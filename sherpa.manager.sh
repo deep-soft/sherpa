@@ -54,7 +54,7 @@ Self.Init()
     DebugFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230105b
+    local -r SCRIPT_VER=230110
 
     IsQNAP || return
     IsSU || return
@@ -70,6 +70,7 @@ Self.Init()
     readonly GREP_CMD=/bin/grep
     readonly LESS_CMD=/bin/less
     readonly MD5SUM_CMD=/bin/md5sum
+    readonly MKNOD_CMD=/bin/mknod
     readonly SED_CMD=/bin/sed
     readonly SH_CMD=/bin/sh
     readonly SLEEP_CMD=/bin/sleep
@@ -100,6 +101,7 @@ Self.Init()
     IsSysFileExist $GREP_CMD || return
     # KLUDGE: don't perform a check for `/bin/less` because it's not always there
     IsSysFileExist $MD5SUM_CMD || return
+    IsSysFileExist $MKNOD_CMD || return
     IsSysFileExist $SED_CMD || return
     IsSysFileExist $SH_CMD || return
     IsSysFileExist $SLEEP_CMD || return
@@ -142,6 +144,8 @@ Self.Init()
     readonly IPK_CACHE_PATH=$WORK_PATH/ipks
     readonly PIP_CACHE_PATH=$WORK_PATH/pips
     readonly BACKUP_PATH=$(GetDefVol)/.qpkg_config_backup
+    readonly QPKG_STATES_PIPE_PATHFILE=/var/run/qpkgs.states.pipe
+    readonly QPKG_PROCS_PIPE_PATHFILE=/var/run/qpkgs.procs.pipe
 
     local -r MANAGER_ARCHIVE_FILE=${MANAGER_FILE%.*}.tar.gz
     readonly MANAGER_ARCHIVE_PATHFILE=$WORK_PATH/$MANAGER_ARCHIVE_FILE
@@ -166,7 +170,7 @@ Self.Init()
     readonly PREVIOUS_PIP_LIST=$WORK_PATH/pip.prev.list
 
     readonly SESS_ARCHIVE_PATHFILE=$LOGS_PATH/session.archive.log
-    readonly SESS_ACTIVE_PATHFILE=$PROJECT_PATH/session.$$.active.log
+    sess_active_pathfile=$PROJECT_PATH/session.$$.active.log
     readonly SESS_LAST_PATHFILE=$LOGS_PATH/session.last.log
     readonly SESS_TAIL_PATHFILE=$LOGS_PATH/session.tail.log
 
@@ -194,17 +198,16 @@ Self.Init()
         readonly "$(Uppercase "$action")"_LOG_FILE="$(Lowercase "$action")".log
     done
 
-    MakePath "$WORK_PATH" work || return
-    MakePath "$LOGS_PATH" logs || return
+    # KLUDGE: service scripts prior to 2022-12-08 would use these paths (by-default) to build/cache Python packages. This has been fixed, but still need to free-up this space to prevent out-of-space issues.
+    [[ -d /root/.cache ]] && rm -rf /root/.cache
+    [[ -d /root/.local/share/virtualenv ]] && rm -rf /root/.local/share/virtualenv
 
     [[ -d $IPK_DL_PATH ]] && rm -rf "$IPK_DL_PATH"
     [[ -d $IPK_CACHE_PATH ]] && rm -rf "$IPK_CACHE_PATH"
     [[ -d $PIP_CACHE_PATH ]] && rm -rf "$PIP_CACHE_PATH"
 
-    # KLUDGE: service scripts prior to 2022-12-08 would use these paths (by-default) to build/cache Python packages. This has been fixed, but still need to free-up this space to prevent out-of-space issues.
-    [[ -d /root/.cache ]] && rm -rf /root/.cache
-    [[ -d /root/.local/share/virtualenv ]] && rm -rf /root/.local/share/virtualenv
-
+    MakePath "$WORK_PATH" work || return
+    MakePath "$LOGS_PATH" logs || return
     MakePath "$QPKG_DL_PATH" 'QPKG download' || return
     MakePath "$IPK_DL_PATH" 'IPK download' || return
     MakePath "$IPK_CACHE_PATH" 'IPK cache' || return
@@ -500,7 +503,7 @@ Self.Validate()
         else
             for package in $(QPKGs.AcToRebuild.Array); do
                 if ! QPKGs.IsBackedUp.Exist "$package"; then
-                    MarkQpkgAcAsSk show "$package" rebuild 'does not have a backup to rebuild from'
+                    MarkQpkgAcAsSk hide "$package" rebuild 'does not have a backup to rebuild from'
                 else
                     (QPKGs.IsNtInstalled.Exist "$package" || QPKGs.AcToUninstall.Exist "$package") && QPKGs.AcToInstall.Add "$package"
                     QPKGs.AcToRestore.Add "$package"
@@ -667,9 +670,9 @@ Tiers.Proc()
     local action=''
     local -i index=0
 
-    Tier.Proc Reassign All QPKG AcToReassign reassign reassigning reassigned '' false || return
-    Tier.Proc Download All QPKG AcToDownload 'update package cache with' 'updating package cache with' 'package cache updated with' '' false || return
-    Tier.Proc Backup All QPKG AcToBackup 'backup configuration for' 'backing-up configuration for' 'configuration backed-up for' '' false || return
+    Tier.Proc Reassign All QPKG AcToReassign reassign reassigning reassigned short || return
+    Tier.Proc Download All QPKG AcToDownload 'update cache with' 'updating cache with' 'updated cache with' short || return
+    Tier.Proc Backup All QPKG AcToBackup 'backup configuration for' 'backing-up configuration for' 'configuration backed-up for' short || return
 
     # -> package removal phase begins here <-
 
@@ -678,8 +681,8 @@ Tiers.Proc()
 
         case $tier in
             Standalone|Dependent)
-                Tier.Proc Stop $tier QPKG AcToStop stop stopping stopped '' false || return
-                Tier.Proc Uninstall $tier QPKG AcToUninstall uninstall uninstalling uninstalled '' false || return
+                Tier.Proc Stop $tier QPKG AcToStop stop stopping stopped short || return
+                Tier.Proc Uninstall $tier QPKG AcToUninstall uninstall uninstalling uninstalled short || return
         esac
     done
 
@@ -688,13 +691,13 @@ Tiers.Proc()
     for tier in "${PACKAGE_TIERS[@]}"; do
         case $tier in
             Standalone|Dependent)
-                Tier.Proc Upgrade $tier QPKG AcToUpgrade upgrade upgrading upgraded long false || return
-                Tier.Proc Reinstall $tier QPKG AcToReinstall reinstall reinstalling reinstalled long false || return
-                Tier.Proc Install $tier QPKG AcToInstall install installing installed long false || return
-                Tier.Proc Restore $tier QPKG AcToRestore 'restore configuration for' 'restoring configuration for' 'configuration restored for' long false || return
-                Tier.Proc Clean $tier QPKG AcToClean clean cleaning cleaned long false || return
-                Tier.Proc Start $tier QPKG AcToStart start starting started long false || return
-                Tier.Proc Restart $tier QPKG AcToRestart restart restarting restarted long false || return
+                Tier.Proc Upgrade $tier QPKG AcToUpgrade upgrade upgrading upgraded long || return
+                Tier.Proc Reinstall $tier QPKG AcToReinstall reinstall reinstalling reinstalled long || return
+                Tier.Proc Install $tier QPKG AcToInstall install installing installed long || return
+                Tier.Proc Restore $tier QPKG AcToRestore 'restore configuration for' 'restoring configuration for' 'configuration restored for' long || return
+                Tier.Proc Clean $tier QPKG AcToClean clean cleaning cleaned long || return
+                Tier.Proc Start $tier QPKG AcToStart start starting started long || return
+                Tier.Proc Restart $tier QPKG AcToRestart restart restarting restarted long || return
                 ;;
             Addon)
                 for action in Install Reinstall Upgrade Start; do
@@ -704,11 +707,11 @@ Tiers.Proc()
 
                 if QPKGs.IsStarted.Exist Entware; then
                     ModPathToEntware
-                    Tier.Proc Upgrade $tier IPK '' upgrade upgrading upgraded long false || return
-                    Tier.Proc Install $tier IPK '' install installing installed long false || return
+                    Tier.Proc Upgrade $tier IPK '' upgrade upgrading upgraded long || return
+                    Tier.Proc Install $tier IPK '' install installing installed long || return
 
                     PIPs.Install.Set
-                    Tier.Proc Install $tier PIP '' install installing installed long false || return
+                    Tier.Proc Install $tier PIP '' install installing installed long || return
                 fi
         esac
     done
@@ -725,7 +728,7 @@ Tiers.Proc()
 Tier.Proc()
     {
 
-    # run a single action on an entire tier of packages
+    # run a single action on an entire tier of packages, asynchronously where possible
 
     # input:
     #   $1 = $TARGET_ACTION                     e.g. `Start`, `Restart`...
@@ -735,56 +738,48 @@ Tier.Proc()
     #   $5 = $ACTION_INTRANSITIVE               e.g. `start`...
     #   $6 = $ACTION_PRESENT                    e.g. `starting`...
     #   $7 = $ACTION_PAST                       e.g. `started`...
-    #   $8 = $RUNTIME (optional)                e.g. `long`
-    #   $9 = execute asynchronously? (optional) e.g. `true`, `false`
+    #   $8 = $RUNTIME (optional)                e.g. `long` - default is `short`
 
     DebugFuncEn
 
-    local package=''
     local target_function=''
     local targets_function=''
-    local -i result_code=0
-    local -a target_packages=()
-    run_count=0
-    pass_count=0
-    skip_count=0
-    fail_count=0
-    local -i total_count=0
-    local -r TARGET_ACTION=${1:?null}
-    local -r TIER=${2:?null}
     local -r PACKAGE_TYPE=${3:?null}
-    local -r TARGET_OBJECT_NAME=${4:-}
-    local -r RUNTIME=${8:-}
-
-    if Self.Debug.ToScreen.IsSet || [[ $CONCURRENCY -eq 1 ]]; then  # no-point running actions concurrently in debug mode: their stdout will make a confused mess of the screen
-        local -r ASYNC=false
-    else
-        local -r ASYNC=${9:-1}
-    fi
+    local -r TARGET_ACTION=${1:?null}
 
     case $PACKAGE_TYPE in
         QPKG|IPK|PIP)
-            target_function=$PACKAGE_TYPE
-            targets_function=${PACKAGE_TYPE}s
+            target_function=_${PACKAGE_TYPE}.${TARGET_ACTION}_
+            targets_function=${PACKAGE_TYPE}s.${TARGET_ACTION}
             ;;
         *)
             DebugAsError "unknown \$PACKAGE_TYPE: '$PACKAGE_TYPE'"
             DebugFuncEx 1; return
     esac
 
+    local package=''
+    total_count=0
+    local -a target_packages=()
+    local -r TIER=${2:?null}
+    local -r TARGET_OBJECT_NAME=${4:-}
     local -r ACTION_INTRANSITIVE=${5:?null}
     local -r ACTION_PRESENT=${6:?null}
     local -r ACTION_PAST=${7:?null}
+    local -r RUNTIME=${8:-short}
 
-    ShowAsProc "$([[ $TIER != All ]] && Lowercase "$TIER ")packages to $ACTION_INTRANSITIVE" >&2
+#     if [[ $RUNTIME = short ]]; then
+        ShowAsProc "$([[ $TIER != All ]] && Lowercase "$TIER ")packages to $ACTION_INTRANSITIVE" >&2
+#     else
+#         ShowAsProcLong "$([[ $TIER != All ]] && Lowercase "$TIER ")packages to $ACTION_INTRANSITIVE" >&2
+#     fi
 
     case $PACKAGE_TYPE in
         QPKG)
             if [[ $TIER = All ]]; then  # process all tiers
-                target_packages=($($targets_function.$TARGET_OBJECT_NAME.Array))
-            else                        # only process packages in specified tier, ignoring all others
-                for package in $($targets_function.$TARGET_OBJECT_NAME.Array); do
-                    $targets_function.Sc${TIER}.Exist "$package" && target_packages+=("$package")
+                target_packages=($(${PACKAGE_TYPE}s.$TARGET_OBJECT_NAME.Array))
+            else                        # process a single tier only
+                for package in $(${PACKAGE_TYPE}s.$TARGET_OBJECT_NAME.Array); do
+                    ${PACKAGE_TYPE}s.Sc${TIER}.Exist "$package" && target_packages+=("$package")
                 done
             fi
 
@@ -795,80 +790,106 @@ Tier.Proc()
                 DebugFuncEx; return
             fi
 
-            if [[ $ASYNC = false ]]; then
-                # execute actions consecutively
-                for package in "${target_packages[@]}"; do
-                    ShowAsActionProgress "$TIER" "$PACKAGE_TYPE" "$pass_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
+			[[ -e $QPKG_STATES_PIPE_PATHFILE ]] && rm -f "$QPKG_STATES_PIPE_PATHFILE"
+            $MKNOD_CMD "$QPKG_STATES_PIPE_PATHFILE" p
+            AdjustMaxForks "$TARGET_ACTION"
+            InitCounts
 
-                    $target_function.${TARGET_ACTION} "$package"
-                    result_code=$?
+            # execute actions concurrently, but only as many as $max_forks will allow given the circumstances
 
-                    case $result_code in
-                        0)  # OK
-                            ((pass_count++))
-                            ;;
-                        2)  # skipped
-                            ((total_count--))
-                            ;;
-                        *)  # failed
-                            ShowAsFail "unable to $ACTION_INTRANSITIVE $(FormatAsPackName "$package") (see log for more details)"
-                            ((fail_count++))
-                    esac
-                done
-            else
-                # execute actions concurrently, but only as many as $CONCURRENCY will allow
-                local -i proc_index=0
-                CreateProcCountPaths
-
-                for package in "${target_packages[@]}"; do
-                    while true; do
-                        RefreshProcCounts #; ShowRunProgress "$TARGET_ACTION" "$total_count" "$CONCURRENCY"
-
-                        # don't proceed until a spot becomes available
-                        [[ $run_count -eq $CONCURRENCY ]] && continue
-
-                        # fork a new action handler
-                        ((proc_index++))
-
-                        proc_run_pathfile="${proc_run_count_path}/$(printf "%02d" "$proc_index")"
-                        proc_pass_pathfile="${proc_pass_count_path}/$(printf "%02d" "$proc_index")"
-                        proc_skip_pathfile="${proc_skip_count_path}/$(printf "%02d" "$proc_index")"
-                        proc_fail_pathfile="${proc_fail_count_path}/$(printf "%02d" "$proc_index")"
-
-                        MarkProcAsRunning       # create runfile here, as it takes too long to happen in background function
-                        { $target_function.${TARGET_ACTION} "$package" & } 2>/dev/null
-
-                        break
-                    done
+            for package in "${target_packages[@]}"; do
+                while [[ $fork_count -ge $max_forks ]]; do  # don't fork until an empty spot becomes available
+                    UpdateProgress
                 done
 
-                wait 2>/dev/null;                   # wait here until all forked jobs have exited
+                IncProgressIndex
+                MarkProcAsForked    # must create runfile here, as it takes too long to happen in background function
+                $target_function "$package" &
+                UpdateProgress
+            done
 
-#                     case $result_code in
-#                         0)  # OK
-#                             ((pass_count++))
-#                             ;;
-#                         2)  # skipped
-#                             ((total_count--))
-#                             ;;
-#                         *)  # failed
-#                             ShowAsFail "unable to $ACTION_INTRANSITIVE $(FormatAsPackName "$package") (see log for more details)"
-#                             ((fail_count++))
-#                     esac
+            # monitor forks via count paths
+            while [[ $fork_count -gt 0 ]]; do
+                UpdateProgress
+            done
 
-                EraseProcCountPaths
-            fi
+            # all pipes must be read from so backgrounded `echo` processes will exit
+            # create a listener here to accept all fork results from $QPKG_PROCS_PIPE_PATHFILE and place into QPKGs.Actions.List()
+
+            # create a listener here to accept all QPKG state assignments from $QPKG_STATES_PIPE_PATHFILE
+
+            wait 2>/dev/null    # wait here until all forks have exited
+
+#             InitProgress
+
+            # loop through all count paths and accumulate their results for QPKGs.Actions.List()
+#             for package in "${target_packages[@]}"; do
+#                 IncProgressIndex
+#
+#                 if [[ -e $proc_pass_pathfile ]]; then
+#                     MarkQpkgAcAsOk "$package" "$TARGET_ACTION"
+#
+#                     # must also change package states here
+#                     NoteQPKGStateAsIsInstalled "$package"
+#
+#                 elif [[ -e $proc_skip_pathfile ]]; then
+#                     MarkQpkgAcAsSk hide "$package" "$TARGET_ACTION"
+#
+#                     # must also change package states here
+#
+#                 elif [[ -e $proc_fail_pathfile ]]; then
+#                     MarkQpkgAcAsEr hide "$package" "$TARGET_ACTION"
+#
+#                     # must also change package states here
+#                 fi
+#             done
             ;;
         IPK|PIP)
-            $targets_function.${TARGET_ACTION}
+            InitCounts
+            $targets_function       # only process these packages in groups, not individually
     esac
 
-    # execute with pass_count > total_count to trigger 100% message
-    ShowAsActionProgress "$TIER" "$PACKAGE_TYPE" "$((total_count+1))" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
-    ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$pass_count" "$fail_count" "$total_count" "$ACTION_PAST" "$RUNTIME"
-
+    ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$pass_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PAST"
+    EraseCountPaths
     DebugFuncEx
     Self.Error.IsNt
+
+    }
+
+AdjustMaxForks()
+    {
+
+    max_forks=0
+
+    # no-point running actions async in debug mode: their stdout will make a confusing mess of the screen
+    if Self.Debug.ToScreen.IsSet; then
+        DebugInfo "reducing \$max_forks to 1 because debug mode is active"
+        max_forks=1
+    fi
+
+    # don't execute these actions async: QTS installer for each package aborts (looks like QTS can only manage a single package at-a-time, packages overwrite each other and package source files end-up in the wrong install paths)
+    case ${1:-} in
+        Install|Reinstall|Upgrade)
+            DebugInfo "reducing \$max_forks to 1 because '$1' has been requested"
+            max_forks=1
+    esac
+
+    [[ $max_forks -eq 0 ]] && max_forks=$CONCURRENCY
+
+    DebugVar max_forks
+
+    }
+
+IncProgressIndex()
+    {
+
+    ((progress_index++))
+    local formatted_index="$(printf "%02d" "$progress_index")"
+
+    proc_fork_pathfile="$proc_fork_count_path/$formatted_index"
+    proc_pass_pathfile="$proc_pass_count_path/$formatted_index"
+    proc_skip_pathfile="$proc_skip_count_path/$formatted_index"
+    proc_fail_pathfile="$proc_fail_count_path/$formatted_index"
 
     }
 
@@ -1044,7 +1065,7 @@ ParseArgs()
         if [[ -n $action ]]; then
             case $arg in
             # these cases use only a single word or char to specify a single action
-                check|installable|installed|not-installed|problems|started|stopped|tail|tips|upgradable)
+                check|installable|installed|missing|not-installed|problems|started|stopped|tail|tips|upgradable)
                     scope=${arg}_
                     scope_identified=true
                     arg_identified=true
@@ -1297,6 +1318,10 @@ ParseArgs()
                         ;;
                     installed_)
                         QPKGs.AcInstall.IsInstalled.Set
+                        scope=''
+                        ;;
+                    missing_)
+                        QPKGs.AcInstall.IsMissing.Set
                         scope=''
                         ;;
                     not-installed_)
@@ -1682,7 +1707,7 @@ Self.ArgSuggests.Show()
     local arg=''
 
     if Args.Unknown.IsAny; then
-        ShowAsError "unknown argument$(Plural "$(Args.Unknown.Count)"): \"$(Args.Unknown.List)\". Please check the argument list again"
+        ShowAsError "unknown argument$(Pluralise "$(Args.Unknown.Count)"): \"$(Args.Unknown.List)\". Please check the argument list again"
 
         for arg in $(Args.Unknown.Array); do
             case $arg in
@@ -1886,7 +1911,7 @@ AllocGroupPacksToAcs()
                 fi
 
                 if QPKGs.AcTo${action}.IsAny; then
-                    DebugAsDone "action: '$action', scope: '$scope': found $(QPKGs.AcTo${action}.Count) package$(Plural "$(QPKGs.AcTo${action}.Count)") to process"
+                    DebugAsDone "action: '$action', scope: '$scope': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
                 else
                     ShowAsWarn "unable to find any $scope packages to $(Lowercase "$action")"
                 fi
@@ -1909,7 +1934,7 @@ AllocGroupPacksToAcs()
                 fi
 
                 if QPKGs.AcTo${action}.IsAny; then
-                    DebugAsDone "action: '$action', scope: 'Nt${scope}': found $(QPKGs.AcTo${action}.Count) package$(Plural "$(QPKGs.AcTo${action}.Count)") to process"
+                    DebugAsDone "action: '$action', scope: 'Nt${scope}': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
                 else
                     ShowAsWarn "unable to find any Nt${scope} packages to $(Lowercase "$action")"
                 fi
@@ -1950,7 +1975,7 @@ AllocGroupPacksToAcs()
                 fi
 
                 if QPKGs.AcTo${action}.IsAny; then
-                    DebugAsDone "action: '$action', state: '$state': found $(QPKGs.AcTo${action}.Count) package$(Plural "$(QPKGs.AcTo${action}.Count)") to process"
+                    DebugAsDone "action: '$action', state: '$state': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
                 else
                     ShowAsWarn "unable to find any $state packages to $(Lowercase "$action")"
                 fi
@@ -1976,7 +2001,7 @@ AllocGroupPacksToAcs()
                 fi
 
                 if QPKGs.AcTo${action}.IsAny; then
-                    DebugAsDone "action: '$action', state: 'Nt${state}': found $(QPKGs.AcTo${action}.Count) package$(Plural "$(QPKGs.AcTo${action}.Count)") to process"
+                    DebugAsDone "action: '$action', state: 'Nt${state}': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
                 else
                     ShowAsWarn "unable to find any Nt${state} packages to $(Lowercase "$action")"
                 fi
@@ -2170,7 +2195,7 @@ CalcIpkDepsToInstall()
     fi
 
     ShowAsProc 'calculating IPK dependencies'
-    DebugInfo "$requested_count IPK$(Plural "$requested_count") requested" "'$req_list' "
+    DebugInfo "$requested_count IPK$(Pluralise "$requested_count") requested" "'$req_list' "
 
     while [[ $iterations -lt $ITERATION_LIMIT ]]; do
         ((iterations++))
@@ -2189,9 +2214,9 @@ CalcIpkDepsToInstall()
     done
 
     if [[ $complete = true ]]; then
-        DebugAsDone "completed in $iterations loop iteration$(Plural "$iterations")"
+        DebugAsDone "completed in $iterations loop iteration$(Pluralise "$iterations")"
     else
-        DebugAsError "incomplete with $iterations loop iteration$(Plural "$iterations"), consider raising \$ITERATION_LIMIT [$ITERATION_LIMIT]"
+        DebugAsError "incomplete with $iterations loop iteration$(Pluralise "$iterations"), consider raising \$ITERATION_LIMIT [$ITERATION_LIMIT]"
         Self.SuggestIssue.Set
     fi
 
@@ -2200,7 +2225,7 @@ CalcIpkDepsToInstall()
     pre_exclude_count=$($WC_CMD -w <<< "$pre_exclude_list")
 
     if [[ $pre_exclude_count -gt 0 ]]; then
-        DebugInfo "$pre_exclude_count IPK$(Plural "$pre_exclude_count") required (including dependencies)" "'$pre_exclude_list' "
+        DebugInfo "$pre_exclude_count IPK$(Pluralise "$pre_exclude_count") required (including dependencies)" "'$pre_exclude_list' "
 
         DebugAsProc 'excluding IPKs already installed'
 
@@ -2239,8 +2264,8 @@ CalcIpkDownloadSize()
     size_count=$(IPKs.AcToDownload.Count)
 
     if [[ $size_count -gt 0 ]]; then
-        DebugAsDone "$size_count IPK$(Plural "$size_count") to download: '$(IPKs.AcToDownload.List)'"
-        DebugAsProc "calculating size of IPK$(Plural "$size_count") to download"
+        DebugAsDone "$size_count IPK$(Pluralise "$size_count") to download: '$(IPKs.AcToDownload.List)'"
+        DebugAsProc "calculating size of IPK$(Pluralise "$size_count") to download"
         size_array=($($GNU_GREP_CMD -w '^Package:\|^Size:' "$EXTERNAL_PACKAGES_PATHFILE" | $GNU_GREP_CMD --after-context 1 --no-group-separator ": $($SED_CMD 's/ /$ /g;s/\$ /\$\\\|: /g' <<< "$(IPKs.AcToDownload.List)")" | $GREP_CMD '^Size:' | $SED_CMD 's|^Size: ||'))
         IPKs.AcToDownload.Size = "$(IFS=+; echo "$((${size_array[*]}))")"   # a nifty sizing shortcut found here https://stackoverflow.com/a/13635566/6182835
         DebugAsDone "$(FormatAsThous "$(IPKs.AcToDownload.Size)") bytes ($(FormatAsISOBytes "$(IPKs.AcToDownload.Size)")) to download"
@@ -2272,10 +2297,10 @@ IPKs.Upgrade()
     IPKs.AcToDownload.Add "$(IPKs.AcToUpgrade.Array)"
 
     CalcIpkDownloadSize
-    local -i total_count=$(IPKs.AcToDownload.Count)
+    total_count=$(IPKs.AcToDownload.Count)
 
     if [[ $total_count -gt 0 ]]; then
-        ShowAsProc "downloading & upgrading $total_count IPK$(Plural "$total_count")"
+        ShowAsProc "downloading & upgrading $total_count IPK$(Pluralise "$total_count")"
 
         CreateDirSizeMonitorFlagFile "$IPK_DL_PATH"/.monitor
             trap CTRL_C_Captured INT
@@ -2287,10 +2312,10 @@ IPKs.Upgrade()
         RemoveDirSizeMonitorFlagFile
 
         if [[ $result_code -eq 0 ]]; then
-            ShowAsDone "downloaded & upgraded $total_count IPK$(Plural "$total_count")"
+#             ShowAsDone "downloaded & upgraded $total_count IPK$(Pluralise "$total_count")"
             MarkIpkAcAsOk "$(IPKs.AcToUpgrade.Array)" "$action"
         else
-            ShowAsFail "download & upgrade $total_count IPK$(Plural "$total_count") failed $(FormatAsExitcode "$result_code")"
+            ShowAsFail "download & upgrade $total_count IPK$(Pluralise "$total_count") failed $(FormatAsExitcode "$result_code")"
             MarkIpkAcAsEr "$(IPKs.AcToUpgrade.Array)" "$action"
         fi
     fi
@@ -2317,7 +2342,7 @@ IPKs.Install()
     IPKs.AcToDownload.Init
 
     # only install essential IPKs once per session. NOTE: This is done immediately after Entware is installed.
-    # If Entware wasn't just installed, reinstall them now along with IPKs require for QPKGs.
+    # If Entware wasn't just installed, reinstall essential IPKs now along with remaining IPKs required for QPKGs.
     ! QPKGs.AcOkInstall.Exist Entware && IPKs.AcToInstall.Add "$ESSENTIAL_IPKS"
 
     if QPKGs.AcInstall.ScAll.IsSet; then
@@ -2337,10 +2362,10 @@ IPKs.Install()
 
     CalcIpkDepsToInstall
     CalcIpkDownloadSize
-    local -i total_count=$(IPKs.AcToDownload.Count)
+    total_count=$(IPKs.AcToDownload.Count)
 
     if [[ $total_count -gt 0 ]]; then
-        ShowAsProc "downloading & installing $total_count IPK$(Plural "$total_count")"
+        ShowAsProc "downloading & installing $total_count IPK$(Pluralise "$total_count")"
 
         CreateDirSizeMonitorFlagFile "$IPK_DL_PATH"/.monitor
             trap CTRL_C_Captured INT
@@ -2352,10 +2377,11 @@ IPKs.Install()
         RemoveDirSizeMonitorFlagFile
 
         if [[ $result_code -eq 0 ]]; then
-            ShowAsDone "downloaded & installed $total_count IPK$(Plural "$total_count")"
+            pass_count=$total_count         # assume they all passed
             MarkIpkAcAsOk "$(IPKs.AcToDownload.Array)" "$action"
         else
-            ShowAsFail "download & install $total_count IPK$(Plural "$total_count") failed $(FormatAsExitcode "$result_code")"
+            fail_count=$total_count         # assume they all failed
+            ShowAsFail "download & install $total_count IPK$(Pluralise "$total_count") failed $(FormatAsExitcode "$result_code")"
             MarkIpkAcAsEr "$(IPKs.AcToDownload.Array)" "$action"
         fi
     fi
@@ -2376,10 +2402,7 @@ PIPs.Install()
 
     local exec_cmd=''
     local -i result_code=0
-    local -i pass_count=0
-    local -i fail_count=0
-    local -i total_count=1
-    local -i index=0
+    local -i group_count=0
     local -r PACKAGE_TYPE='PyPI group'
     local ACTION_PRESENT=installing
     local ACTION_PAST=installed
@@ -2387,7 +2410,9 @@ PIPs.Install()
     ModPathToEntware
 
     if Opts.Deps.Check.IsSet || IPKs.AcOkInstall.Exist python3-pip; then
-        ShowAsActionProgress '' "$PACKAGE_TYPE" "$pass_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
+        ((total_count++))
+        ((group_count++))
+        ShowAsActionProgress '' "$PACKAGE_TYPE" "$group_count" "$pass_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
 
         exec_cmd="$PIP_CMD install --upgrade --no-input $ESSENTIAL_PIPS --cache-dir $PIP_CACHE_PATH 2> >(grep -v \"Running pip as the 'root' user\") >&2"
         local desc="'PyPI' essential modules"
@@ -2403,13 +2428,11 @@ PIPs.Install()
             ShowAsFail "$ACTION_PAST $desc failed $(FormatAsResult "$result_code")"
             ((fail_count++))
         fi
-    else
-        ((total_count--))
+
+        # execute with group_count > total_count to trigger 100% message
+        ShowAsActionProgress '' "$PACKAGE_TYPE" "$((total_count+1))" "$pass_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
     fi
 
-    # execute with pass_count > total_count to trigger 100% message
-    ShowAsActionProgress '' "$PACKAGE_TYPE" "$((total_count+1))" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
-    ShowAsActionResult '' "$PACKAGE_TYPE" "$pass_count" "$fail_count" "$total_count" "$ACTION_PAST" "$RUNTIME"
     DebugFuncEx $result_code
 
     }
@@ -2471,9 +2494,7 @@ _MonitorDirSize_()
     local -i current_bytes=0
     local percent=''
 
-    progress_message=''
-    previous_length=0
-    previous_clean_msg=''
+    InitProgress
 
     while [[ -e $MONITOR_FLAG_PATHFILE ]]; do
         current_bytes=$($GNU_FIND_CMD "$1" -type f -name '*.ipk' -exec $DU_CMD --bytes --total --apparent-size {} + 2>/dev/null | $GREP_CMD total$ | cut -f1)
@@ -2517,21 +2538,21 @@ _MonitorDirSize_()
             progress_message+=$stall_message
         fi
 
-        ProgressUpdater "$progress_message"
+        UpdateInPlace "$progress_message"
         $SLEEP_CMD 1
     done
 
-    [[ -n $progress_message ]] && ProgressUpdater 'done!'
+    [[ -n $progress_message ]] && UpdateInPlace 'done!'
 
     }
 
-ProgressUpdater()
+UpdateInPlace()
     {
 
     # input:
     #   $1 = message to display
 
-    this_clean_msg=$(StripANSI "${1:-}")
+    local this_clean_msg=$(StripANSI "${1:-}")
 
     if [[ $this_clean_msg != "$previous_clean_msg" ]]; then
         this_length=$((${#this_clean_msg}+1))
@@ -3385,7 +3406,7 @@ GetLogSessFinishLine()
 ArchiveActiveSessLog()
     {
 
-    [[ -e $SESS_ACTIVE_PATHFILE ]] && $CAT_CMD "$SESS_ACTIVE_PATHFILE" >> "$SESS_ARCHIVE_PATHFILE"
+    [[ -e $sess_active_pathfile ]] && $CAT_CMD "$sess_active_pathfile" >> "$SESS_ARCHIVE_PATHFILE"
 
     }
 
@@ -3397,7 +3418,7 @@ ArchivePriorSessLogs()
     local log_pathfile=''
 
     for log_pathfile in "$PROJECT_PATH/session."*".active.log"; do
-        if [[ -f $log_pathfile && $log_pathfile != "$SESS_ACTIVE_PATHFILE" ]]; then
+        if [[ -f $log_pathfile && $log_pathfile != "$sess_active_pathfile" ]]; then
             $CAT_CMD "$log_pathfile" >> "$SESS_ARCHIVE_PATHFILE"
             rm -f "$log_pathfile"
         fi
@@ -3408,7 +3429,7 @@ ArchivePriorSessLogs()
 ResetActiveSessLog()
     {
 
-    [[ -e $SESS_ACTIVE_PATHFILE ]] && rm -f "$SESS_ACTIVE_PATHFILE"
+    [[ -e $sess_active_pathfile ]] && rm -f "$sess_active_pathfile"
 
     }
 
@@ -3472,7 +3493,18 @@ Self.Vers.Show()
 
     }
 
-CreateProcCountPaths()
+Display2to1()
+    {
+
+    if [[ ${1:-0} -eq ${2:-0} ]]; then
+        echo "${1:-0}"
+    else
+        echo "${1:-0}/${2:-0}"
+    fi
+
+    }
+
+InitCounts()
     {
 
     # create directories so background processes can be monitored
@@ -3480,48 +3512,88 @@ CreateProcCountPaths()
     PROC_COUNTS_PATH=$(/bin/mktemp -d /var/run/"${FUNCNAME[1]}"_XXXXXX)
     [[ -n ${PROC_COUNTS_PATH:?no proc counts path} ]] || return
 
-    proc_run_count_path=${PROC_COUNTS_PATH}/run.count
+    EraseCountPaths
+
+    proc_fork_count_path=${PROC_COUNTS_PATH}/fork.count
     proc_pass_count_path=${PROC_COUNTS_PATH}/pass.count
     proc_skip_count_path=${PROC_COUNTS_PATH}/skip.count
     proc_fail_count_path=${PROC_COUNTS_PATH}/fail.count
 
-    mkdir -p "$proc_run_count_path"
+    mkdir -p "$proc_fork_count_path"
     mkdir -p "$proc_pass_count_path"
     mkdir -p "$proc_skip_count_path"
     mkdir -p "$proc_fail_count_path"
 
-    RefreshProcCounts
+    InitProgress
 
     }
 
-ResetProcCounts()
+RefreshCounts()
     {
 
-    # reset background processing paths and counts
-
-    [[ -d $proc_run_count_path ]] && rm -f "$proc_run_count_path"/*
-    [[ -d $proc_pass_count_path ]] && rm -f "$proc_pass_count_path"/*
-    [[ -d $proc_skip_count_path ]] && rm -f "$proc_skip_count_path"/*
-    [[ -d $proc_fail_count_path ]] && rm -f "$proc_fail_count_path"/*
-
-    RefreshProcCounts
-
-    }
-
-RefreshProcCounts()
-    {
-
-    run_count="$(ls -A -1 "$proc_run_count_path" | $WC_CMD -l)"
+    fork_count="$(ls -A -1 "$proc_fork_count_path" | $WC_CMD -l)"
     pass_count="$(ls -A -1 "$proc_pass_count_path" | $WC_CMD -l)"
     skip_count="$(ls -A -1 "$proc_skip_count_path" | $WC_CMD -l)"
     fail_count="$(ls -A -1 "$proc_fail_count_path" | $WC_CMD -l)"
 
     }
 
-EraseProcCountPaths()
+EraseCountPaths()
     {
 
     [[ -d ${PROC_COUNTS_PATH:?no proc counts path} ]] && rm -r "$PROC_COUNTS_PATH"
+
+    }
+
+InitProgress()
+    {
+
+    progress_index=0
+    previous_length=0
+    previous_clean_msg=''
+
+    RefreshCounts
+
+    }
+
+UpdateProgress()
+    {
+
+    # all input vars are global
+
+    local progress_message=''
+
+    RefreshCounts
+
+    if [[ $total_count -gt 0 ]]; then
+        progress_message+="$(ColourTextBrightWhite "$total_count") total"
+    fi
+
+    if [[ $fork_count -gt 0 ]]; then
+        [[ -n $progress_message ]] && progress_message+=': '
+        progress_message+="$(ColourTextBrightOrange "$fork_count") $(PluralTense "$fork_count" 'is' 'are') in progress"
+    fi
+
+    if [[ $pass_count -gt 0 ]]; then
+        [[ -n $progress_message ]] && progress_message+=': '
+        progress_message+="$(ColourTextBrightGreen "$pass_count") $(PluralTense "$pass_count" 'has' 'have') completed OK"
+    fi
+
+    if [[ $skip_count -gt 0 ]]; then
+        [[ -n $progress_message ]] && progress_message+=': '
+        progress_message+="$(ColourTextBrightOrange "$skip_count") $(PluralTense "$skip_count" 'was' 'were') skipped"
+    fi
+
+    if [[ $fail_count -gt 0 ]]; then
+        [[ -n $progress_message ]] && progress_message+=': '
+        progress_message+="$(ColourTextBrightRed "$fail_count") $(PluralTense "$fail_count" 'has' 'have') failed"
+    fi
+
+    [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
+
+    [[ $((fork_count+pass_count+skip_count+fail_count)) -ge $total_count ]] && $SLEEP_CMD 1
+
+    return 0
 
     }
 
@@ -3780,6 +3852,8 @@ QPKGs.States.Build()
 
     # $1 (optional) = `rebuild` - clear existing lists and rebuild them from scratch
 
+    local state=''
+
     if [[ ${1:-} = rebuild ]]; then
         DebugAsProc 'clearing existing state lists'
 
@@ -3797,7 +3871,6 @@ QPKGs.States.Build()
     local -i index=0
     local package=''
     local previous=''
-    local state=''
     ShowAsProc 'package states' >&2
 
     for index in "${!QPKG_NAME[@]}"; do
@@ -3810,7 +3883,7 @@ QPKGs.States.Build()
                 continue
             fi
 
-            MarkQpkgAsIsInstalled "$package"
+            NoteQPKGStateAsIsInstalled "$package"
 
             if [[ $(QPKG.Local.Ver "$package") != "${QPKG_VERSION[$index]}" ]]; then
                 MarkQpkgAsIsUpgradable "$package"
@@ -3855,7 +3928,7 @@ QPKGs.States.Build()
 
             QPKG.IsCanBackup "$package" && MarkQpkgAsIsBackedUp "$package"
         else
-            MarkQpkgAsNtInstalled "$package"
+            NoteQPKGStateAsNtInstalled "$package"
 
             if [[ -n ${QPKG_ABBRVS[$index]} ]]; then
                 if [[ ${QPKG_ARCH[$index]} = all || ${QPKG_ARCH[$index]} = "$NAS_QPKG_ARCH" ]]; then
@@ -4248,31 +4321,31 @@ QPKGs.ScDependent.Show()
 
     }
 
-MarkProcAsRunning()
+MarkProcAsForked()
     {
 
-    [[ -n ${proc_run_pathfile:-} ]] && touch "$proc_run_pathfile"
+    [[ -n ${proc_fork_pathfile:-} ]] && touch "$proc_fork_pathfile"
 
     }
 
-MarkProcAsOk()
+MarkProcAsPassed()
     {
 
-    [[ -n ${proc_run_pathfile:-} && -e $proc_run_pathfile ]] && mv "$proc_run_pathfile" "$proc_pass_pathfile"
+    [[ -n ${proc_fork_pathfile:-} && -e $proc_fork_pathfile ]] && mv "$proc_fork_pathfile" "$proc_pass_pathfile"
 
     }
 
 MarkProcAsSkipped()
     {
 
-    [[ -n ${proc_run_pathfile:-} && -e $proc_run_pathfile ]] && mv "$proc_run_pathfile" "$proc_skip_pathfile"
+    [[ -n ${proc_fork_pathfile:-} && -e $proc_fork_pathfile ]] && mv "$proc_fork_pathfile" "$proc_skip_pathfile"
 
     }
 
 MarkProcAsFailed()
     {
 
-    [[ -n ${proc_run_pathfile:-} && -e $proc_run_pathfile ]] && mv "$proc_run_pathfile" "$proc_fail_pathfile"
+    [[ -n ${proc_fork_pathfile:-} && -e $proc_fork_pathfile ]] && mv "$proc_fork_pathfile" "$proc_fail_pathfile"
 
     }
 
@@ -4298,16 +4371,22 @@ MarkQpkgAcAsEr()
     # move specified package name from `To` action array into associated `Er` array
 
     # input:
-    #   $1 = package name
-    #   $2 = action
-    #   $3 = reason (optional)
+    #   $1 = show this onscreen: `show`/`hide`
+    #   $2 = package name
+    #   $3 = action
+    #   $4 = reason (optional)
 
-    local message="failing request to $2 $(FormatAsPackName "$1")"
+    local message="failing request to $3 $(FormatAsPackName "$2")"
+    [[ -n ${4:-} ]] && message+=" as $4"
 
-    [[ -n ${3:-} ]] && message+=" as $3"
-    DebugAsError "$message" >&2
-    QPKGs.AcTo"$(Capitalise "$2")".Remove "$1"
-    QPKGs.AcEr"$(Capitalise "$2")".Add "$1"
+    if [[ ${1:-hide} = show ]]; then
+        ShowAsInfo "$message" >&2
+    else
+        DebugAsInfo "$message" >&2
+    fi
+
+    QPKGs.AcTo"$(Capitalise "$3")".Remove "$2"
+    QPKGs.AcEr"$(Capitalise "$3")".Add "$2"
 
     return 0
 
@@ -4377,20 +4456,24 @@ MarkIpkAcAsEr()
 
     }
 
-MarkQpkgAsIsInstalled()
+NoteQPKGStateAsIsInstalled()
     {
 
-    [[ -n ${1:-} ]] || return
+    # $1 = package name
+
+    [[ -n ${1:?package name null} ]] || return
 
     QPKGs.IsInstalled.Add "$1"
     QPKGs.IsNtInstalled.Remove "$1"
 
     }
 
-MarkQpkgAsNtInstalled()
+NoteQPKGStateAsNtInstalled()
     {
 
-    [[ -n ${1:-} ]] || return
+    # $1 = package name
+
+    [[ -n ${1:?package name null} ]] || return
 
     QPKGs.IsInstalled.Remove "$1"
     QPKGs.IsNtInstalled.Add "$1"
@@ -4845,19 +4928,18 @@ DisableDebugToArchiveAndFile()
 
 # QPKG tasks
 
-QPKG.Reassign()
+_QPKG.Reassign_()
     {
+
+    # * This function runs autonomously *
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not reassigned: not already installed, or already assigned)
+    #   $? = none, this function executes in background
 
-    Self.Error.IsSet && return
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -4865,15 +4947,17 @@ QPKG.Reassign()
     local action=reassign
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's not installed - use 'install' instead"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's not installed - use 'install' instead"
+        DebugForkFuncEx 2
+        exit
     fi
 
     local package_store_id=$(QPKG.StoreID "$PACKAGE_NAME")
 
     if [[ $package_store_id = sherpa ]]; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's already assigned to $(FormatAsTitle)"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's already assigned to $(FormatAsTitle)"
+        DebugForkFuncEx 2
+        exit
     fi
 
     DebugAsProc "reassigning $(FormatAsPackName "$PACKAGE_NAME")"
@@ -4884,28 +4968,27 @@ QPKG.Reassign()
         MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
         DebugAsDone "reassigned $(FormatAsPackName "$PACKAGE_NAME") to sherpa"
     else
-        MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+        MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
         DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         result_code=1    # remap to 1
     fi
 
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
-QPKG.Download()
+_QPKG.Download_()
     {
+
+    # * This function runs autonomously *
 
     # input:
     #   $1 = QPKG name to download
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not downloaded: already downloaded)
+    #   $? = none, this function executes in background
 
-    Self.Error.IsSet && return
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -4933,14 +5016,23 @@ QPKG.Download()
                 DebugInfo "deleting $(FormatAsFileName "$LOCAL_FILENAME")"
                 rm -f "$LOCAL_PATHFILE"
             fi
+            result_code=1
         fi
     fi
 
-    if [[ $result_code -eq 2 ]]; then
-        MarkProcAsSkipped
-        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action"
-        DebugFuncEx $result_code; return
-    fi
+    case $result_code in
+        1)
+            MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+            MarkProcAsFailed
+            DebugForkFuncEx $result_code
+            exit
+            ;;
+        2)
+            MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action"
+            MarkProcAsSkipped
+            DebugForkFuncEx $result_code
+            exit
+    esac
 
     if [[ ! -f $LOCAL_PATHFILE ]]; then
         DebugAsProc "downloading $(FormatAsFileName "$REMOTE_FILENAME")"
@@ -4954,7 +5046,7 @@ QPKG.Download()
             if FileMatchesMD5 "$LOCAL_PATHFILE" "$REMOTE_MD5"; then
                 DebugAsDone "downloaded $(FormatAsFileName "$REMOTE_FILENAME")"
                 QPKGs.AcOkDownload.Add "$PACKAGE_NAME"
-                MarkProcAsOk
+                MarkProcAsPassed
             else
                 DebugAsError "downloaded package $(FormatAsFileName "$LOCAL_PATHFILE") checksum incorrect"
                 QPKGs.AcErDownload.Add "$PACKAGE_NAME"
@@ -4970,23 +5062,22 @@ QPKG.Download()
     fi
 
     QPKGs.AcToDownload.Remove "$PACKAGE_NAME"
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
-QPKG.Install()
+_QPKG.Install_()
     {
+
+    # * This function runs autonomously *
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not installed: already installed, or no package available for this NAS arch)
+    #   $? = none, this function executes in background
 
-    Self.Error.IsSet && return
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -4994,18 +5085,20 @@ QPKG.Install()
     local debug_cmd=''
 
     if QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's already installed - use 'reinstall' instead"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's already installed - use 'reinstall' instead"
+        result_code=2
+    elif ! QPKG.URL "$PACKAGE_NAME" &>/dev/null; then
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" 'this NAS has an unsupported arch'
+        result_code=2
+    elif ! QPKG.MinRAM "$PACKAGE_NAME" &>/dev/null; then
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" 'this NAS has insufficient RAM'
+        result_code=2
     fi
 
-    if ! QPKG.URL "$PACKAGE_NAME" &>/dev/null; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" 'this NAS has an unsupported arch'
-        DebugFuncEx 2; return
-    fi
-
-    if ! QPKG.MinRAM "$PACKAGE_NAME" &>/dev/null; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" 'this NAS has insufficient RAM'
-        DebugFuncEx 2; return
+    if [[ $result_code -eq 2 ]]; then
+        MarkProcAsSkipped
+        DebugForkFuncEx $result_code
+        exit
     fi
 
     local local_pathfile=$(QPKG.PathFilename "$PACKAGE_NAME")
@@ -5016,8 +5109,10 @@ QPKG.Install()
     fi
 
     if [[ -z $local_pathfile ]]; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" 'no local file found for processing: this error should be reported'
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" 'no local file found for processing: this error should be reported'
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     if [[ $PACKAGE_NAME = Entware ]] && ! QPKGs.IsInstalled.Exist Entware && QPKGs.AcToInstall.Exist Entware; then
@@ -5044,7 +5139,8 @@ QPKG.Install()
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
-        MarkQpkgAsIsInstalled "$PACKAGE_NAME"
+        MarkProcAsPassed
+        NoteQPKGStateAsIsInstalled "$PACKAGE_NAME"
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
             MarkQpkgAsIsEnabled "$PACKAGE_NAME"
@@ -5083,28 +5179,28 @@ QPKG.Install()
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
     else
         DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+        MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+        MarkProcAsFailed
         result_code=1    # remap to 1
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
-QPKG.Reinstall()
+_QPKG.Reinstall_()
     {
+
+    # * This function runs autonomously *
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not reinstalled: not already installed, or no package available for this NAS arch)
+    #   $? = none, this function executes in background
 
-    Self.Error.IsSet && return
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -5112,8 +5208,10 @@ QPKG.Reinstall()
     local debug_cmd=''
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's not installed - use 'install' instead"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's not installed - use 'install' instead"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     local local_pathfile=$(QPKG.PathFilename "$PACKAGE_NAME")
@@ -5124,8 +5222,10 @@ QPKG.Reinstall()
     fi
 
     if [[ -z $local_pathfile ]]; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" 'no local file found for processing: this error should be reported'
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" 'no local file found for processing: this error should be reported'
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     local -r TARGET_FILE=$($BASENAME_CMD "$local_pathfile")
@@ -5141,6 +5241,7 @@ QPKG.Reinstall()
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
+        MarkProcAsPassed
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
             MarkQpkgAsIsEnabled "$PACKAGE_NAME"
@@ -5159,30 +5260,29 @@ QPKG.Reinstall()
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
     else
         DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+        MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+        MarkProcAsFailed
         result_code=1    # remap to 1
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
-QPKG.Upgrade()
+_QPKG.Upgrade_()
     {
 
+    # * This function runs autonomously *
     # Upgrades the QPKG named in $1
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not upgraded: not installed, or no package available for this NAS arch)
+    #   $? = none, this function executes in background
 
-    Self.Error.IsSet && return
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -5190,20 +5290,26 @@ QPKG.Upgrade()
     local debug_cmd=''
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's not installed - use 'install' instead"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's not installed - use 'install' instead"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     if ! QPKGs.IsUpgradable.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" 'no new package is available'
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" 'no new package is available'
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     local package_store_id=$(QPKG.StoreID "$PACKAGE_NAME")
 
     if [[ $package_store_id != sherpa ]]; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's assigned to another repository - use 'reassign' first"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's assigned to another repository - use 'reassign' first"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     local local_pathfile=$(QPKG.PathFilename "$PACKAGE_NAME")
@@ -5214,8 +5320,9 @@ QPKG.Upgrade()
     fi
 
     if [[ -z $local_pathfile ]]; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" 'no local file found for processing: this error should be reported'
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" 'no local file found for processing: this error should be reported'
+        DebugForkFuncEx 2
+        exit
     fi
 
     local -r TARGET_FILE=$($BASENAME_CMD "$local_pathfile")
@@ -5232,6 +5339,7 @@ QPKG.Upgrade()
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
+        MarkProcAsPassed
         QPKGs.IsUpgradable.Remove "$PACKAGE_NAME"
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
@@ -5257,28 +5365,28 @@ QPKG.Upgrade()
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
     else
         DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+        MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+        MarkProcAsFailed
         result_code=1    # remap to 1
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
-QPKG.Uninstall()
+_QPKG.Uninstall_()
     {
+
+    # * This function runs autonomously *
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not uninstalled: not already installed)
+    #   $? = none, this function executes in background
 
-    Self.Error.IsSet && return
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -5286,13 +5394,17 @@ QPKG.Uninstall()
     local debug_cmd=''
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's not installed"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's not installed"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     if [[ $PACKAGE_NAME = sherpa ]]; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's needed here! 😉"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's needed here! 😉"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     local -r QPKG_UNINSTALLER_PATHFILE=$(QPKG.InstallationPath "$PACKAGE_NAME")/.uninstall.sh
@@ -5312,33 +5424,34 @@ QPKG.Uninstall()
             DebugAsDone 'removed icon information from App Center'
             [[ $PACKAGE_NAME = Entware ]] && ModPathToEntware
             MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
-            MarkQpkgAsNtInstalled "$PACKAGE_NAME"
+            MarkProcAsPassed
+            NoteQPKGStateAsNtInstalled "$PACKAGE_NAME"
         else
             DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-            MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+            MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+            MarkProcAsFailed
             result_code=1    # remap to 1
         fi
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
-QPKG.Restart()
+_QPKG.Restart_()
     {
 
+    # * This function runs autonomously *
     # Restarts the service script for the QPKG named in $1
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not restarted: not already installed)
+    #   $? = none, this function executes in background
 
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -5348,14 +5461,18 @@ QPKG.Restart()
     QPKG.ClearServiceStatus "$PACKAGE_NAME"
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's not installed"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's not installed"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
-    if [[ $PACKAGE_NAME = sherpa ]]; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's needed here! 😉"
-        DebugFuncEx 2; return
-    fi
+#     if [[ $PACKAGE_NAME = sherpa ]]; then
+#         MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's needed here! 😉"
+#         MarkProcAsSkipped
+#         DebugForkFuncEx 2
+#         exit
+#     fi
 
     local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile "$PACKAGE_NAME")
     local -r LOG_PATHFILE=$LOGS_PATH/$PACKAGE_NAME.$RESTART_LOG_FILE
@@ -5374,31 +5491,32 @@ QPKG.Restart()
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "restarted $(FormatAsPackName "$PACKAGE_NAME")"
         MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
+        MarkProcAsPassed
     else
         DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+        MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+        MarkProcAsFailed
         result_code=1    # remap to 1
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
-QPKG.Start()
+_QPKG.Start_()
     {
 
+    # * This function runs autonomously *
     # Starts the service script for the QPKG named in $1
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not started: not installed or already started)
+    #   $? = none, this function executes in background
 
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -5408,13 +5526,17 @@ QPKG.Start()
     QPKG.ClearServiceStatus "$PACKAGE_NAME"
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's not installed"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's not installed"  # don't need to mark this anymore, but still need to log reason
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     if QPKGs.IsStarted.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's already started"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's already started"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile "$PACKAGE_NAME")
@@ -5435,32 +5557,33 @@ QPKG.Start()
         DebugAsDone "started $(FormatAsPackName "$PACKAGE_NAME")"
         MarkQpkgAsIsStarted "$PACKAGE_NAME"
         MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
+        MarkProcAsPassed
         [[ $PACKAGE_NAME = Entware ]] && ModPathToEntware
     else
         DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+        MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+        MarkProcAsFailed
         result_code=1    # remap to 1
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
-QPKG.Stop()
+_QPKG.Stop_()
     {
 
+    # * This function runs autonomously *
     # Stops the service script for the QPKG named in $1
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not stopped: not installed or already stopped)
+    #   $? = none, this function executes in background
 
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -5470,18 +5593,24 @@ QPKG.Stop()
     QPKG.ClearServiceStatus "$PACKAGE_NAME"
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's not installed"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's not installed"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     if QPKGs.IsNtStarted.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's already stopped"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's already stopped"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     if [[ $PACKAGE_NAME = sherpa ]]; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's needed here! 😉"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's needed here! 😉"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile "$PACKAGE_NAME")
@@ -5502,14 +5631,16 @@ QPKG.Stop()
         DebugAsDone "stopped $(FormatAsPackName "$PACKAGE_NAME")"
         MarkQpkgAsNtStarted "$PACKAGE_NAME"
         MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
+        MarkProcAsPassed
     else
         DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+        MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+        MarkProcAsFailed
         result_code=1    # remap to 1
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
@@ -5557,20 +5688,19 @@ QPKG.Disable()
 
     }
 
-QPKG.Backup()
+_QPKG.Backup_()
     {
 
+    # * This function runs autonomously *
     # Calls the service script for the QPKG named in $1 and runs a `backup` action
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not already installed, does not support `backup`)
+    #   $? = none, this function executes in background
 
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -5578,13 +5708,17 @@ QPKG.Backup()
     local debug_cmd=''
 
     if ! QPKG.IsCanBackup "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" 'it does not support backup'
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" 'it does not support backup'
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's not installed"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's not installed"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile "$PACKAGE_NAME")
@@ -5600,30 +5734,31 @@ QPKG.Backup()
         DebugAsDone "backed-up $(FormatAsPackName "$PACKAGE_NAME") configuration"
         MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
         MarkQpkgAsIsBackedUp
+        MarkProcAsPassed
     else
         DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+        MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+        MarkProcAsFailed
         result_code=1    # remap to 1
     fi
 
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
-QPKG.Restore()
+_QPKG.Restore_()
     {
 
+    # * This function runs autonomously *
     # Calls the service script for the QPKG named in $1 and runs a `restore` action
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not already installed, does not support `restore`)
+    #   $? = none, this function executes in background
 
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -5631,13 +5766,17 @@ QPKG.Restore()
     local debug_cmd=''
 
     if ! QPKG.IsCanBackup "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" 'it does not support backup'
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" 'it does not support backup'
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's not installed"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's not installed"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile "$PACKAGE_NAME")
@@ -5652,29 +5791,30 @@ QPKG.Restore()
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "restored $(FormatAsPackName "$PACKAGE_NAME") configuration"
         MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
+        MarkProcAsPassed
     else
         DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+        MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+        MarkProcAsFailed
     fi
 
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
-QPKG.Clean()
+_QPKG.Clean_()
     {
 
+    # * This function runs autonomously *
     # Calls the service script for the QPKG named in $1 and runs a `clean` action
 
     # input:
     #   $1 = QPKG name
 
     # output:
-    #   $? = 0  : successful
-    #   $? = 1  : failed
-    #   $? = 2  : skipped (not already installed, does not support `clean`)
+    #   $? = none, this function executes in background
 
-    DebugFuncEn
+    DebugForkFuncEn
 
     local -r PACKAGE_NAME=${1:?package name null}
     local -i result_code=0
@@ -5682,13 +5822,17 @@ QPKG.Clean()
     local debug_cmd=''
 
     if ! QPKG.IsCanRestartToUpdate "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" 'it does not support cleaning'
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" 'it does not support cleaning'
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        MarkQpkgAcAsSk show "$PACKAGE_NAME" "$action" "it's not installed"
-        DebugFuncEx 2; return
+        MarkQpkgAcAsSk hide "$PACKAGE_NAME" "$action" "it's not installed"
+        MarkProcAsSkipped
+        DebugForkFuncEx 2
+        exit
     fi
 
     local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile "$PACKAGE_NAME")
@@ -5705,13 +5849,15 @@ QPKG.Clean()
         MarkQpkgAcAsOk "$PACKAGE_NAME" "$action"
         QPKGs.IsNtCleaned.Remove "$PACKAGE_NAME"
         QPKGs.IsCleaned.Add "$PACKAGE_NAME"
+        MarkProcAsPassed
     else
         DebugAsError "$action failed $(FormatAsFileName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkQpkgAcAsEr "$PACKAGE_NAME" "$action"
+        MarkQpkgAcAsEr hide "$PACKAGE_NAME" "$action"
+        MarkProcAsFailed
         result_code=1    # remap to 1
     fi
 
-    DebugFuncEx $result_code
+    DebugForkFuncEx $result_code
 
     }
 
@@ -6284,10 +6430,11 @@ QPKG.GetServiceStatus()
 MakePath()
     {
 
-    mkdir -p "${1:?null}" 2>/dev/null; result_code=$?
+    # $1 = path to create
+    # $2 = summarised reason for this path
 
-    if [[ $result_code -ne 0 ]]; then
-        ShowAsError "unable to create ${2:?null} path $(FormatAsFileName "$1") $(FormatAsExitcode "$result_code")"
+    if ! mkdir -p "${1:?path null}"; then
+        ShowAsError "unable to create ${2:?null} path $(FormatAsFileName "$1") $(FormatAsExitcode "$?")"
         [[ $(type -t Self.SuggestIssue.Init) = function ]] && Self.SuggestIssue.Set
         return 1
     fi
@@ -6367,10 +6514,29 @@ FileMatchesMD5()
 
     }
 
-Plural()
+Pluralise()
     {
 
     [[ ${1:-0} -ne 1 ]] && echo s
+
+    }
+
+PluralTense()
+    {
+
+    # $1 = count to check
+    # $2 = emit this word if $1 is 1            e.g. `has`
+    # $3 = emit this word if $1 is zero or < 1  e.g. `have`
+
+    case ${1:-} in
+        1)
+            echo "${2:-}"
+            ;;
+        *)
+            echo "${3:-}"
+    esac
+
+    return 0
 
     }
 
@@ -6828,6 +6994,45 @@ DebugFuncEx()
 
     }
 
+DebugForkFuncEn()
+    {
+
+    # debug forked function entry
+
+    # redirect debug output to a temporary log, then add it to session log before exiting. This will keep action log progress in-order
+    original_session_log_pathfile="$sess_active_pathfile"
+    sess_active_pathfile=$(/bin/mktemp /var/log/"${FUNCNAME[1]}"_XXXXXX)
+
+    local var_name=${FUNCNAME[1]}_STARTSECONDS
+    local var_safe_name=${var_name//[.-]/_}
+    eval "$var_safe_name=$(/bin/date +%s%N)"    # $DATE_CMD hasnt been defined when this function is first called in Self.Init()
+
+    DebugThis "(>>) ${FUNCNAME[1]}"
+
+    }
+
+DebugForkFuncEx()
+    {
+
+    # debug forked function exit
+
+    local var_name=${FUNCNAME[1]}_STARTSECONDS
+    local var_safe_name=${var_name//[.-]/_}
+    local diff_milliseconds=$((($($DATE_CMD +%s%N)-${!var_safe_name})/1000000))
+    local elapsed_time=''
+
+    if [[ $diff_milliseconds -lt 30000 ]]; then
+        elapsed_time="$(FormatAsThous "$diff_milliseconds")ms"
+    else
+        elapsed_time=$(FormatSecsToHoursMinutesSecs "$((diff_milliseconds/1000))")
+    fi
+
+    DebugThis "(<<) ${FUNCNAME[1]}|${1:-0}|$elapsed_time"
+    $CAT_CMD "$sess_active_pathfile" >> "$original_session_log_pathfile" && rm "$sess_active_pathfile"
+    return ${1:-0}
+
+    }
+
 DebugAsProc()
     {
 
@@ -6897,7 +7102,7 @@ DebugThis()
 AddFileToDebug()
     {
 
-    # Add the contents of specified pathfile $1 to the runtime log
+    # Add the contents of pathfile $1 to the session debug log, with each line formatted as an external log entry
 
     local linebuff=''
     local screen_debug=false
@@ -6905,7 +7110,7 @@ AddFileToDebug()
     DebugAsLog 'adding external log to main log ...'
     DebugExtLogMinSep
 
-    if Self.Debug.ToScreen.IsSet; then      # prevent external log contents appearing onscreen again - its already been seen "live"
+    if Self.Debug.ToScreen.IsSet; then      # prevent external log contents appearing onscreen again, because they've already been seen "live"
         screen_debug=true
         Self.Debug.ToScreen.UnSet
     fi
@@ -6995,7 +7200,7 @@ ShowAsWarn()
 
     local capitalised="$(Capitalise "${1:-}")"
 
-    WriteToDisplayNew "$(ColourTextBrightOrange warn)" "$capitalised."
+    WriteToDisplayNew "$(ColourTextBrightOrange warn)" "$capitalised"
     WriteToLog warn "$capitalised."
 
     }
@@ -7046,15 +7251,17 @@ ShowAsError()
 ShowAsActionProgress()
     {
 
-    # Show QPKG actions progress as percent-complete and a fraction of the total
+    # Show actions progress as percent-complete and a fraction of the total
 
     # $1 = tier (optional)
     # $2 = package type: `QPKG`, `IPK`, `PIP`, etc ...
-    # $3 = pass count
-    # $4 = fail count
-    # $5 = total count
-    # $6 = verb (present)
-    # $7 = `long` (optional)
+    # $3 = run count
+    # $4 = pass count
+    # $5 = skip count
+    # $6 = fail count
+    # $7 = total count
+    # $8 = verb (present)
+    # $9 = expected action duration: `long` (optional)
 
     if [[ -n $1 && $1 != All ]]; then
         local tier=" $(Lowercase "$1")"
@@ -7063,30 +7270,58 @@ ShowAsActionProgress()
     fi
 
     local -r PACKAGE_TYPE=${2:?null}
-    local -i pass_count=${3:-0}
-    local -i fail_count=${4:-0}
-    local -i total_count=${5:-0}
-    local -r ACTION_PRESENT=${6:?null}
-    local -r DURATION=${7:-}
-    local -i tweaked_passes=$((pass_count+1))           # never show zero (e.g. 0/8)
-    local -i tweaked_total=$((total_count-fail_count))  # auto-adjust upper limit to account for failures
+    declare -i -r RUN_COUNT=${3:-0}
+    declare -i -r PASS_COUNT=${4:-0}
+    declare -i -r SKIP_COUNT=${5:-0}
+    declare -i -r FAIL_COUNT=${6:-0}
+    declare -i -r TOTAL_COUNT=${7:-0}
+    local -r ACTION_PRESENT=${8:?null}
+    local -r DURATION=${9:-}
+    local progress_message=''
 
-    [[ $tweaked_total -gt 0 ]] || return                # no-point showing a fraction of zero
+    progress_message="$(PercFrac "$RUN_COUNT" "$PASS_COUNT" "$SKIP_COUNT" "$FAIL_COUNT" "$TOTAL_COUNT")"
 
-    if [[ $tweaked_passes -gt $tweaked_total ]]; then
-        tweaked_passes=$((tweaked_total-fail_count))
+    if [[ $DURATION != long ]]; then
+        ShowAsProc "$ACTION_PRESENT ${TOTAL_COUNT}${tier} ${PACKAGE_TYPE}$(Pluralise "$TOTAL_COUNT")" "$progress_message"
+    else
+        ShowAsProcLong "$ACTION_PRESENT ${TOTAL_COUNT}${tier} ${PACKAGE_TYPE}$(Pluralise "$TOTAL_COUNT")" "$progress_message"
+    fi
+
+    [[ $((RUN_COUNT+PASS_COUNT+SKIP_COUNT+FAIL_COUNT)) -ge $TOTAL_COUNT ]] && $SLEEP_CMD 1
+
+    return 0
+
+    }
+
+PercFrac()
+    {
+
+    # calculate percent-complete and a fraction of the total
+
+    # $1 = run count
+    # $2 = pass count
+    # $3 = skip count
+    # $4 = fail count
+    # $5 = total count
+
+    declare -i -r RUN_COUNT=${1:-0}
+    declare -i -r PASS_COUNT=${2:-0}
+    declare -i -r SKIP_COUNT=${3:-0}
+    declare -i -r FAIL_COUNT=${4:-0}
+    declare -i -r TOTAL_COUNT=${5:-0}
+    local -i progress_count="$((RUN_COUNT+PASS_COUNT+SKIP_COUNT+FAIL_COUNT+1))"     # never show zero progress (e.g. 0/8)
+    local percent=''
+
+    [[ $TOTAL_COUNT -gt 0 ]] || return          # no-point calculating a fraction of zero
+
+    if [[ $progress_count -gt $TOTAL_COUNT ]]; then
+        progress_count=$TOTAL_COUNT
         percent='100%'
     else
-        percent="$((200*(tweaked_passes)/(tweaked_total+1)%2+100*(tweaked_passes)/(tweaked_total+1)))%"
+        percent="$((200*(progress_count)/(TOTAL_COUNT+1)%2+100*(progress_count)/(TOTAL_COUNT+1)))%"
     fi
 
-    if [[ $DURATION = long ]]; then
-        ShowAsProcLong "$ACTION_PRESENT ${tweaked_total}${tier} ${PACKAGE_TYPE}$(Plural "$tweaked_total")" "$percent ($tweaked_passes/$tweaked_total)"
-    else
-        ShowAsProc "$ACTION_PRESENT ${tweaked_total}${tier} ${PACKAGE_TYPE}$(Plural "$tweaked_total")" "$percent ($tweaked_passes/$tweaked_total)"
-    fi
-
-    [[ $percent = '100%' ]] && sleep 1
+    echo "$percent ($progress_count/$TOTAL_COUNT)"
 
     return 0
 
@@ -7095,38 +7330,51 @@ ShowAsActionProgress()
 ShowAsActionResult()
     {
 
-    # $1 = tier (optional)
+    # $1 = tier (optional) e.g. `Standalone`, `Dependent`, `Addon`, `All`
     # $2 = package type: `QPKG`, `IPK`, `PIP`, etc ...
     # $3 = pass count
-    # $4 = fail count
-    # $5 = total count
-    # $6 = verb (past)
-    # $7 = `long` (optional)
+    # $4 = skip count
+    # $5 = fail count
+    # $6 = total count
+    # $7 = verb (past)
 
     if [[ -n $1 && $1 != All ]]; then
-        local tier=" $(Lowercase "$1")"
+        local -r TIER=" $(Lowercase "$1")"
     else
-        local tier=''
+        local -r TIER=''
     fi
 
     local -r PACKAGE_TYPE=${2:?null}
-    local -i pass_count=${3:-0}
-    local -i fail_count=${4:-0}
-    local -i total_count=${5:-0}
-    local -r ACTION_PAST=${6:?null}
-    local -r DURATION=${7:-}
+    declare -i -r PASS_COUNT=${3:-0}
+    declare -i -r SKIP_COUNT=${4:-0}
+    declare -i -r FAIL_COUNT=${5:-0}
+    declare -i -r TOTAL_COUNT=${6:-0}
+    local result_message="${7:?null} "
 
-    [[ $total_count -gt 0 ]] || return
-
-    if [[ $pass_count -eq 0 ]]; then
-        ShowAsFail "$ACTION_PAST ${fail_count}${tier} ${PACKAGE_TYPE}$(Plural "$fail_count") failed"
-    elif [[ $fail_count -gt 0 ]]; then
-        ShowAsWarn "$ACTION_PAST ${pass_count}${tier} ${PACKAGE_TYPE}$(Plural "$pass_count"), but ${fail_count}${tier} ${PACKAGE_TYPE}$(Plural "$fail_count") failed"
-    elif [[ $pass_count -gt 0 ]]; then
-        ShowAsDone "$ACTION_PAST ${pass_count}${tier} ${PACKAGE_TYPE}$(Plural "$pass_count")"
-    else
-        DebugAsDone "no${tier} ${PACKAGE_TYPE}s processed"
+    if [[ $PASS_COUNT -gt 0 ]]; then
+        result_message+="${PASS_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$PASS_COUNT") OK"
     fi
+
+    if [[ $SKIP_COUNT -gt 0 ]]; then
+        [[ $PASS_COUNT -gt 0 ]] && result_message+=', '
+        result_message+="${SKIP_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$SKIP_COUNT") skipped"
+    fi
+
+    if [[ $FAIL_COUNT -gt 0 ]]; then
+        [[ $PASS_COUNT -gt 0 || $SKIP_COUNT -gt 0 ]] && result_message+=' and '
+        result_message+="${FAIL_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$FAIL_COUNT") failed"
+    fi
+
+    case $TOTAL_COUNT in
+        0)
+            DebugAsDone "no${TIER} ${PACKAGE_TYPE}s processed"
+            ;;
+        "$FAIL_COUNT")
+            ShowAsWarn "$result_message"
+            ;;
+        *)
+            ShowAsDone "$result_message"
+    esac
 
     return 0
 
@@ -7208,7 +7456,7 @@ WriteToLog()
     #   $2 = message
 
     [[ $(type -t Self.Debug.ToFile.Init) = function ]] && Self.Debug.ToFile.IsNt && return
-    [[ -n ${SESS_ACTIVE_PATHFILE:-} ]] && printf "%-4s: %s\n" "$(StripANSI "${1:-}")" "$(StripANSI "${2:-}")" >> "$SESS_ACTIVE_PATHFILE"
+    [[ -n ${sess_active_pathfile:-} ]] && printf "%-4s: %s\n" "$(StripANSI "${1:-}")" "$(StripANSI "${2:-}")" >> "$sess_active_pathfile"
 
     }
 
@@ -7321,12 +7569,12 @@ ColourReset()
 StripANSI()
     {
 
-    # QTS 4.2.6 BusyBox `sed` doesn't fully support extended regexes, so this only works with a real `sed`
+    # QTS 4.2.6 BusyBox `sed` doesn't fully support extended regexes, so code stripping only works with a real `sed`
 
-    if [[ -e $GNU_SED_CMD ]]; then
+    if [[ -e $GNU_SED_CMD && -e $GNU_SED_CMD ]]; then   # KLUDGE: yes, it looks weird, but during Entware startup, weird things happen. Need to check for this file multiple times to ensure it's there before attempting to run it.
         $GNU_SED_CMD -r 's/\x1b\[[0-9;]*m//g' <<< "${1:-}"
     else
-        echo "${1:-}"           # cant strip, so pass thru original message unaltered
+        echo "${1:-}"           # can't strip, so pass thru original message unaltered
     fi
 
     }
