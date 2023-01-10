@@ -135,7 +135,7 @@ Self.Init()
     readonly PIP_CMD="$PYTHON3_CMD -m pip"
     readonly PERL_CMD=/opt/bin/perl
 
-    local -r PROJECT_BRANCH=main
+    local -r PROJECT_BRANCH=develop
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs
