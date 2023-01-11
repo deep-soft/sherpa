@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# OneCD's async FIFO pipe reader proof-of-concept
+# OneCD's async FIFO pipe reader proof-of-concept. 2023-01-11
+
 # have multiple background procs all send data to a single named pipe.
 # at the same time, read from this pipe, and update the state of specific QPKG arrays according to details in data.
 
@@ -23,7 +24,7 @@ receiver()
         fi
 
         if [[ -n $data ]]; then
-            # this is where QPKG state arrays should be updated using data from senders
+            # this is where QPKG state arrays should be updated using data from various senders
             echo "this was just seen in the pipe: [$data]"
         fi
     done < "$mypipe"
@@ -47,12 +48,11 @@ _sender_()
 
     }
 
-# redirect fd1 from function to fd5
+# redirect fd1 from function to fd5. This creates an instance of receiver()
 exec 5< <(receiver)
 echo 'after the redirect to fd5'
 
 # launch background procs to write data to $mypipe
-declare -i pid=0
 declare -a pids=()
 
 _sender_ ae35 &
@@ -65,6 +65,8 @@ _sender_ ae64 6 &
 pids+=($!)
 
 echo 'before wait'
+
+declare -i pid=0
 
 for pid in ${pids[@]}; do
     wait $pid
