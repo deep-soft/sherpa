@@ -54,7 +54,7 @@ Self.Init()
     DebugFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230110
+    local -r SCRIPT_VER=230111
 
     IsQNAP || return
     IsSU || return
