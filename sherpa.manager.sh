@@ -54,7 +54,7 @@ Self.Init()
     DebugFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230111
+    local -r SCRIPT_VER=230112
 
     IsQNAP || return
     IsSU || return
@@ -790,7 +790,7 @@ Tier.Proc()
                 DebugFuncEx; return
             fi
 
-			[[ -e $QPKG_STATES_PIPE_PATHFILE ]] && rm -f "$QPKG_STATES_PIPE_PATHFILE"
+            [[ -e $QPKG_STATES_PIPE_PATHFILE ]] && rm -f "$QPKG_STATES_PIPE_PATHFILE"
             $MKNOD_CMD "$QPKG_STATES_PIPE_PATHFILE" p
             AdjustMaxForks "$TARGET_ACTION"
             InitCounts
@@ -974,7 +974,7 @@ ParseArgs()
     {
 
     # basic argument syntax:
-    #   scriptname [action] [scope] [options]
+    #   scriptname [action] [scopes] [options]
 
     DebugFuncEn
     DebugVar USER_ARGS_RAW
@@ -995,7 +995,7 @@ ParseArgs()
         # identify action: every time action changes, must clear scope too
         case $arg in
         # these cases use only a single word to specify a single action
-            backup|check|clean|reassign|rebuild|reinstall|restart|restore|start|stop|upgrade)
+            backup|check|clean|reassign|rebuild|reinstall|restart|restore|start|stop)
                 action=${arg}_
                 arg_identified=true
                 scope=''
@@ -1043,6 +1043,14 @@ ParseArgs()
                 scope_identified=false
                 Self.Display.Clean.UnSet
                 QPKGs.SkProc.Set
+                ;;
+            update|upgrade)
+                action=upgrade_
+                arg_identified=true
+                scope=''
+                scope_identified=false
+                Self.Display.Clean.UnSet
+                QPKGs.SkProc.UnSet
         esac
 
         # identify scope in two stages: stage 1 for when user didn't supply an action before scope, stage 2 is after an action has been defined.
@@ -1050,7 +1058,7 @@ ParseArgs()
         # stage 1
         if [[ -z $action ]]; then
             case $arg in
-                a|abs|action|actions|actions-all|all-actions|b|backups|dependent|dependents|installable|installed|l|last|log|not-installed|option|options|p|package|packages|problems|r|repo|repos|standalone|standalones|started|stopped|tail|tips|upgradable|v|version|versions|whole)
+                a|abs|action|actions|actions-all|all-actions|b|backups|dependent|dependents|installable|installed|l|last|log|missing|not-installed|option|options|p|package|packages|problems|r|repo|repos|standalone|standalones|started|stopped|tail|tips|updatable|updateable|upgradable|v|version|versions|whole)
                     action=help_
                     arg_identified=true
                     scope=''
@@ -1064,13 +1072,13 @@ ParseArgs()
         # stage 2
         if [[ -n $action ]]; then
             case $arg in
-            # these cases use only a single word or char to specify a single action
-                check|installable|installed|missing|not-installed|problems|started|stopped|tail|tips|upgradable)
+            # these cases use only a single word or char to specify a single scope
+                check|installable|installed|missing|not-installed|problems|started|stopped|tail|tips)
                     scope=${arg}_
                     scope_identified=true
                     arg_identified=true
                     ;;
-            # all cases below can use multiple words or chars to specify a single action
+            # all cases below can use multiple words or chars to specify a single scope
                 a|abs)
                     scope=abs_
                     scope_identified=true
@@ -1128,6 +1136,11 @@ ParseArgs()
                     ;;
                 standalone|standalones)
                     scope=standalone_
+                    scope_identified=true
+                    arg_identified=true
+                    ;;
+                updatable|updateable|upgradable)
+                    scope=upgradable_
                     scope_identified=true
                     arg_identified=true
                     ;;
