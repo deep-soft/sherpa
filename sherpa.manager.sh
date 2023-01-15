@@ -54,7 +54,7 @@ Self.Init()
     DebugFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230115
+    local -r SCRIPT_VER=230116
 
     IsQNAP || return
     IsSU || return
@@ -247,7 +247,7 @@ Self.Init()
     done
 
     readonly THIS_PACKAGE_VER=$(QPKG.Local.Ver)
-    readonly MANAGER_SCRIPT_VER="${SCRIPT_VER}-beta$([[ $PROJECT_BRANCH = develop ]] && echo '(d)')"
+    readonly MANAGER_SCRIPT_VER="${SCRIPT_VER}-beta$([[ $PROJECT_BRANCH = develop ]] && echo '-develop')"
 
     DebugInfoMajSep
     DebugScript started "$($DATE_CMD -d @"$SCRIPT_STARTSECONDS" | tr -s ' ')"
@@ -845,10 +845,13 @@ Tier.Proc()
                 esac
             done <&$fd_pipe
 
+            # close messages file descriptor and remove messages pipe
             eval "exec $fd_pipe<&-"
             [[ -p $QPKG_MESSAGES_PIPE ]] && rm "$QPKG_MESSAGES_PIPE"
 
-            UpdateForkProgress
+            RefreshForkCounts
+            [[ $((pass_count+skip_count+fail_count)) -ge $total_count ]] && $SLEEP_CMD 1    # pause to briefly show progress completion
+
             ;;
         IPK|PIP)
             InitForkCounts
@@ -3635,8 +3638,6 @@ UpdateForkProgress()
 
     [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
 
-    [[ $((fork_count+pass_count+skip_count+fail_count)) -ge $total_count ]] && $SLEEP_CMD 1
-
     return 0
 
     }
@@ -4472,14 +4473,14 @@ MarkQpkgAcAsOk()
     #   $3 = action
     #   $4 = reason (optional)
 
-    local message="ignoring request to $3 $(FormatAsPackName "$2")"
-    [[ -n ${4:-} ]] && message+=" as $4"
+#     local message="OKing request to $3 $(FormatAsPackName "$2")"
+#     [[ -n ${4:-} ]] && message+=" as $4"
 
-    if [[ ${1:-hide} = show ]]; then
-        ShowAsInfo "$message" >&2
-    else
-        DebugAsInfo "$message" >&2
-    fi
+#     if [[ ${1:-hide} = show ]]; then
+#         ShowAsInfo "$message" >&2
+#     else
+#         DebugAsInfo "$message" >&2
+#     fi
 
     QPKGs.AcTo"$(Capitalise "$3")".Remove "$2"
     QPKGs.AcOk"$(Capitalise "$3")".Add "$2"
@@ -4499,14 +4500,14 @@ MarkQpkgAcAsSk()
     #   $3 = action
     #   $4 = reason (optional)
 
-    local message="ignoring request to $3 $(FormatAsPackName "$2")"
-    [[ -n ${4:-} ]] && message+=" as $4"
+#     local message="skipping request to $3 $(FormatAsPackName "$2")"
+#     [[ -n ${4:-} ]] && message+=" as $4"
 
-    if [[ ${1:-hide} = show ]]; then
-        ShowAsInfo "$message" >&2
-    else
-        DebugAsInfo "$message" >&2
-    fi
+#     if [[ ${1:-hide} = show ]]; then
+#         ShowAsInfo "$message" >&2
+#     else
+#         DebugAsInfo "$message" >&2
+#     fi
 
     QPKGs.AcTo"$(Capitalise "$3")".Remove "$2"
     QPKGs.AcSk"$(Capitalise "$3")".Add "$2"
@@ -4526,14 +4527,14 @@ MarkQpkgAcAsEr()
     #   $3 = action
     #   $4 = reason (optional)
 
-    local message="failing request to $3 $(FormatAsPackName "$2")"
-    [[ -n ${4:-} ]] && message+=" as $4"
+#     local message="failing request to $3 $(FormatAsPackName "$2")"
+#     [[ -n ${4:-} ]] && message+=" as $4"
 
-    if [[ ${1:-hide} = show ]]; then
-        ShowAsInfo "$message" >&2
-    else
-        DebugAsInfo "$message" >&2
-    fi
+#     if [[ ${1:-hide} = show ]]; then
+#         ShowAsInfo "$message" >&2
+#     else
+#         DebugAsInfo "$message" >&2
+#     fi
 
     QPKGs.AcTo"$(Capitalise "$3")".Remove "$2"
     QPKGs.AcEr"$(Capitalise "$3")".Add "$2"
