@@ -173,22 +173,26 @@ Self.Init()
     readonly SESS_LAST_PATHFILE=$LOGS_PATH/session.last.log
     readonly SESS_TAIL_PATHFILE=$LOGS_PATH/session.tail.log
 
-    MANAGEMENT_ACTIONS=(Check List Paste Status)
-
+#     MANAGEMENT_ACTIONS=(Check List Paste Status)
     PACKAGE_TIERS=(Standalone Addon Dependent)  # ordered
-    PACKAGE_SCOPES=(All CanBackup CanRestartToUpdate Dependent HasDependents Installable Standalone)    # sorted
-    PACKAGE_STATES=(BackedUp Cleaned Downloaded Enabled Installed Missing Started Upgradable)           # sorted
-    PACKAGE_STATES_TRANSIENT=(Starting Stopping Restarting)                                             # unsorted
+
+    # these words may be specified by the user when requesting actions, so each word can only be used once across all 4 of the following arrays
+    PACKAGE_SCOPES=(All CanBackup CanRestartToUpdate Dependent HasDependents Installable Standalone Upgradable)     # sorted: 'Sc' & 'ScNt'
+    PACKAGE_STATES=(BackedUp Cleaned Downloaded Enabled Installed Missing Reassigned Reinstalled Started Upgraded)  # sorted: 'Is' & 'IsNt'
+    PACKAGE_STATES_TRANSIENT=(Starting Stopping Restarting)                                                         # unsorted: 'Is' & 'IsNt'
     PACKAGE_ACTIONS=(Download Rebuild Reassign Backup Stop Disable Uninstall Upgrade Reinstall Install Restore Clean Enable Start Restart)  # ordered
-    PACKAGE_RESULTS=(Ok Unknown)                # unsorted
 
-    readonly MANAGEMENT_ACTIONS
+    # only used by sherpa QPKG service-script results parser
+    PACKAGE_RESULTS=(Ok Unknown)
 
+#     readonly MANAGEMENT_ACTIONS
     readonly PACKAGE_TIERS
+
     readonly PACKAGE_SCOPES
     readonly PACKAGE_STATES
     readonly PACKAGE_STATES_TRANSIENT
     readonly PACKAGE_ACTIONS
+
     readonly PACKAGE_RESULTS
 
     local action=''
@@ -616,7 +620,7 @@ Self.Validate()
         QPKGs.NewVers.Show
 
         for package in $(QPKGs.ScDependent.Array); do
-            ! QPKGs.IsUpgradable.Exist "$package" && QPKGs.IsStarted.Exist "$package" && QPKGs.ScCanRestartToUpdate.Exist "$package" && QPKGs.AcToRestart.Add "$package"
+            ! QPKGs.ScUpgradable.Exist "$package" && QPKGs.IsStarted.Exist "$package" && QPKGs.ScCanRestartToUpdate.Exist "$package" && QPKGs.AcToRestart.Add "$package"
         done
     fi
 
@@ -929,8 +933,8 @@ Self.Results()
             QPKGs.IsStarted.Show
         elif QPKGs.List.IsNtStarted.IsSet; then
             QPKGs.IsNtStarted.Show
-        elif QPKGs.List.IsUpgradable.IsSet; then
-            QPKGs.IsUpgradable.Show
+        elif QPKGs.List.ScUpgradable.IsSet; then
+            QPKGs.ScUpgradable.Show
         elif QPKGs.List.ScStandalone.IsSet; then
             QPKGs.ScStandalone.Show
         elif QPKGs.List.ScDependent.IsSet; then
@@ -1897,7 +1901,7 @@ AllocGroupPacksToAcs()
                             All)
                                 found=true
                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsUpgradable' packages"
-                                QPKGs.AcTo${action}.Add "$(QPKGs.IsUpgradable.Array)"
+                                QPKGs.AcTo${action}.Add "$(QPKGs.ScUpgradable.Array)"
                                 DebugAsProc "action: 'Restart': adding 'ScCanRestartToUpdate' packages"
                                 QPKGs.AcToRestart.Add "$(QPKGs.ScCanRestartToUpdate.Array)"
                                 DebugAsProc "action: 'Restart': removing 'IsNtInstalled' packages"
@@ -3675,10 +3679,10 @@ QPKGs.NewVers.Show()
     Self.Display.Clean.IsNt || return
     QPKGs.States.Build
 
-    if [[ $(QPKGs.IsUpgradable.Count) -eq 0 ]]; then
+    if [[ $(QPKGs.ScUpgradable.Count) -eq 0 ]]; then
         return 0
     else
-        upgradable_packages+=($(QPKGs.IsUpgradable.Array))
+        upgradable_packages+=($(QPKGs.ScUpgradable.Array))
     fi
 
     for ((index=0; index<=((${#upgradable_packages[@]}-1)); index++)); do
@@ -3921,6 +3925,7 @@ QPKGs.States.Build()
 
         for state in "${PACKAGE_STATES[@]}" "${PACKAGE_STATES_TRANSIENT[@]}"; do
             QPKGs.Is${state}.Init
+            QPKGs.IsNt${state}.Init
         done
 
         DebugAsDone 'cleared existing state lists'
@@ -4231,7 +4236,7 @@ QPKGs.Statuses.Show()
                         package_status_notes+=("($(ColourTextBrightOrange unknown))")
                     fi
 
-                    if QPKGs.IsUpgradable.Exist "$package_name"; then
+                    if QPKGs.ScUpgradable.Exist "$package_name"; then
                         package_ver="$(QPKG.Local.Ver "$package_name") $(ColourTextBrightOrange "($(QPKG.Avail.Ver "$package_name"))")"
                         package_status_notes+=($(ColourTextBrightOrange upgradable))
                     else
@@ -4338,14 +4343,14 @@ QPKGs.IsNtStarted.Show()
 
     }
 
-QPKGs.IsUpgradable.Show()
+QPKGs.ScUpgradable.Show()
     {
 
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
 
-    for package in $(QPKGs.IsUpgradable.Array); do
+    for package in $(QPKGs.ScUpgradable.Array); do
         Display "$package"
     done
 
@@ -4729,8 +4734,8 @@ NoteQPKGStateAsIsUpgradable()
 
     [[ -n ${1:-} ]] || return
 
-    QPKGs.IsNtUpgradable.Remove "$1"
-    QPKGs.IsUpgradable.Add "$1"
+    QPKGs.ScNtUpgradable.Remove "$1"
+    QPKGs.ScUpgradable.Add "$1"
 
     }
 
@@ -4739,8 +4744,8 @@ NoteQPKGStateAsIsNtUpgradable()
 
     [[ -n ${1:-} ]] || return
 
-    QPKGs.IsUpgradable.Remove "$1"
-    QPKGs.IsNtUpgradable.Add "$1"
+    QPKGs.ScUpgradable.Remove "$1"
+    QPKGs.ScNtUpgradable.Add "$1"
 
     }
 
@@ -5425,7 +5430,7 @@ _QPKG.Upgrade_()
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
         DebugAsInfo "$action skipped $(FormatAsPackName "$PACKAGE_NAME") as it's not installed - use 'install' instead"
         result_code=2
-    elif ! QPKGs.IsUpgradable.Exist "$PACKAGE_NAME"; then
+    elif ! QPKGs.ScUpgradable.Exist "$PACKAGE_NAME"; then
         DebugAsInfo "$action skipped $(FormatAsPackName "$PACKAGE_NAME") as no new package is available"
         result_code=2
     fi
@@ -5469,7 +5474,7 @@ _QPKG.Upgrade_()
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         MarkThisActionAsPassed
-        QPKGs.IsUpgradable.Remove "$PACKAGE_NAME"
+        QPKGs.ScUpgradable.Remove "$PACKAGE_NAME"
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
             NoteQPKGStateAsIsEnabled "$PACKAGE_NAME"
