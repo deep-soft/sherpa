@@ -506,7 +506,8 @@ Self.Validate()
         else
             for package in $(QPKGs.AcToRebuild.Array); do
                 if ! QPKGs.IsBackedUp.Exist "$package"; then
-                    NoteQPKGAcAsSk "$package" rebuild 'does not have a backup to rebuild from'
+#                     NoteQPKGAcAsSk "$package" rebuild 'does not have a backup to rebuild from'
+                    :
                 else
                     (QPKGs.IsNtInstalled.Exist "$package" || QPKGs.AcToUninstall.Exist "$package") && QPKGs.AcToInstall.Add "$package"
                     QPKGs.AcToRestore.Add "$package"
@@ -815,20 +816,36 @@ Tier.Proc()
 
                 case $state_status_key in
                     change)
-                        # must validate the content of $state_status_value before calling it
+                        # validate the content of $state_status_value before calling it
                         while true; do
                             for scope in "${PACKAGE_SCOPES[@]}"; do
-                                if [[ $state_status_value = "Sc${scope}" || $state_status_value = "ScNt${scope}" ]]; then
-                                    NoteQPKGScopeAs${state_status_value} "$package_name"
-                                    break 2
-                                fi
+                                case $state_status_value in
+                                    "Sc${scope}")
+                                        QPKGs.ScNt${state_status_value}.Remove "$1"
+                                        QPKGs.Sc${state_status_value}.Add "$1"
+                                        break 2
+                                        ;;
+                                    "ScNt${scope}")
+                                        QPKGs.Sc${state_status_value}.Remove "$1"
+                                        QPKGs.ScNt${state_status_value}.Add "$1"
+                                        break 2
+                                esac
                             done
 
                             for state in "${PACKAGE_STATES[@]}"; do
-                                if [[ $state_status_value = "Is${state}" || $state_status_value = "IsNt${state}" ]]; then
-                                    NoteQPKGStateAs${state_status_value} "$package_name"
-                                    break 2
-                                fi
+                                case $state_status_value in
+                                    "Is${state}")
+                                        QPKGs.IsNt${state_status_value}.Remove "$1"
+                                        QPKGs.Is${state_status_value}.Add "$1"
+                                        [[ $package_name = Entware && $state = Installed ]] && ModPathToEntware
+                                        break 2
+                                        ;;
+                                    "IsNt${state}")
+                                        QPKGs.Is${state_status_value}.Remove "$1"
+                                        QPKGs.IsNt${state_status_value}.Add "$1"
+                                        [[ $package_name = Entware && $state = Uninstalled ]] && ModPathToEntware
+                                        break 2
+                                esac
                             done
 
                             DebugAsWarn "ignore unidentified $package_name state in message queue: '$state_status_value'"
@@ -838,13 +855,19 @@ Tier.Proc()
                     status)
                         case $state_status_value in
                             ok)
-                                NoteQPKGAcAsOk "$package_name" "$TARGET_ACTION"
+                                QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
+                                QPKGs.AcOk${TARGET_ACTION}.Add "$package_name"
+                                ((pass_count++))
                                 ;;
                             skipped)
-                                NoteQPKGAcAsSk "$package_name" "$TARGET_ACTION"
+                                QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
+                                QPKGs.AcSk${TARGET_ACTION}.Add "$package_name"
+                                ((skip_count++))
                                 ;;
                             failed)
-                                NoteQPKGAcAsEr "$package_name" "$TARGET_ACTION"
+                                QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
+                                QPKGs.AcEr${TARGET_ACTION}.Add "$package_name"
+                                ((fail_count++))
                                 ;;
                             exit)
                                 for package_index in "${!target_packages[@]}"; do
@@ -864,9 +887,8 @@ Tier.Proc()
             eval "exec $fd_pipe<&-"
             [[ -p $QPKG_MESSAGES_PIPE ]] && rm "$QPKG_MESSAGES_PIPE"
 
-            RefreshForkCounts   # must load current fork counts into this shell, as we can't access the counts in a child process
-            [[ $((pass_count+skip_count+fail_count)) -ge $total_count ]] && $SLEEP_CMD 1    # pause to briefly show progress completion
-
+#             RefreshForkCounts   # must load current fork counts into this shell, as we can't access the counts in a child process
+#             [[ $((pass_count+skip_count+fail_count)) -ge $total_count ]] && $SLEEP_CMD 1    # pause to briefly show progress completion
             ;;
         IPK|PIP)
             InitForkCounts
@@ -2096,11 +2118,11 @@ Quiz()
 PatchEntwareService()
     {
 
-    local tab=$'\t'
-    local prefix='# the following line was inserted by sherpa: https://git.io/sherpa'
+    local -r TAB=$'\t'
+    local -r PREFIX='# the following line was inserted by sherpa: https://git.io/sherpa'
+    local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile Entware)
     local find=''
     local insert=''
-    local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile Entware)
 
     if $GREP_CMD -q 'opt.orig' "$PACKAGE_INIT_PATHFILE"; then
         DebugInfo 'patch: do the "/opt shuffle" - already done'
@@ -2108,12 +2130,12 @@ PatchEntwareService()
         # ensure existing files are moved out of the way before creating /opt symlink
         find='# sym-link $QPKG_DIR to /opt'
         insert='opt_path="/opt"; opt_backup_path="/opt.orig"; [[ -d "$opt_path" \&\& ! -L "$opt_path" \&\& ! -e "$opt_backup_path" ]] \&\& mv "$opt_path" "$opt_backup_path"'
-        $SED_CMD -i "s|$find|$find\n\n${tab}${prefix}\n${tab}${insert}\n|" "$PACKAGE_INIT_PATHFILE"
+        $SED_CMD -i "s|$find|$find\n\n${TAB}${PREFIX}\n${TAB}${insert}\n|" "$PACKAGE_INIT_PATHFILE"
 
         # ... then restored after creating /opt symlink
         find='/bin/ln -sf $QPKG_DIR /opt'
         insert='[[ -L "$opt_path" \&\& -d "$opt_backup_path" ]] \&\& cp "$opt_backup_path"/* --target-directory "$opt_path" \&\& rm -r "$opt_backup_path"'
-        $SED_CMD -i "s|$find|$find\n\n${tab}${prefix}\n${tab}${insert}\n|" "$PACKAGE_INIT_PATHFILE"
+        $SED_CMD -i "s|$find|$find\n\n${TAB}${PREFIX}\n${TAB}${insert}\n|" "$PACKAGE_INIT_PATHFILE"
 
         DebugAsDone 'patch: do the "opt shuffle"'
     fi
@@ -3961,63 +3983,57 @@ QPKGs.States.Build()
                 continue
             fi
 
-            NoteQPKGStateAsIsInstalled "$package"
+            QPKGs.IsInstalled.Add "$package"
 
             if [[ $(QPKG.Local.Ver "$package") != "${QPKG_VERSION[$index]}" ]]; then
-                NoteQPKGStateAsIsUpgradable "$package"
+                QPKGs.ScUpgradable.Add "$package"
             else
-                NoteQPKGStateAsIsNtUpgradable "$package"
+                QPKGs.ScNtUpgradable.Add "$package"
             fi
 
             if QPKG.IsEnabled "$package"; then
-                NoteQPKGStateAsIsEnabled "$package"
+                QPKGs.IsEnabled.Add "$package"
             else
-                NoteQPKGStateAsIsNtEnabled "$package"
+                QPKGs.IsNtEnabled.Add "$package"
             fi
 
             if QPKG.IsStarted "$package"; then
-                NoteQPKGStateAsIsStarted "$package"
+                QPKGs.IsStarted.Add "$1"
             else
-                NoteQPKGStateAsIsNtStarted "$package"
+                QPKGs.IsNtStarted.Add "$package"
             fi
 
             if [[ -e /var/run/$package.last.operation ]]; then
                 case $(</var/run/$package.last.operation) in
                     starting)
-                        NoteQPKGStateAsIsStarting "$package"
+                        QPKGs.IsStarting.Add "$package"
                         ;;
                     restarting)
-                        NoteQPKGStateAsIsRestarting "$package"
+                        QPKGs.IsRestarting.Add "$package"
                         ;;
                     stopping)
-                        NoteQPKGStateAsIsStopping "$package"
+                        QPKGs.IsStopping.Add "$package"
                         ;;
                     failed)
-                        QPKGs.IsOk.Remove "$package"
                         QPKGs.IsNtOk.Add "$package"
                         ;;
                     ok)
-                        QPKGs.IsNtOk.Remove "$package"
                         QPKGs.IsOk.Add "$package"
                 esac
             else
                 QPKGs.IsUnknown.Add "$package"
             fi
-
-            QPKG.IsCanBackup "$package" && NoteQPKGStateAsIsBackedUp "$package"
         else
-            NoteQPKGStateAsIsNtInstalled "$package"
+            QPKGs.IsNtInstalled.Add "$package"
 
-            if [[ -n ${QPKG_ABBRVS[$index]} ]]; then
-                if [[ ${QPKG_ARCH[$index]} = all || ${QPKG_ARCH[$index]} = "$NAS_QPKG_ARCH" ]]; then
-                    if [[ ${QPKG_MIN_RAM_KB[$index]} = none || $NAS_RAM_KB -ge ${QPKG_MIN_RAM_KB[$index]} ]]; then
-                        QPKGs.ScInstallable.Add "$package"
-                    fi
+            if [[ -n ${QPKG_ABBRVS[$index]} ]] && [[ ${QPKG_ARCH[$index]} = all || ${QPKG_ARCH[$index]} = "$NAS_QPKG_ARCH" ]]; then
+                if [[ ${QPKG_MIN_RAM_KB[$index]} = none || $NAS_RAM_KB -ge ${QPKG_MIN_RAM_KB[$index]} ]]; then
+                    QPKGs.ScInstallable.Add "$package"
                 fi
             fi
-
-            QPKG.IsCanBackup "$package" && QPKG.IsBackupExist "$package" && QPKGs.IsBackedUp.Add "$package"
         fi
+
+        QPKG.IsCanBackup "$package" && QPKG.IsBackupExist "$package" && QPKGs.IsBackedUp.Add "$package"
     done
 
     QPKGs.States.Built.Set
@@ -4037,11 +4053,11 @@ QPKGs.IsCanBackup.Build()
 
     for package in $(QPKGs.ScAll.Array); do
         if QPKG.IsCanBackup "$package"; then
-            QPKGs.ScCanBackup.Add "$package"
             QPKGs.ScNtCanBackup.Remove "$package"
+            QPKGs.ScCanBackup.Add "$package"
         else
-            QPKGs.ScNtCanBackup.Add "$package"
             QPKGs.ScCanBackup.Remove "$package"
+            QPKGs.ScNtCanBackup.Add "$package"
         fi
     done
 
@@ -4061,11 +4077,11 @@ QPKGs.IsCanRestartToUpdate.Build()
 
     for package in $(QPKGs.ScAll.Array); do
         if QPKG.IsCanRestartToUpdate "$package"; then
-            QPKGs.ScCanRestartToUpdate.Add "$package"
             QPKGs.ScNtCanRestartToUpdate.Remove "$package"
+            QPKGs.ScCanRestartToUpdate.Add "$package"
         else
-            QPKGs.ScNtCanRestartToUpdate.Add "$package"
             QPKGs.ScCanRestartToUpdate.Remove "$package"
+            QPKGs.ScNtCanRestartToUpdate.Add "$package"
         fi
     done
 
@@ -4514,54 +4530,6 @@ MarkThisActionAsFailed()
 
     }
 
-NoteQPKGAcAsOk()
-    {
-
-    # move specified QPKG package name from `To` action array into associated `Ok` array
-
-    # input:
-    #   $1 = package name
-    #   $2 = action
-
-    QPKGs.AcTo"$(Capitalise "$2")".Remove "$1"
-    QPKGs.AcOk"$(Capitalise "$2")".Add "$1"
-
-    return 0
-
-    }
-
-NoteQPKGAcAsSk()
-    {
-
-    # move specified QPKG package name from `To` action array into associated `Sk` array
-
-    # input:
-    #   $1 = package name
-    #   $2 = action
-
-    QPKGs.AcTo"$(Capitalise "$2")".Remove "$1"
-    QPKGs.AcSk"$(Capitalise "$2")".Add "$1"
-
-    return 0
-
-    }
-
-NoteQPKGAcAsEr()
-    {
-
-    # move specified QPKG package name from `To` action array into associated `Er` array
-
-    # input:
-    #   $1 = package name
-    #   $2 = action
-
-    QPKGs.AcTo"$(Capitalise "$2")".Remove "$1"
-    QPKGs.AcEr"$(Capitalise "$2")".Add "$1"
-
-    return 0
-
-    }
-
 NoteIPKAcAsOk()
     {
 
@@ -4596,224 +4564,6 @@ NoteIPKAcAsEr()
     IPKs.AcEr"$(Capitalise "$2")".Add "$1"
 
     return 0
-
-    }
-
-NoteQPKGScopeAsScNtUpgradable()
-    {
-
-    # $1 = package name
-
-    [[ -n ${1:?package name null} ]] || return
-
-    QPKGs.ScNtUpgradable.Add "$1"
-    QPKGs.ScUpgradable.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsInstalled()
-    {
-
-    # $1 = package name
-
-    [[ -n ${1:?package name null} ]] || return
-
-    QPKGs.IsInstalled.Add "$1"
-    QPKGs.IsNtInstalled.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsNtInstalled()
-    {
-
-    # $1 = package name
-
-    [[ -n ${1:?package name null} ]] || return
-
-    QPKGs.IsInstalled.Remove "$1"
-    QPKGs.IsNtInstalled.Add "$1"
-    QPKGs.IsEnabled.Remove "$1"
-    QPKGs.IsNtEnabled.Remove "$1"
-    QPKGs.IsStarted.Remove "$1"
-    QPKGs.IsNtStarted.Remove "$1"
-    QPKGs.IsOk.Remove "$1"
-    QPKGs.IsNtOk.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsEnabled()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsNtEnabled.Remove "$1"
-    QPKGs.IsEnabled.Add "$1"
-
-    }
-
-NoteQPKGStateAsIsNtEnabled()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsEnabled.Remove "$1"
-    QPKGs.IsNtEnabled.Add "$1"
-
-    }
-
-NoteQPKGStateAsIsStarting()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsStarting.Add "$1"
-    QPKGs.IsStarted.Remove "$1"
-    QPKGs.IsStopping.Remove "$1"
-    QPKGs.IsNtStarted.Remove "$1"
-    QPKGs.IsRestarting.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsNtStarting()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsStarting.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsRestarting()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsStarting.Remove "$1"
-    QPKGs.IsStarted.Remove "$1"
-    QPKGs.IsStopping.Remove "$1"
-    QPKGs.IsNtStarted.Remove "$1"
-    QPKGs.IsRestarting.Add "$1"
-
-    }
-
-NoteQPKGStateAsIsNtRestarting()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsRestarting.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsStarted()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsStarting.Remove "$1"
-    QPKGs.IsStarted.Add "$1"
-    QPKGs.IsStopping.Remove "$1"
-    QPKGs.IsNtStarted.Remove "$1"
-    QPKGs.IsRestarting.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsNtStarted()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsStarting.Remove "$1"
-    QPKGs.IsStarted.Remove "$1"
-    QPKGs.IsStopping.Remove "$1"
-    QPKGs.IsNtStarted.Add "$1"
-    QPKGs.IsRestarting.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsStopping()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsStarting.Remove "$1"
-    QPKGs.IsStarted.Remove "$1"
-    QPKGs.IsStopping.Add "$1"
-    QPKGs.IsNtStarted.Remove "$1"
-    QPKGs.IsRestarting.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsNtStopping()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsStopping.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsUpgradable()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.ScNtUpgradable.Remove "$1"
-    QPKGs.ScUpgradable.Add "$1"
-
-    }
-
-NoteQPKGStateAsIsNtUpgradable()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.ScUpgradable.Remove "$1"
-    QPKGs.ScNtUpgradable.Add "$1"
-
-    }
-
-NoteQPKGStateAsIsBackedUp()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsBackedUp.Add "$1"
-    QPKGs.IsNtBackedUp.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsNtBackedUp()
-    {
-
-    [[ -n ${1:-} ]] || return
-
-    QPKGs.IsNtBackedUp.Add "$1"
-    QPKGs.IsBackedUp.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsCleaned()
-    {
-
-    # $1 = package name
-
-    [[ -n ${1:?package name null} ]] || return
-
-    QPKGs.IsCleaned.Add "$1"
-    QPKGs.IsNtCleaned.Remove "$1"
-
-    }
-
-NoteQPKGStateAsIsNtCleaned()
-    {
-
-    # $1 = package name
-
-    [[ -n ${1:?package name null} ]] || return
-
-    QPKGs.IsCleaned.Remove "$1"
-    QPKGs.IsNtCleaned.Add "$1"
 
     }
 
@@ -5387,7 +5137,7 @@ _QPKG.Reinstall_()
     fi
 
     if [[ -z $local_pathfile ]]; then
-        NoteQPKGAcAsSk "$PACKAGE_NAME" "$action" 'no local file found for processing: this error should be reported'
+        DebugAsInfo "$action skipped $(FormatAsPackName "$PACKAGE_NAME"): no local file found for processing - this error should be reported"
         MarkThisActionAsSkipped
         DebugForkFuncEx 2
     fi
@@ -5479,7 +5229,7 @@ _QPKG.Upgrade_()
     fi
 
     if [[ -z $local_pathfile ]]; then
-        NoteQPKGAcAsSk "$PACKAGE_NAME" "$action" 'no local file found for processing: this error should be reported'
+        DebugAsInfo "$action skipped $(FormatAsPackName "$PACKAGE_NAME"): no local file found for processing - this error should be reported"
         MarkThisActionAsSkipped
         DebugForkFuncEx 2
     fi
@@ -5498,7 +5248,6 @@ _QPKG.Upgrade_()
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         MarkThisActionAsPassed
-#         QPKGs.ScUpgradable.Remove "$PACKAGE_NAME"
         SendPackageStateChange ScNtUpgradable
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
