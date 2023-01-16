@@ -669,7 +669,7 @@ Tiers.Proc()
 
     local tier=''
     local action=''
-    local -i index=0
+    local -i tier_index=0
 
     Tier.Proc Reassign All QPKG AcToReassign reassign reassigning reassigned short || return
     Tier.Proc Download All QPKG AcToDownload 'update cache with' 'updating cache with' 'updated cache with' short || return
@@ -677,8 +677,8 @@ Tiers.Proc()
 
     # -> package removal phase begins here <-
 
-    for ((index=${#PACKAGE_TIERS[@]}-1; index>=0; index--)); do     # process tiers in-reverse
-        tier=${PACKAGE_TIERS[$index]}
+    for ((tier_index=${#PACKAGE_TIERS[@]}-1; tier_index>=0; tier_index--)); do     # process tiers in-reverse
+        tier=${PACKAGE_TIERS[$tier_index]}
 
         case $tier in
             Standalone|Dependent)
@@ -758,8 +758,10 @@ Tier.Proc()
             DebugFuncEx 1; return
     esac
 
-    local package=''
     total_count=0
+    local package=''
+    local state=''
+    local -i package_index=0
     local -a target_packages=()
     local -r TIER=${2:?null}
     local -r TARGET_OBJECT_NAME=${4:-}
@@ -836,9 +838,9 @@ Tier.Proc()
                                 NoteQPKGAcAsEr "$package_name" "$TARGET_ACTION"
                                 ;;
                             exit)
-                                for index in "${!target_packages[@]}"; do
-                                    if [[ ${target_packages[index]} = "$package_name" ]]; then
-                                        unset 'target_packages[index]'
+                                for package_index in "${!target_packages[@]}"; do
+                                    if [[ ${target_packages[package_index]} = "$package_name" ]]; then
+                                        unset 'target_packages[package_index]'
                                         break
                                     fi
                                 done
@@ -5122,7 +5124,7 @@ _QPKG.Reassign_()
     if [[ $result_code -eq 0 ]]; then
         DebugAsDone "reassigned $(FormatAsPackName "$PACKAGE_NAME") to sherpa"
         MarkThisActionAsPassed
-#         SendPackageStateChange IsReassigned
+        SendPackageStateChange IsReassigned
     else
         DebugAsError "$action failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         MarkThisActionAsFailed
@@ -5477,15 +5479,15 @@ _QPKG.Upgrade_()
         QPKGs.ScUpgradable.Remove "$PACKAGE_NAME"
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
-            NoteQPKGStateAsIsEnabled "$PACKAGE_NAME"
+            SendPackageStateChange IsEnabled
         else
-            NoteQPKGStateAsIsNtEnabled "$PACKAGE_NAME"
+            SendPackageStateChange IsNtEnabled
         fi
 
         if QPKG.IsStarted "$PACKAGE_NAME"; then
-            NoteQPKGStateAsIsStarted "$PACKAGE_NAME"
+            SendPackageStateChange IsStarted
         else
-            NoteQPKGStateAsIsNtStarted "$PACKAGE_NAME"
+            SendPackageStateChange IsNtStarted
         fi
 
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
@@ -5556,7 +5558,7 @@ _QPKG.Uninstall_()
             DebugAsDone 'removed icon information from App Center'
             [[ $PACKAGE_NAME = Entware ]] && ModPathToEntware
             MarkThisActionAsPassed
-            NoteQPKGStateAsNtInstalled "$PACKAGE_NAME"
+            SendPackageStateChange IsNtInstalled
         else
             DebugAsError "$action failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
             MarkThisActionAsFailed

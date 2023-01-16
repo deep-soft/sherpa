@@ -14666,6 +14666,40 @@ QPKGs.IsStarting.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_isstarting_sz_=$2; else echo -n "$_ob_qpkgs_isstarting_sz_"
 fi ;}
 QPKGs.IsStarting.Init
+QPKGs.IsNtStarting.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! QPKGs.IsNtStarting.Exist "$it" && _ob_qpkgs_isntstarting_ar_+=("$it")
+done ;}
+QPKGs.IsNtStarting.Array()
+{ echo -n "${_ob_qpkgs_isntstarting_ar_[@]:-}" ;}
+QPKGs.IsNtStarting.Count()
+{ echo "${#_ob_qpkgs_isntstarting_ar_[@]}" ;}
+QPKGs.IsNtStarting.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_qpkgs_isntstarting_ar_[*]:-} " =~ $patt ]] ;}
+QPKGs.IsNtStarting.Init()
+{ _ob_qpkgs_isntstarting_sz_=0 _ob_qpkgs_isntstarting_ar_=() _ob_qpkgs_isntstarting_arin_=1 ;}
+QPKGs.IsNtStarting.IsAny()
+{ [[ ${#_ob_qpkgs_isntstarting_ar_[@]} -gt 0 ]] ;}
+QPKGs.IsNtStarting.IsNone()
+{ [[ ${#_ob_qpkgs_isntstarting_ar_[@]} -eq 0 ]] ;}
+QPKGs.IsNtStarting.List()
+{ echo -n "${_ob_qpkgs_isntstarting_ar_[*]:-}" ;}
+QPKGs.IsNtStarting.ListCSV()
+{ echo -n "${_ob_qpkgs_isntstarting_ar_[*]:-}" | tr ' ' ',' ;}
+QPKGs.IsNtStarting.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_qpkgs_isntstarting_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_qpkgs_isntstarting_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_qpkgs_isntstarting_ar_[*]+"${_ob_qpkgs_isntstarting_ar_[@]}"} ]] && _ob_qpkgs_isntstarting_ar_=() ;}
+QPKGs.IsNtStarting.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_isntstarting_sz_=$2; else echo -n "$_ob_qpkgs_isntstarting_sz_"
+fi ;}
+QPKGs.IsNtStarting.Init
 QPKGs.IsStopping.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -14700,6 +14734,40 @@ QPKGs.IsStopping.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_isstopping_sz_=$2; else echo -n "$_ob_qpkgs_isstopping_sz_"
 fi ;}
 QPKGs.IsStopping.Init
+QPKGs.IsNtStopping.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! QPKGs.IsNtStopping.Exist "$it" && _ob_qpkgs_isntstopping_ar_+=("$it")
+done ;}
+QPKGs.IsNtStopping.Array()
+{ echo -n "${_ob_qpkgs_isntstopping_ar_[@]:-}" ;}
+QPKGs.IsNtStopping.Count()
+{ echo "${#_ob_qpkgs_isntstopping_ar_[@]}" ;}
+QPKGs.IsNtStopping.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_qpkgs_isntstopping_ar_[*]:-} " =~ $patt ]] ;}
+QPKGs.IsNtStopping.Init()
+{ _ob_qpkgs_isntstopping_sz_=0 _ob_qpkgs_isntstopping_ar_=() _ob_qpkgs_isntstopping_arin_=1 ;}
+QPKGs.IsNtStopping.IsAny()
+{ [[ ${#_ob_qpkgs_isntstopping_ar_[@]} -gt 0 ]] ;}
+QPKGs.IsNtStopping.IsNone()
+{ [[ ${#_ob_qpkgs_isntstopping_ar_[@]} -eq 0 ]] ;}
+QPKGs.IsNtStopping.List()
+{ echo -n "${_ob_qpkgs_isntstopping_ar_[*]:-}" ;}
+QPKGs.IsNtStopping.ListCSV()
+{ echo -n "${_ob_qpkgs_isntstopping_ar_[*]:-}" | tr ' ' ',' ;}
+QPKGs.IsNtStopping.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_qpkgs_isntstopping_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_qpkgs_isntstopping_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_qpkgs_isntstopping_ar_[*]+"${_ob_qpkgs_isntstopping_ar_[@]}"} ]] && _ob_qpkgs_isntstopping_ar_=() ;}
+QPKGs.IsNtStopping.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_isntstopping_sz_=$2; else echo -n "$_ob_qpkgs_isntstopping_sz_"
+fi ;}
+QPKGs.IsNtStopping.Init
 QPKGs.IsRestarting.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -14734,3 +14802,37 @@ QPKGs.IsRestarting.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_isrestarting_sz_=$2; else echo -n "$_ob_qpkgs_isrestarting_sz_"
 fi ;}
 QPKGs.IsRestarting.Init
+QPKGs.IsNtRestarting.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! QPKGs.IsNtRestarting.Exist "$it" && _ob_qpkgs_isntrestarting_ar_+=("$it")
+done ;}
+QPKGs.IsNtRestarting.Array()
+{ echo -n "${_ob_qpkgs_isntrestarting_ar_[@]:-}" ;}
+QPKGs.IsNtRestarting.Count()
+{ echo "${#_ob_qpkgs_isntrestarting_ar_[@]}" ;}
+QPKGs.IsNtRestarting.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_qpkgs_isntrestarting_ar_[*]:-} " =~ $patt ]] ;}
+QPKGs.IsNtRestarting.Init()
+{ _ob_qpkgs_isntrestarting_sz_=0 _ob_qpkgs_isntrestarting_ar_=() _ob_qpkgs_isntrestarting_arin_=1 ;}
+QPKGs.IsNtRestarting.IsAny()
+{ [[ ${#_ob_qpkgs_isntrestarting_ar_[@]} -gt 0 ]] ;}
+QPKGs.IsNtRestarting.IsNone()
+{ [[ ${#_ob_qpkgs_isntrestarting_ar_[@]} -eq 0 ]] ;}
+QPKGs.IsNtRestarting.List()
+{ echo -n "${_ob_qpkgs_isntrestarting_ar_[*]:-}" ;}
+QPKGs.IsNtRestarting.ListCSV()
+{ echo -n "${_ob_qpkgs_isntrestarting_ar_[*]:-}" | tr ' ' ',' ;}
+QPKGs.IsNtRestarting.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_qpkgs_isntrestarting_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_qpkgs_isntrestarting_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_qpkgs_isntrestarting_ar_[*]+"${_ob_qpkgs_isntrestarting_ar_[@]}"} ]] && _ob_qpkgs_isntrestarting_ar_=() ;}
+QPKGs.IsNtRestarting.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_isntrestarting_sz_=$2; else echo -n "$_ob_qpkgs_isntrestarting_sz_"
+fi ;}
+QPKGs.IsNtRestarting.Init
