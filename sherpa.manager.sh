@@ -761,6 +761,7 @@ Tier.Proc()
     total_count=0
     local package=''
     local state=''
+    local scope=''
     local -i package_index=0
     local -a target_packages=()
     local -r TIER=${2:?null}
@@ -809,12 +810,20 @@ Tier.Proc()
             # read message pipe and process QPKGs as per requests contained within
             while [[ ${#target_packages[@]} -gt 0 ]]; do
                 # shellcheck disable=2162
-                read package_key package_name state_status_key state_status_value datetime_key datetime_value
+#                 read package_key package_name state_status_key state_status_value datetime_key datetime_value
+                read package_key package_name state_status_key state_status_value
 
                 case $state_status_key in
                     change)
                         # must validate the content of $state_status_value before calling it
                         while true; do
+                            for scope in "${PACKAGE_SCOPES[@]}"; do
+                                if [[ $state_status_value = "Sc${scope}" || $state_status_value = "ScNt${scope}" ]]; then
+                                    NoteQPKGScopeAs${state_status_value} "$package_name"
+                                    break 2
+                                fi
+                            done
+
                             for state in "${PACKAGE_STATES[@]}"; do
                                 if [[ $state_status_value = "Is${state}" || $state_status_value = "IsNt${state}" ]]; then
                                     NoteQPKGStateAs${state_status_value} "$package_name"
@@ -4394,7 +4403,7 @@ SendPackageStateChange()
     {
 
     # Send a message into message stream to change the state of this QPKG to $1
-    # This might be: `IsInstalled`, `IsNtEnabled`, `IsStarted`, etc...
+    # This might be: `IsInstalled`, `IsNtEnabled`, `IsStarted`, `ScNtUpgradable`, etc...
     # This function is only called from within background functions
 
     # input:
@@ -4428,7 +4437,8 @@ SendMessageIntoPipe()
     #   $2 = `status` or `change`
     #   $3 = a valid status word e.g. `ok`, `skipped`, `failed`, `exit`
 
-    echo "package $1 $2 $3 date $(NowInEpochSeconds)"
+#     echo "package $1 $2 $3 date $(NowInEpochSeconds)"
+    echo "package $1 $2 $3"
 
     } >&$fd_pipe
 
@@ -4586,6 +4596,18 @@ NoteIPKAcAsEr()
     IPKs.AcEr"$(Capitalise "$2")".Add "$1"
 
     return 0
+
+    }
+
+NoteQPKGScopeAsScNtUpgradable()
+    {
+
+    # $1 = package name
+
+    [[ -n ${1:?package name null} ]] || return
+
+    QPKGs.ScNtUpgradable.Add "$1"
+    QPKGs.ScUpgradable.Remove "$1"
 
     }
 
@@ -5476,7 +5498,8 @@ _QPKG.Upgrade_()
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         MarkThisActionAsPassed
-        QPKGs.ScUpgradable.Remove "$PACKAGE_NAME"
+#         QPKGs.ScUpgradable.Remove "$PACKAGE_NAME"
+        SendPackageStateChange ScNtUpgradable
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
             SendPackageStateChange IsEnabled
@@ -7393,7 +7416,7 @@ ShowAsActionProgress()
         ShowAsProcLong "$ACTION_PRESENT ${TOTAL_COUNT}${tier} ${PACKAGE_TYPE}$(Pluralise "$TOTAL_COUNT")" "$progress_message"
     fi
 
-    [[ $((RUN_COUNT+PASS_COUNT+SKIP_COUNT+FAIL_COUNT)) -ge $TOTAL_COUNT ]] && $SLEEP_CMD 1
+#     [[ $((RUN_COUNT+PASS_COUNT+SKIP_COUNT+FAIL_COUNT)) -ge $TOTAL_COUNT ]] && $SLEEP_CMD 1
 
     return 0
 
