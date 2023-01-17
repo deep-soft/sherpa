@@ -797,28 +797,20 @@ Tier.Proc()
             fi
 
             AdjustMaxForks "$TARGET_ACTION"
-
-            [[ -p $QPKG_MESSAGES_PIPE ]] && rm "$QPKG_MESSAGES_PIPE"
-            [[ ! -p $QPKG_MESSAGES_PIPE ]] && mknod "$QPKG_MESSAGES_PIPE" p
-
             InitForkCounts
-            fd_pipe=$(FindNextFD)
-
-            # open a 2-way channel to this pipe, so it will receive data without blocking the sender
-            eval "exec $fd_pipe<>$QPKG_MESSAGES_PIPE"
+            OpenMessagePipe
 
             trap CTRL_C_Captured INT
                 _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
                 forkpid=$!
 
-                # read message pipe and process QPKGs as per requests contained within
+                # read message pipe and process QPKGs and actions as per requests contained within
                 while [[ ${#target_packages[@]} -gt 0 ]]; do
                     # shellcheck disable=2162
                     read package_key package_name state_status_key state_status_value
 
                     case $state_status_key in
-                        change)
-                            # validate the content of $state_status_value before calling it
+                        change)     # change the state of a single QPKG in the parent shell
                             while true; do
                                 for scope in "${PACKAGE_SCOPES[@]}"; do
                                     case $state_status_value in
@@ -850,11 +842,11 @@ Tier.Proc()
                                     esac
                                 done
 
-                                DebugAsWarn "ignore unidentified $package_name state in message queue: '$state_status_value'"
+                                DebugAsWarn "ignore unidentified $package_name change in message queue: '$state_status_value'"
                                 break
                             done
                             ;;
-                        status)
+                        status)     # update the status of a single action fork in the parent shell
                             case $state_status_value in
                                 ok)
                                     QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
@@ -886,10 +878,7 @@ Tier.Proc()
                 done <&$fd_pipe
             trap - INT
             KillActiveFork
-
-            # close messages file descriptor and remove messages pipe
-            eval "exec $fd_pipe<&-"
-            [[ -p $QPKG_MESSAGES_PIPE ]] && rm "$QPKG_MESSAGES_PIPE"
+            CloseMessagePipe
 
 #             RefreshForkCounts   # must load current fork counts into this shell, as we can't access the counts in a child process
 #             [[ $((pass_count+skip_count+fail_count)) -ge $total_count ]] && $SLEEP_CMD 1    # pause to briefly show progress completion
@@ -903,6 +892,31 @@ Tier.Proc()
     EraseForkCountPaths
     DebugFuncEx
     Self.Error.IsNt
+
+    }
+
+OpenMessagePipe()
+    {
+
+    # create a message pipe, so forks can send data back to parent
+
+    [[ -p $QPKG_MESSAGES_PIPE ]] && rm "$QPKG_MESSAGES_PIPE"
+    [[ ! -p $QPKG_MESSAGES_PIPE ]] && mknod "$QPKG_MESSAGES_PIPE" p
+
+    fd_pipe=$(FindNextFD)
+
+    # open a 2-way channel to this pipe, so it will receive data without blocking the sender
+    eval "exec $fd_pipe<>$QPKG_MESSAGES_PIPE"
+
+    }
+
+CloseMessagePipe()
+    {
+
+    # close messages file descriptor and remove message pipe
+
+    eval "exec $fd_pipe<&-"
+    [[ -p $QPKG_MESSAGES_PIPE ]] && rm "$QPKG_MESSAGES_PIPE"
 
     }
 
