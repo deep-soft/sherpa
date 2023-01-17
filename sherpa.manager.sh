@@ -2263,7 +2263,7 @@ CalcIpkDepsToInstall()
     requested_count=$($WC_CMD -w <<< "$req_list")
 
     if [[ $requested_count -eq 0 ]]; then
-        DebugAsWarn 'no IPKs requested: aborting ...'
+        DebugAsWarn 'no IPKs requested'
         DebugFuncEx 1; return
     fi
 
@@ -2485,7 +2485,7 @@ PIPs.Install()
         ((total_count++))
         ShowAsActionProgress '' "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
 
-        exec_cmd="$PIP_CMD install --upgrade --no-input $ESSENTIAL_PIPS --cache-dir $PIP_CACHE_PATH 2> >(grep -v \"Running pip as the 'root' user\") >&2"
+        exec_cmd="$PIP_CMD install --upgrade --no-input $ESSENTIAL_PIPS --cache-dir $PIP_CACHE_PATH 2> >($GREP_CMD -v \"Running pip as the 'root' user\") >&2"
         local desc="'PyPI' essential modules"
         local log_pathfile=$LOGS_PATH/pypi.$INSTALL_LOG_FILE
         DebugAsProc "$ACTION_PRESENT $desc"
@@ -6956,7 +6956,7 @@ AddFileToDebug()
     local linebuff=''
     local screen_debug=false
 
-    DebugAsLog 'adding external log to main log ...'
+    DebugAsLog 'adding external log to main log'
     DebugExtLogMinSepr
 
     if Self.Debug.ToScreen.IsSet; then      # prevent external log contents appearing onscreen again, because they've already been seen "live"
@@ -7060,7 +7060,7 @@ ShowAsAbort()
 
     local capitalised="$(Capitalise "${1:-}")"
 
-    WriteToDisplayNew "$(ColourTextBrightRed bort)" "$capitalised: aborting ..."
+    WriteToDisplayNew "$(ColourTextBrightRed bort)" "$capitalised: aborting"
     WriteToLog bort "$capitalised: aborting"
     Self.Error.Set
 
