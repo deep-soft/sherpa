@@ -276,6 +276,7 @@ Self.Init()
     readonly CONCURRENCY=$CPU_CORES     # maximum concurrent package actions to run. Should probably make this account for CPU speed too.
     readonly LOG_TAIL_LINES=5000        # note: a full download and install of everything generates a session log of around 1600 lines, but include a bunch of opkg updates and it can get much longer
     previous_msg=' '
+    forkpid=''
     [[ ${NAS_FIRMWARE_VER//.} -lt 426 ]] && curl_insecure_arg=' --insecure' || curl_insecure_arg=''
     QPKG.IsInstalled Entware && [[ $ENTWARE_VER = none ]] && DebugAsWarn "$(FormatAsPackName Entware) appears to be installed but is not visible"
 
@@ -806,82 +807,86 @@ Tier.Proc()
             # open a 2-way channel to this pipe, so it will receive data without blocking the sender
             eval "exec $fd_pipe<>$QPKG_MESSAGES_PIPE"
 
-            _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
+            trap CTRL_C_Captured INT
+                _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
+                forkpid=$!
 
-            # read message pipe and process QPKGs as per requests contained within
-            while [[ ${#target_packages[@]} -gt 0 ]]; do
-                # shellcheck disable=2162
-#                 read package_key package_name state_status_key state_status_value datetime_key datetime_value
-                read package_key package_name state_status_key state_status_value
+                # read message pipe and process QPKGs as per requests contained within
+                while [[ ${#target_packages[@]} -gt 0 ]]; do
+                    # shellcheck disable=2162
+    #                 read package_key package_name state_status_key state_status_value datetime_key datetime_value
+                    read package_key package_name state_status_key state_status_value
 
-                case $state_status_key in
-                    change)
-                        # validate the content of $state_status_value before calling it
-                        while true; do
-                            for scope in "${PACKAGE_SCOPES[@]}"; do
-                                case $state_status_value in
-                                    "Sc${scope}")
-                                        QPKGs.ScNt${state_status_value}.Remove "$1"
-                                        QPKGs.Sc${state_status_value}.Add "$1"
-                                        break 2
-                                        ;;
-                                    "ScNt${scope}")
-                                        QPKGs.Sc${state_status_value}.Remove "$1"
-                                        QPKGs.ScNt${state_status_value}.Add "$1"
-                                        break 2
-                                esac
-                            done
-
-                            for state in "${PACKAGE_STATES[@]}"; do
-                                case $state_status_value in
-                                    "Is${state}")
-                                        QPKGs.IsNt${state_status_value}.Remove "$1"
-                                        QPKGs.Is${state_status_value}.Add "$1"
-                                        [[ $package_name = Entware && $state = Installed ]] && ModPathToEntware
-                                        break 2
-                                        ;;
-                                    "IsNt${state}")
-                                        QPKGs.Is${state_status_value}.Remove "$1"
-                                        QPKGs.IsNt${state_status_value}.Add "$1"
-                                        [[ $package_name = Entware && $state = Uninstalled ]] && ModPathToEntware
-                                        break 2
-                                esac
-                            done
-
-                            DebugAsWarn "ignore unidentified $package_name state in message queue: '$state_status_value'"
-                            break
-                        done
-                        ;;
-                    status)
-                        case $state_status_value in
-                            ok)
-                                QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
-                                QPKGs.AcOk${TARGET_ACTION}.Add "$package_name"
-                                ((pass_count++))
-                                ;;
-                            skipped)
-                                QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
-                                QPKGs.AcSk${TARGET_ACTION}.Add "$package_name"
-                                ((skip_count++))
-                                ;;
-                            failed)
-                                QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
-                                QPKGs.AcEr${TARGET_ACTION}.Add "$package_name"
-                                ((fail_count++))
-                                ;;
-                            exit)
-                                for package_index in "${!target_packages[@]}"; do
-                                    if [[ ${target_packages[package_index]} = "$package_name" ]]; then
-                                        unset 'target_packages[package_index]'
-                                        break
-                                    fi
+                    case $state_status_key in
+                        change)
+                            # validate the content of $state_status_value before calling it
+                            while true; do
+                                for scope in "${PACKAGE_SCOPES[@]}"; do
+                                    case $state_status_value in
+                                        "Sc${scope}")
+                                            QPKGs.ScNt${scope}.Remove "$1"
+                                            QPKGs.Sc${scope}.Add "$1"
+                                            break 2
+                                            ;;
+                                        "ScNt${scope}")
+                                            QPKGs.Sc${scope}.Remove "$1"
+                                            QPKGs.ScNt${scope}.Add "$1"
+                                            break 2
+                                    esac
                                 done
-                                ;;
-                            *)
-                                DebugAsWarn "ignore unidentified $package_name status in message queue: '$state_status_value'"
-                        esac
-                esac
-            done <&$fd_pipe
+
+                                for state in "${PACKAGE_STATES[@]}"; do
+                                    case $state_status_value in
+                                        "Is${state}")
+                                            QPKGs.IsNt${state}.Remove "$1"
+                                            QPKGs.Is${state}.Add "$1"
+                                            [[ $package_name = Entware && $state = Installed ]] && ModPathToEntware
+                                            break 2
+                                            ;;
+                                        "IsNt${state}")
+                                            QPKGs.Is${state}.Remove "$1"
+                                            QPKGs.IsNt${state}.Add "$1"
+                                            [[ $package_name = Entware && $state = Uninstalled ]] && ModPathToEntware
+                                            break 2
+                                    esac
+                                done
+
+                                DebugAsWarn "ignore unidentified $package_name state in message queue: '$state_status_value'"
+                                break
+                            done
+                            ;;
+                        status)
+                            case $state_status_value in
+                                ok)
+                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
+                                    QPKGs.AcOk${TARGET_ACTION}.Add "$package_name"
+                                    ((pass_count++))
+                                    ;;
+                                skipped)
+                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
+                                    QPKGs.AcSk${TARGET_ACTION}.Add "$package_name"
+                                    ((skip_count++))
+                                    ;;
+                                failed)
+                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
+                                    QPKGs.AcEr${TARGET_ACTION}.Add "$package_name"
+                                    ((fail_count++))
+                                    ;;
+                                exit)
+                                    for package_index in "${!target_packages[@]}"; do
+                                        if [[ ${target_packages[package_index]} = "$package_name" ]]; then
+                                            unset 'target_packages[package_index]'
+                                            break
+                                        fi
+                                    done
+                                    ;;
+                                *)
+                                    DebugAsWarn "ignore unidentified $package_name status in message queue: '$state_status_value'"
+                            esac
+                    esac
+                done <&$fd_pipe
+            trap - INT
+            KillActiveFork
 
             # close messages file descriptor and remove messages pipe
             eval "exec $fd_pipe<&-"
@@ -2350,14 +2355,14 @@ IPKs.Upgrade()
     if [[ $total_count -gt 0 ]]; then
         ShowAsProc "downloading & upgrading $total_count IPK$(Pluralise "$total_count")"
 
-        CreateDirSizeMonitorFlagFile "$IPK_DL_PATH"/.monitor
-            trap CTRL_C_Captured INT
-                _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
+        trap CTRL_C_Captured INT
+            _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
+            forkpid=$!
 
-                RunAndLog "$OPKG_CMD upgrade --force-overwrite $(IPKs.AcToDownload.List) --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.$UPGRADE_LOG_FILE" log:failure-only
-                result_code=$?
-            trap - INT
-        RemoveDirSizeMonitorFlagFile
+            RunAndLog "$OPKG_CMD upgrade --force-overwrite $(IPKs.AcToDownload.List) --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.$UPGRADE_LOG_FILE" log:failure-only
+            result_code=$?
+        trap - INT
+        KillActiveFork
 
         if [[ $result_code -eq 0 ]]; then
 #             ShowAsDone "downloaded & upgraded $total_count IPK$(Pluralise "$total_count")"
@@ -2415,14 +2420,14 @@ IPKs.Install()
     if [[ $total_count -gt 0 ]]; then
         ShowAsProc "downloading & installing $total_count IPK$(Pluralise "$total_count")"
 
-        CreateDirSizeMonitorFlagFile "$IPK_DL_PATH"/.monitor
-            trap CTRL_C_Captured INT
-                _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
+        trap CTRL_C_Captured INT
+            _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
+            forkpid=$!
 
-                RunAndLog "$OPKG_CMD install --force-overwrite $(IPKs.AcToDownload.List) --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.$INSTALL_LOG_FILE" log:failure-only
-                result_code=$?
-            trap - INT
-        RemoveDirSizeMonitorFlagFile
+            RunAndLog "$OPKG_CMD install --force-overwrite $(IPKs.AcToDownload.List) --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.$INSTALL_LOG_FILE" log:failure-only
+            result_code=$?
+        trap - INT
+        KillActiveFork
 
         if [[ $result_code -eq 0 ]]; then
             pass_count=$total_count         # assume they all passed
@@ -2520,15 +2525,15 @@ CloseIPKArchive()
 _LaunchQPKGActionForks_()
     {
 
-    # * This function runs as a background process *
+    # Execute actions concurrently, but only as many as $max_forks will allow given the circumstances
 
-    # execute actions concurrently, but only as many as $max_forks will allow given the circumstances
+    # * This function runs as a background process *
 
     # inputs: (local)
     #   $1 = the target function action to be applied to each QPKG in $target_packages()
     #   $2 = an array of QPKG names to process with $1
 
-    # inputs: (these global)
+    # inputs: (global)
     #   $fork_count = number of currently running forks
     #   $max_forks = maximum number of permitted concurrent forks given the current environment
 
@@ -2561,8 +2566,6 @@ _MonitorDirSize_()
     {
 
     # * This function runs autonomously *
-    # It watches for the existence of $MONITOR_FLAG_PATHFILE
-    # If that file is removed, this function dies gracefully
 
     # input:
     #   $1 = directory to monitor the size of
@@ -2579,12 +2582,12 @@ _MonitorDirSize_()
     local -i stall_seconds=0
     local -i stall_seconds_threshold=4
     local stall_message=''
-    local -i current_bytes=0
+    local -i current_bytes=-1
     local percent=''
 
     InitProgress
 
-    while [[ -e $MONITOR_FLAG_PATHFILE ]]; do
+    while [[ $current_bytes -lt $total_bytes ]]; do
         current_bytes=$($GNU_FIND_CMD "$1" -type f -name '*.ipk' -exec $DU_CMD --bytes --total --apparent-size {} + 2>/dev/null | $GREP_CMD total$ | cut -f1)
         [[ -z $current_bytes ]] && current_bytes=0
 
@@ -2660,21 +2663,10 @@ UpdateInPlace()
 
     }
 
-CreateDirSizeMonitorFlagFile()
+KillActiveFork()
     {
 
-    [[ -z ${MONITOR_FLAG_PATHFILE:-} ]] && readonly MONITOR_FLAG_PATHFILE=${1:?pathfile null}
-    $TOUCH_CMD "$MONITOR_FLAG_PATHFILE"
-
-    }
-
-RemoveDirSizeMonitorFlagFile()
-    {
-
-    if [[ -f $MONITOR_FLAG_PATHFILE ]]; then
-        rm -f "$MONITOR_FLAG_PATHFILE"
-        $SLEEP_CMD 2
-    fi
+    [[ -n ${forkpid:-} && ${forkpid:-0} -gt 0 && -d /proc/$forkpid ]] && kill -9 $forkpid
 
     }
 
@@ -3998,7 +3990,7 @@ QPKGs.States.Build()
             fi
 
             if QPKG.IsStarted "$package"; then
-                QPKGs.IsStarted.Add "$1"
+                QPKGs.IsStarted.Add "$package"
             else
                 QPKGs.IsNtStarted.Add "$package"
             fi
@@ -4831,7 +4823,7 @@ ClaimLockFile()
     readonly RUNTIME_LOCK_PATHFILE=${1:?null}
 
     if [[ -e $RUNTIME_LOCK_PATHFILE && -d /proc/$(<"$RUNTIME_LOCK_PATHFILE") && $(</proc/"$(<"$RUNTIME_LOCK_PATHFILE")"/cmdline) =~ $MANAGER_FILE ]]; then
-        ShowAsAbort 'another instance is running'
+        ShowAsAbort "another instance is running (PID $(<"$RUNTIME_LOCK_PATHFILE"))"
         return 1
     fi
 
@@ -7494,8 +7486,9 @@ FormatLongMinutesSecs()
 CTRL_C_Captured()
     {
 
-    RemoveDirSizeMonitorFlagFile
-
+    Display
+    ShowAsAbort 'caught SIGINT'
+    KillActiveFork
     exit
 
     }
