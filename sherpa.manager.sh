@@ -736,13 +736,13 @@ Tier.Proc()
     # run a single action on an entire tier of packages, asynchronously where possible
 
     # input:
-    #   $1 = $TARGET_ACTION                     e.g. `Start`, `Restart`...
+    #   $1 = $TARGET_ACTION                     e.g. `Start`, `Restart` ...
     #   $2 = $TIER                              e.g. `Standalone`, `Dependent`, `Addon`, `All`
     #   $3 = $PACKAGE_TYPE                      e.g. `QPKG`, `IPK`, `PIP`
-    #   $4 = $TARGET_OBJECT_NAME (optional)     e.g. `AcToStart`, `AcToStop`...
-    #   $5 = $ACTION_INTRANSITIVE               e.g. `start`...
-    #   $6 = $ACTION_PRESENT                    e.g. `starting`...
-    #   $7 = $ACTION_PAST                       e.g. `started`...
+    #   $4 = $TARGET_OBJECT_NAME (optional)     e.g. `AcToStart`, `AcToStop` ...
+    #   $5 = $ACTION_INTRANSITIVE               e.g. `start` ...
+    #   $6 = $ACTION_PRESENT                    e.g. `starting` ...
+    #   $7 = $ACTION_PAST                       e.g. `started` ...
     #   $8 = $RUNTIME (optional)                e.g. `long` - default is `short`
 
     DebugFuncEn
@@ -2438,7 +2438,7 @@ IPKs.Install()
     total_count=$(IPKs.AcToDownload.Count)
 
     if [[ $total_count -gt 0 ]]; then
-        ShowAsProc "downloading & installing $total_count IPK$(Pluralise "$total_count")"
+        ShowAsProc "downloading & installing $total_count IPK$(Pluralise "$total_count"): "
 
         trap CTRL_C_Captured INT
             _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
@@ -3127,7 +3127,7 @@ Help.Basic.Show()
 
     SmartCR
     DisplayLineSpaceIfNoneAlready
-    Display "Usage: sherpa $(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpAc) $(FormatAsHelpPacks) ... $(FormatAsHelpOpts)"
+    Display "Usage: sherpa $(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpOpts)"
 
     return 0
 
@@ -4428,7 +4428,7 @@ SendPackageStateChange()
     {
 
     # Send a message into message stream to change the state of this QPKG to $1
-    # This might be: `IsInstalled`, `IsNtEnabled`, `IsStarted`, `ScNtUpgradable`, etc...
+    # This might be: `IsInstalled`, `IsNtEnabled`, `IsStarted`, `ScNtUpgradable`, etc ...
     # This function is only called from within background functions
 
     # input:
@@ -5060,19 +5060,17 @@ _QPKG.Install_()
             ModPathToEntware
             PatchEntwareService
 
-            if QPKGs.AcOkInstall.Exist Entware; then
-                # copy all files from original [/opt] into new [/opt]
-                if [[ -L ${OPT_PATH:-} && -d ${OPT_BACKUP_PATH:-} ]]; then
-                    DebugAsProc 'restoring original /opt'
-                    mv "$OPT_BACKUP_PATH"/* "$OPT_PATH" && rm -rf "$OPT_BACKUP_PATH"
-                    DebugAsDone 'complete'
-                fi
-
-                # add essential package(s) needed immediately
-                DebugAsProc 'installing essential IPKs'
-                RunAndLog "$OPKG_CMD install --force-overwrite $ESSENTIAL_IPKS --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.essential.$INSTALL_LOG_FILE" log:failure-only
-                DebugAsDone 'installed essential IPKs'
+            # copy all files from original [/opt] into new [/opt]
+            if [[ -L ${OPT_PATH:-} && -d ${OPT_BACKUP_PATH:-} ]]; then
+                DebugAsProc 'restoring original /opt'
+                mv "$OPT_BACKUP_PATH"/* "$OPT_PATH" && rm -rf "$OPT_BACKUP_PATH"
+                DebugAsDone 'complete'
             fi
+
+            # add essential IPKs needed immediately
+            DebugAsProc 'installing essential IPKs'
+            RunAndLog "$OPKG_CMD install --force-overwrite $ESSENTIAL_IPKS --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.essential.$INSTALL_LOG_FILE" log:failure-only
+            DebugAsDone 'installed essential IPKs'
         fi
 
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
