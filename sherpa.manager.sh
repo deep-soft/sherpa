@@ -814,7 +814,6 @@ Tier.Proc()
                 # read message pipe and process QPKGs as per requests contained within
                 while [[ ${#target_packages[@]} -gt 0 ]]; do
                     # shellcheck disable=2162
-    #                 read package_key package_name state_status_key state_status_value datetime_key datetime_value
                     read package_key package_name state_status_key state_status_value
 
                     case $state_status_key in
@@ -4445,7 +4444,6 @@ SendMessageIntoPipe()
     #   $2 = `status` or `change`
     #   $3 = a valid status word e.g. `ok`, `skipped`, `failed`, `exit`
 
-#     echo "package $1 $2 $3 date $(NowInEpochSeconds)"
     echo "package $1 $2 $3"
 
     } >&$fd_pipe
@@ -4465,29 +4463,6 @@ FindNextFD()
     done
 
     return 1
-
-    }
-
-Now()
-    {
-
-    date +%H:%M:%S
-
-    }
-
-NowInEpochSeconds()
-    {
-
-    date +%s
-
-    }
-
-ConvertEpochSecondsToTime()
-    {
-
-    # $1 = epoch seconds
-
-    date -d @${1:-0} +'%H:%M:%S'
 
     }
 
