@@ -47,6 +47,7 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
+boring=false
 
 Self.Init()
     {
@@ -204,6 +205,7 @@ Self.Init()
     done
 
     [[ -e $GNU_SETTERM ]] && $GNU_SETTERM --cursor off
+    [[ ! -e $GNU_SED_CMD ]] && boring=true
 
     # KLUDGE: service scripts prior to 2022-12-08 would use these paths (by-default) to build/cache Python packages. This has been fixed, but still need to free-up this space to prevent out-of-space issues.
     [[ -d /root/.cache ]] && rm -rf /root/.cache
@@ -809,72 +811,75 @@ Tier.Proc()
                 # read message pipe and process QPKGs and actions as per requests contained within
                 while [[ ${#target_packages[@]} -gt 0 ]]; do
                     # shellcheck disable=2162
-                    read package_key package_name state_status_key state_status_value
+                    read message1_key message1_value message2_key message2_value
 
-                    case $state_status_key in
+                    case $message1_key in
+                        env)        # change the state of the sherpa environment
+                            eval "$message1_value"      # run this as executable
+                            ;;
                         change)     # change the state of a single QPKG in the parent shell
                             while true; do
                                 for scope in "${PACKAGE_SCOPES[@]}"; do
-                                    case $state_status_value in
+                                    case $message1_value in
                                         "Sc${scope}")
-                                            QPKGs.ScNt${scope}.Remove "$package_name"
-                                            QPKGs.Sc${scope}.Add "$package_name"
+                                            QPKGs.ScNt${scope}.Remove "$message2_value"
+                                            QPKGs.Sc${scope}.Add "$message2_value"
                                             break 2
                                             ;;
                                         "ScNt${scope}")
-                                            QPKGs.Sc${scope}.Remove "$package_name"
-                                            QPKGs.ScNt${scope}.Add "$package_name"
+                                            QPKGs.Sc${scope}.Remove "$message2_value"
+                                            QPKGs.ScNt${scope}.Add "$message2_value"
                                             break 2
                                     esac
                                 done
 
                                 for state in "${PACKAGE_STATES[@]}"; do
-                                    case $state_status_value in
+                                    case $message1_value in
                                         "Is${state}")
-                                            QPKGs.IsNt${state}.Remove "$package_name"
-                                            QPKGs.Is${state}.Add "$package_name"
-                                            [[ $package_name = Entware && $state = Installed ]] && ModPathToEntware
+                                            QPKGs.IsNt${state}.Remove "$message2_value"
+                                            QPKGs.Is${state}.Add "$message2_value"
+                                            [[ $message2_value = Entware && $state = Installed ]] && ModPathToEntware
                                             break 2
                                             ;;
                                         "IsNt${state}")
-                                            QPKGs.Is${state}.Remove "$package_name"
-                                            QPKGs.IsNt${state}.Add "$package_name"
-                                            [[ $package_name = Entware && $state = Uninstalled ]] && ModPathToEntware
+                                            QPKGs.Is${state}.Remove "$message2_value"
+                                            QPKGs.IsNt${state}.Add "$message2_value"
+                                            [[ $message2_value = Entware && $state = Uninstalled ]] && ModPathToEntware
                                             break 2
                                     esac
                                 done
 
-                                DebugAsWarn "ignore unidentified $package_name change in message queue: '$state_status_value'"
+                                DebugAsWarn "ignore unidentified $message2_value change in message queue: '$message1_value'"
                                 break
                             done
                             ;;
                         status)     # update the status of a single action fork in the parent shell
-                            case $state_status_value in
+                            case $message1_value in
                                 ok)
-                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
-                                    QPKGs.AcOk${TARGET_ACTION}.Add "$package_name"
+                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
+                                    QPKGs.AcOk${TARGET_ACTION}.Add "$message2_value"
                                     ((ok_count++))
                                     ;;
                                 skipped)
-                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
-                                    QPKGs.AcSk${TARGET_ACTION}.Add "$package_name"
+                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
+                                    QPKGs.AcSk${TARGET_ACTION}.Add "$message2_value"
                                     ((skip_count++))
                                     ;;
                                 failed)
-                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$package_name"
-                                    QPKGs.AcEr${TARGET_ACTION}.Add "$package_name"
+                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
+                                    QPKGs.AcEr${TARGET_ACTION}.Add "$message2_value"
                                     ((fail_count++))
                                     ;;
                                 exit)
                                     for package_index in "${!target_packages[@]}"; do
-                                        if [[ ${target_packages[package_index]} = "$package_name" ]]; then
+                                        if [[ ${target_packages[package_index]} = "$message2_value" ]]; then
                                             unset 'target_packages[package_index]'
                                             break
                                         fi
                                     done
                                     ;;
                                 *)
-                                    DebugAsWarn "ignore unidentified $package_name status in message queue: '$state_status_value'"
+                                    DebugAsWarn "ignore unidentified $message2_value status in message queue: '$message1_value'"
                             esac
                     esac
                 done <&$fd_pipe
@@ -4242,8 +4247,6 @@ QPKGs.Statuses.Show()
                         package_name_formatted=$(ColourTextBrightRed "$package_name")
                     fi
                 else
-                    [[ ! -e $GNU_SED_CMD ]] && Self.Boring.Set
-
                     if QPKGs.IsMissing.Exist "$package_name"; then
                         package_status_notes=($(ColourTextBrightRedBlink missing))
                     elif QPKGs.IsEnabled.Exist "$package_name"; then
@@ -4278,8 +4281,6 @@ QPKGs.Statuses.Show()
                     else
                         package_ver=$(QPKG.Avail.Ver "$package_name")
                     fi
-
-                    [[ ! -e $GNU_SED_CMD ]] && Self.Boring.UnSet
 
                     for ((index=0; index<=((${#package_status_notes[@]}-1)); index++)); do
                         package_status+=${package_status_notes[$index]}
@@ -4424,6 +4425,20 @@ QPKGs.ScDependent.Show()
 
     }
 
+SendEnvChange()
+    {
+
+    # Send a message into message stream to change the sherpa environment
+    # a package name is not required
+    # This function is only called from within background functions
+
+    # input:
+    #   $1 = action request
+
+    SendMessageIntoPipe env "$1" '' ''
+
+    }
+
 SendPackageStateChange()
     {
 
@@ -4434,7 +4449,7 @@ SendPackageStateChange()
     # input:
     #   $1 = action request
 
-    SendMessageIntoPipe "$PACKAGE_NAME" change "$1"
+    SendMessageIntoPipe change "$1" package "$PACKAGE_NAME"
 
     }
 
@@ -4448,21 +4463,16 @@ SendActionStatus()
     # input:
     #   $1 = status update
 
-    SendMessageIntoPipe "$PACKAGE_NAME" status "$1"
+    SendMessageIntoPipe status "$1" package "$PACKAGE_NAME"
 
     }
 
 SendMessageIntoPipe()
     {
 
-    # Send a message into message stream to update parent shell
+    # Send a message into message stream to update parent shell environment
 
-    # input:
-    #   $1 = package name
-    #   $2 = `status` or `change`
-    #   $3 = a valid status word e.g. `ok`, `skipped`, `failed`, `exit`
-
-    echo "package $1 $2 $3"
+    echo "$1 $2 $3 $4"
 
     } >&$fd_pipe
 
@@ -5037,6 +5047,11 @@ _QPKG.Install_()
     result_code=$?
 
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
+        if [[ -e $GNU_SED_CMD ]]; then      # enable ANSI codes as soon as possible
+            boring=false
+            SendEnvChange 'boring=false'
+        fi
+
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         MarkThisActionAsOk
         SendPackageStateChange IsInstalled
@@ -5302,6 +5317,11 @@ _QPKG.Uninstall_()
         result_code=$?
 
         if [[ $result_code -eq 0 ]]; then
+            if [[ ! -e $GNU_SED_CMD ]]; then    # disable ANSI codes as soon as we can't strip them from output
+                boring=true
+                SendEnvChange 'boring=true'
+            fi
+
             DebugAsDone "uninstalled $(FormatAsPackName "$PACKAGE_NAME")"
             /sbin/rmcfg "$PACKAGE_NAME" -f /etc/config/qpkg.conf
             DebugAsDone 'removed icon information from App Center'
@@ -7241,7 +7261,12 @@ WriteToDisplayWait()
     # output:
     #   $previous_msg = global and will be used again later
 
-    previous_msg=$(printf "%-10s: %s" "${1:-}" "${2:-}")
+    if [[ $boring = true ]]; then
+        previous_msg=$(printf "%-4s: %s" "${1:-}" "${2:-}")
+    else
+        previous_msg=$(printf "%-10s: %s" "${1:-}" "${2:-}")    # allow for ANSI codes
+    fi
+
     DisplayWait "$previous_msg"
 
     return 0
@@ -7268,7 +7293,11 @@ WriteToDisplayNew()
 
     [[ ${previous_msg:-_none_} = _none_ ]] && previous_msg=''
 
-    this_message=$(printf "%-10s: %s" "${1:-}" "${2:-}")
+    if [[ $boring = true ]]; then
+        this_message=$(printf "%-4s: %s" "${1:-}" "${2:-}")
+    else
+        this_message=$(printf "%-10s: %s" "${1:-}" "${2:-}")    # allow for ANSI codes
+    fi
 
     if [[ $this_message != "${previous_msg}" ]]; then
         previous_length=$((${#previous_msg}+1))
@@ -7305,7 +7334,7 @@ WriteToLog()
 ColourTextBrightGreen()
     {
 
-    if [[ $(type -t Self.Boring.Init) = function ]] && Self.Boring.IsSet; then
+    if [[ $boring = true ]]; then
         echo -n "${1:-}"
     else
         echo -en '\033[1;32m'"$(ColourReset "${1:-}")"
@@ -7316,7 +7345,7 @@ ColourTextBrightGreen()
 ColourTextBrightYellow()
     {
 
-    if [[ $(type -t Self.Boring.Init) = function ]] && Self.Boring.IsSet; then
+    if [[ $boring = true ]]; then
         echo -n "${1:-}"
     else
         echo -en '\033[1;33m'"$(ColourReset "${1:-}")"
@@ -7327,7 +7356,7 @@ ColourTextBrightYellow()
 ColourTextBrightOrange()
     {
 
-    if [[ $(type -t Self.Boring.Init) = function ]] && Self.Boring.IsSet; then
+    if [[ $boring = true ]]; then
         echo -n "${1:-}"
     else
         echo -en '\033[1;38;5;214m'"$(ColourReset "${1:-}")"
@@ -7338,7 +7367,7 @@ ColourTextBrightOrange()
 ColourTextBrightOrangeBlink()
     {
 
-    if [[ $(type -t Self.Boring.Init) = function ]] && Self.Boring.IsSet; then
+    if [[ $boring = true ]]; then
         echo -n "${1:-}"
     else
         echo -en '\033[1;5;38;5;214m'"$(ColourReset "${1:-}")"
@@ -7349,7 +7378,7 @@ ColourTextBrightOrangeBlink()
 ColourTextBrightRed()
     {
 
-    if [[ $(type -t Self.Boring.Init) = function ]] && Self.Boring.IsSet; then
+    if [[ $boring = true ]]; then
         echo -n "${1:-}"
     else
         echo -en '\033[1;31m'"$(ColourReset "${1:-}")"
@@ -7360,7 +7389,7 @@ ColourTextBrightRed()
 ColourTextBrightRedBlink()
     {
 
-    if [[ $(type -t Self.Boring.Init) = function ]] && Self.Boring.IsSet; then
+    if [[ $boring = true ]]; then
         echo -n "${1:-}"
     else
         echo -en '\033[1;5;31m'"$(ColourReset "${1:-}")"
@@ -7371,7 +7400,7 @@ ColourTextBrightRedBlink()
 ColourTextUnderlinedCyan()
     {
 
-    if [[ $(type -t Self.Boring.Init) = function ]] && Self.Boring.IsSet; then
+    if [[ $boring = true ]]; then
         echo -n "${1:-}"
     else
         echo -en '\033[4;36m'"$(ColourReset "${1:-}")"
@@ -7382,7 +7411,7 @@ ColourTextUnderlinedCyan()
 ColourTextBlackOnCyan()
     {
 
-    if [[ $(type -t Self.Boring.Init) = function ]] && Self.Boring.IsSet; then
+    if [[ $boring = true ]]; then
         echo -n "${1:-}"
     else
         echo -en '\033[30;46m'"$(ColourReset "${1:-}")"
@@ -7393,7 +7422,7 @@ ColourTextBlackOnCyan()
 ColourTextBrightWhite()
     {
 
-    if [[ $(type -t Self.Boring.Init) = function ]] && Self.Boring.IsSet; then
+    if [[ $boring = true ]]; then
         echo -n "${1:-}"
     else
         echo -en '\033[1;97m'"$(ColourReset "${1:-}")"
