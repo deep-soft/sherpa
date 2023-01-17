@@ -54,7 +54,7 @@ Self.Init()
     DebugFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230117
+    local -r SCRIPT_VER=230118
 
     IsQNAP || return
     IsSU || return
@@ -817,13 +817,13 @@ Tier.Proc()
                                 for scope in "${PACKAGE_SCOPES[@]}"; do
                                     case $state_status_value in
                                         "Sc${scope}")
-                                            QPKGs.ScNt${scope}.Remove "$1"
-                                            QPKGs.Sc${scope}.Add "$1"
+                                            QPKGs.ScNt${scope}.Remove "$package_name"
+                                            QPKGs.Sc${scope}.Add "$package_name"
                                             break 2
                                             ;;
                                         "ScNt${scope}")
-                                            QPKGs.Sc${scope}.Remove "$1"
-                                            QPKGs.ScNt${scope}.Add "$1"
+                                            QPKGs.Sc${scope}.Remove "$package_name"
+                                            QPKGs.ScNt${scope}.Add "$package_name"
                                             break 2
                                     esac
                                 done
@@ -831,14 +831,14 @@ Tier.Proc()
                                 for state in "${PACKAGE_STATES[@]}"; do
                                     case $state_status_value in
                                         "Is${state}")
-                                            QPKGs.IsNt${state}.Remove "$1"
-                                            QPKGs.Is${state}.Add "$1"
+                                            QPKGs.IsNt${state}.Remove "$package_name"
+                                            QPKGs.Is${state}.Add "$package_name"
                                             [[ $package_name = Entware && $state = Installed ]] && ModPathToEntware
                                             break 2
                                             ;;
                                         "IsNt${state}")
-                                            QPKGs.Is${state}.Remove "$1"
-                                            QPKGs.IsNt${state}.Add "$1"
+                                            QPKGs.Is${state}.Remove "$package_name"
+                                            QPKGs.IsNt${state}.Add "$package_name"
                                             [[ $package_name = Entware && $state = Uninstalled ]] && ModPathToEntware
                                             break 2
                                     esac
@@ -1047,7 +1047,7 @@ ParseArgs()
         # identify action: every time action changes, must clear scope too
         case $arg in
         # these cases use only a single word to specify a single action
-            backup|check|clean|reassign|rebuild|reinstall|restart|restore|start|stop)
+            backup|clean|reassign|rebuild|reinstall|restart|restore|start|stop)
                 action=${arg}_
                 arg_identified=true
                 scope=''
@@ -1066,6 +1066,14 @@ ParseArgs()
         # all cases below can use multiple words or chars to specify a single action
             add|install)
                 action=install_
+                arg_identified=true
+                scope=''
+                scope_identified=false
+                Self.Display.Clean.UnSet
+                QPKGs.SkProc.UnSet
+                ;;
+            c|check)
+                action=check_
                 arg_identified=true
                 scope=''
                 scope_identified=false
@@ -1125,7 +1133,7 @@ ParseArgs()
         if [[ -n $action ]]; then
             case $arg in
             # these cases use only a single word or char to specify a single scope
-                check|installable|installed|missing|not-installed|problems|started|stopped|tail|tips)
+                installable|installed|missing|not-installed|problems|started|stopped|tail|tips)
                     scope=${arg}_
                     scope_identified=true
                     arg_identified=true
@@ -6879,7 +6887,7 @@ DebugAsProc()
 
     # debug as processing
 
-    DebugThis "(--) ${1:-} ..."
+    DebugThis "(--) ${1:-}"
 
     }
 
