@@ -59,6 +59,7 @@ Self.Init()
     IsQNAP || return
     IsSU || return
     ClaimLockFile /var/run/sherpa.lock || return
+    trap CleanupOnExit EXIT
 
     [[ ! -e /dev/fd ]] && ln -s /proc/self/fd /dev/fd       # KLUDGE: `/dev/fd` isn't always created by QTS during startup
 
@@ -129,6 +130,7 @@ Self.Init()
     readonly GNU_GREP_CMD=/opt/bin/grep
     readonly GNU_LESS_CMD=/opt/bin/less
     readonly GNU_SED_CMD=/opt/bin/sed
+    readonly GNU_SETTERM=/opt/bin/setterm
     readonly GNU_STTY_CMD=/opt/bin/stty
     readonly PYTHON_CMD=/opt/bin/python
     readonly PYTHON3_CMD=/opt/bin/python3
@@ -200,6 +202,8 @@ Self.Init()
     for action in "${PACKAGE_ACTIONS[@]}" check debug update; do
         readonly "$(Uppercase "$action")"_LOG_FILE="$(Lowercase "$action")".log
     done
+
+    [[ -e $GNU_SETTERM ]] && $GNU_SETTERM --cursor off
 
     # KLUDGE: service scripts prior to 2022-12-08 would use these paths (by-default) to build/cache Python packages. This has been fixed, but still need to free-up this space to prevent out-of-space issues.
     [[ -d /root/.cache ]] && rm -rf /root/.cache
@@ -722,8 +726,6 @@ Tiers.Proc()
     IPKs.Actions.List
     QPKGs.Actions.List
     QPKGs.States.List rebuild       # rebuild these after processing QPKGs to get current states
-    SmartCR >&2
-
     DebugFuncEx
 
     }
@@ -877,11 +879,8 @@ Tier.Proc()
                     esac
                 done <&$fd_pipe
             trap - INT
-            KillActiveFork
+            wait 2>/dev/null    # wait here until all forked jobs have exited
             CloseMessagePipe
-
-#             RefreshForkCounts   # must load current fork counts into this shell, as we can't access the counts in a child process
-#             [[ $((ok_count+skip_count+fail_count)) -ge $total_count ]] && $SLEEP_CMD 1    # pause to briefly show progress completion
             ;;
         IPK|PIP)
             InitForkCounts
@@ -1859,14 +1858,14 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
                                 for prospect in $(QPKGs.IsInstalled.Array); do
                                     QPKGs.ScCanRestartToUpdate.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
                                 ;;
                             Dependent|Standalone)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
                                 for prospect in $(QPKGs.IsInstalled.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1876,12 +1875,12 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtInstalled' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtInstalled' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsNtInstalled.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtInstalled' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtInstalled' packages"
                                 for prospect in $(QPKGs.IsNtInstalled.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1891,12 +1890,12 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'ScCanBackup' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'ScCanBackup' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.ScCanBackup.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'ScCanBackup' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'ScCanBackup' packages"
                                 for prospect in $(QPKGs.ScCanBackup.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1906,12 +1905,12 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsStarted' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsStarted' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsStarted.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsStarted' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsStarted' packages"
                                 for prospect in $(QPKGs.IsStarted.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1921,12 +1920,12 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtStarted' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtStarted' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsNtStarted.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtStarted' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtStarted' packages"
                                 for prospect in $(QPKGs.IsNtStarted.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1936,12 +1935,12 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsInstalled.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
                                 for prospect in $(QPKGs.IsInstalled.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1951,20 +1950,20 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsUpgradable' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsUpgradable' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.ScUpgradable.Array)"
-                                DebugAsProc "action: 'Restart': adding 'ScCanRestartToUpdate' packages"
+#                                 DebugAsProc "action: 'Restart': adding 'ScCanRestartToUpdate' packages"
                                 QPKGs.AcToRestart.Add "$(QPKGs.ScCanRestartToUpdate.Array)"
-                                DebugAsProc "action: 'Restart': removing 'IsNtInstalled' packages"
+#                                 DebugAsProc "action: 'Restart': removing 'IsNtInstalled' packages"
                                 QPKGs.AcToRestart.Remove "$(QPKGs.IsNtInstalled.Array)"
-                                DebugAsProc "action: 'Restart': removing 'AcToUpgrade' packages"
+#                                 DebugAsProc "action: 'Restart': removing 'AcToUpgrade' packages"
                                 QPKGs.AcToRestart.Remove "$(QPKGs.AcToUpgrade.Array)"
-                                DebugAsProc "action: 'Restart': removing 'ScStandalone' packages"
+#                                 DebugAsProc "action: 'Restart': removing 'ScStandalone' packages"
                                 QPKGs.AcToRestart.Remove "$(QPKGs.ScStandalone.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-                                DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
+#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
                                 for prospect in $(QPKGs.IsInstalled.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -2018,12 +2017,12 @@ AllocGroupPacksToAcs()
                         case $state in
                             BackedUp|Cleaned|Downloaded|Enabled|Installed|Started|Upgradable)
                                 found=true
-                                DebugAsProc "action: '$action', state: '$state': adding 'Is${state}' packages"
+#                                 DebugAsProc "action: '$action', state: '$state': adding 'Is${state}' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.Is${state}.Array)"
                                 ;;
                             Stopped)
                                 found=true
-                                DebugAsProc "action: '$action', state: '$state': adding 'IsNtStarted' packages"
+#                                 DebugAsProc "action: '$action', state: '$state': adding 'IsNtStarted' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsNtStarted.Array)"
                         esac
                         ;;
@@ -2031,12 +2030,12 @@ AllocGroupPacksToAcs()
                         case $state in
                             Enabled|Installed|Started|Stopped)
                                 found=true
-                                DebugAsProc "action: '$action', state: '$state': not adding 'Is${state}' packages"
+#                                 DebugAsProc "action: '$action', state: '$state': not adding 'Is${state}' packages"
                         esac
                 esac
 
                 if [[ $found = false ]]; then
-                    DebugAsProc "action: '$action', state: '$state': adding 'Is${state}' packages"
+#                     DebugAsProc "action: '$action', state: '$state': adding 'Is${state}' packages"
                     QPKGs.AcTo${action}.Add "$(QPKGs.Is${state}.Array)"
                 fi
 
@@ -2051,18 +2050,18 @@ AllocGroupPacksToAcs()
                         case $state in
                             Installed|Started)
                                 found=true
-                                DebugAsProc "action: '$action', state: 'Nt${state}': adding 'IsNt${state}' packages"
+#                                 DebugAsProc "action: '$action', state: 'Nt${state}': adding 'IsNt${state}' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsNt${state}.Array)"
                                 ;;
                             Stopped)
                                 found=true
-                                DebugAsProc "action: '$action', state: 'Nt${state}': adding 'IsStarted' packages"
+#                                 DebugAsProc "action: '$action', state: 'Nt${state}': adding 'IsStarted' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsStarted.Array)"
                         esac
                 esac
 
                 if [[ $found = false ]]; then
-                    DebugAsProc "action: '$action', state: '$state': adding 'IsNt${state}' packages"
+#                     DebugAsProc "action: '$action', state: '$state': adding 'IsNt${state}' packages"
                     QPKGs.AcTo${action}.Add "$(QPKGs.IsNt${state}.Array)"
                 fi
 
@@ -2468,7 +2467,6 @@ PIPs.Install()
 
     local exec_cmd=''
     local -i result_code=0
-    local -i group_count=0
     local -r PACKAGE_TYPE='PyPI group'
     local ACTION_PRESENT=installing
     local ACTION_PAST=installed
@@ -2477,8 +2475,7 @@ PIPs.Install()
 
     if Opts.Deps.Check.IsSet || IPKs.AcOkInstall.Exist python3-pip; then
         ((total_count++))
-        ((group_count++))
-        ShowAsActionProgress '' "$PACKAGE_TYPE" "$group_count" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
+        ShowAsActionProgress '' "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
 
         exec_cmd="$PIP_CMD install --upgrade --no-input $ESSENTIAL_PIPS --cache-dir $PIP_CACHE_PATH 2> >(grep -v \"Running pip as the 'root' user\") >&2"
         local desc="'PyPI' essential modules"
@@ -2495,8 +2492,7 @@ PIPs.Install()
             ((fail_count++))
         fi
 
-        # execute with group_count > total_count to trigger 100% message
-        ShowAsActionProgress '' "$PACKAGE_TYPE" "$((total_count+1))" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
+        ShowAsActionProgress '' "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
     fi
 
     DebugFuncEx $result_code
@@ -2659,7 +2655,7 @@ UpdateInPlace()
     local this_clean_msg=$(StripANSI "${1:-}")
 
     if [[ $this_clean_msg != "$previous_clean_msg" ]]; then
-        this_length=$((${#this_clean_msg}+1))
+        this_length=${#this_clean_msg}
 
         if [[ $this_length -lt $previous_length ]]; then
             blanking_length=$((this_length-previous_length))
@@ -2679,7 +2675,7 @@ UpdateInPlace()
 KillActiveFork()
     {
 
-    [[ -n ${forkpid:-} && ${forkpid:-0} -gt 0 && -d /proc/$forkpid ]] && kill -9 $forkpid
+    [[ -n ${forkpid:-} && ${forkpid:-0} -gt 0 && -d /proc/$forkpid ]] && kill -9 "$forkpid"
 
     }
 
@@ -3114,7 +3110,7 @@ Display()
 DisplayWait()
     {
 
-    echo -en "${1:-} "
+    echo -en "${1:-}"
 
     }
 
@@ -3667,7 +3663,7 @@ UpdateForkProgress()
 
     # all input vars are global
 
-    local progress_message=''
+    local progress_message=': '
 
     RefreshForkCounts
 
@@ -4058,10 +4054,10 @@ QPKGs.IsCanBackup.Build()
 
     for package in $(QPKGs.ScAll.Array); do
         if QPKG.IsCanBackup "$package"; then
-            QPKGs.ScNtCanBackup.Remove "$package"
+#             QPKGs.ScNtCanBackup.Remove "$package"
             QPKGs.ScCanBackup.Add "$package"
         else
-            QPKGs.ScCanBackup.Remove "$package"
+#             QPKGs.ScCanBackup.Remove "$package"
             QPKGs.ScNtCanBackup.Add "$package"
         fi
     done
@@ -4082,10 +4078,10 @@ QPKGs.IsCanRestartToUpdate.Build()
 
     for package in $(QPKGs.ScAll.Array); do
         if QPKG.IsCanRestartToUpdate "$package"; then
-            QPKGs.ScNtCanRestartToUpdate.Remove "$package"
+#             QPKGs.ScNtCanRestartToUpdate.Remove "$package"
             QPKGs.ScCanRestartToUpdate.Add "$package"
         else
-            QPKGs.ScCanRestartToUpdate.Remove "$package"
+#             QPKGs.ScCanRestartToUpdate.Remove "$package"
             QPKGs.ScNtCanRestartToUpdate.Add "$package"
         fi
     done
@@ -6982,12 +6978,11 @@ ShowAsProc()
     {
 
     local suffix=''
-
-    [[ -n ${2:-} ]] && suffix=" $2"
+    [[ -n ${2:-} ]] && suffix=": $2"
 
     SmartCR
-    WriteToDisplayWait "$(ColourTextBrightOrange proc)" "${1:-}:$suffix"
-    WriteToLog proc "${1:-}:$suffix"
+    WriteToDisplayWait "$(ColourTextBrightOrange proc)" "${1:-}${suffix}"
+    WriteToLog proc "${1:-}${suffix}"
     [[ $(type -t Self.Debug.ToScreen.Init) = function ]] && Self.Debug.ToScreen.IsSet && Display
 
     }
@@ -7100,13 +7095,12 @@ ShowAsActionProgress()
 
     # $1 = tier (optional)
     # $2 = package type: `QPKG`, `IPK`, `PIP`, etc ...
-    # $3 = run count
-    # $4 = ok count
-    # $5 = skip count
-    # $6 = fail count
-    # $7 = total count
-    # $8 = verb (present)
-    # $9 = expected action duration: `long` (optional)
+    # $3 = ok count
+    # $4 = skip count
+    # $5 = fail count
+    # $6 = total count
+    # $7 = verb (present)
+    # $8 = expected action duration: `long` (optional)
 
     if [[ -n $1 && $1 != All ]]; then
         local tier=" $(Lowercase "$1")"
@@ -7115,16 +7109,15 @@ ShowAsActionProgress()
     fi
 
     local -r PACKAGE_TYPE=${2:?null}
-    declare -i -r RUN_COUNT=${3:-0}
-    declare -i -r OK_COUNT=${4:-0}
-    declare -i -r SKIP_COUNT=${5:-0}
-    declare -i -r FAIL_COUNT=${6:-0}
-    declare -i -r TOTAL_COUNT=${7:-0}
-    local -r ACTION_PRESENT=${8:?null}
-    local -r DURATION=${9:-}
+    declare -i -r OK_COUNT=${3:-0}
+    declare -i -r SKIP_COUNT=${4:-0}
+    declare -i -r FAIL_COUNT=${5:-0}
+    declare -i -r TOTAL_COUNT=${6:-0}
+    local -r ACTION_PRESENT=${7:?null}
+    local -r DURATION=${8:-}
     local progress_message=''
 
-    progress_message="$(PercFrac "$RUN_COUNT" "$OK_COUNT" "$SKIP_COUNT" "$FAIL_COUNT" "$TOTAL_COUNT")"
+    progress_message="$(PercFrac "$OK_COUNT" "$SKIP_COUNT" "$FAIL_COUNT" "$TOTAL_COUNT")"
 
     if [[ $DURATION != long ]]; then
         ShowAsProc "$ACTION_PRESENT ${TOTAL_COUNT}${tier} ${PACKAGE_TYPE}$(Pluralise "$TOTAL_COUNT")" "$progress_message"
@@ -7132,7 +7125,7 @@ ShowAsActionProgress()
         ShowAsProcLong "$ACTION_PRESENT ${TOTAL_COUNT}${tier} ${PACKAGE_TYPE}$(Pluralise "$TOTAL_COUNT")" "$progress_message"
     fi
 
-#     [[ $((RUN_COUNT+OK_COUNT+SKIP_COUNT+FAIL_COUNT)) -ge $TOTAL_COUNT ]] && $SLEEP_CMD 1
+    [[ $((OK_COUNT+SKIP_COUNT+FAIL_COUNT)) -ge $TOTAL_COUNT ]] && $SLEEP_CMD 1
 
     return 0
 
@@ -7143,18 +7136,16 @@ PercFrac()
 
     # calculate percent-complete and a fraction of the total
 
-    # $1 = run count
-    # $2 = ok count
-    # $3 = skip count
-    # $4 = fail count
-    # $5 = total count
+    # $1 = ok count
+    # $2 = skip count
+    # $3 = fail count
+    # $4 = total count
 
-    declare -i -r RUN_COUNT=${1:-0}
-    declare -i -r OK_COUNT=${2:-0}
-    declare -i -r SKIP_COUNT=${3:-0}
-    declare -i -r FAIL_COUNT=${4:-0}
-    declare -i -r TOTAL_COUNT=${5:-0}
-    local -i progress_count="$((RUN_COUNT+OK_COUNT+SKIP_COUNT+FAIL_COUNT+1))"     # never show zero progress (e.g. 0/8)
+    declare -i -r OK_COUNT=${1:-0}
+    declare -i -r SKIP_COUNT=${2:-0}
+    declare -i -r FAIL_COUNT=${3:-0}
+    declare -i -r TOTAL_COUNT=${4:-0}
+    local -i progress_count="$((OK_COUNT+SKIP_COUNT+FAIL_COUNT+1))"     # never show zero progress (e.g. 0/8)
     local percent=''
 
     [[ $TOTAL_COUNT -gt 0 ]] || return          # no-point calculating a fraction of zero
@@ -7465,6 +7456,13 @@ CTRL_C_Captured()
     ShowAsAbort 'caught SIGINT'
     KillActiveFork
     exit
+
+    }
+
+CleanupOnExit()
+    {
+
+    [[ -e $GNU_SETTERM ]] && $GNU_SETTERM --cursor on
 
     }
 
