@@ -55,7 +55,7 @@ Self.Init()
     DebugFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230118
+    local -r SCRIPT_VER=230119
 
     IsQNAP || return
     IsSU || return
@@ -181,7 +181,7 @@ Self.Init()
 
     # these words may be specified by the user when requesting actions, so each word can only be used once across all 4 of the following arrays
     PACKAGE_SCOPES=(All CanBackup CanRestartToUpdate Dependent HasDependents Installable Standalone Upgradable)     # sorted: 'Sc' & 'ScNt'
-    PACKAGE_STATES=(BackedUp Cleaned Downloaded Enabled Installed Missing Reassigned Reinstalled Started Upgraded)  # sorted: 'Is' & 'IsNt'
+    PACKAGE_STATES=(BackedUp Cleaned Downloaded Enabled Installed Missing Reassigned Reinstalled Restarted Started Upgraded)  # sorted: 'Is' & 'IsNt'
     PACKAGE_STATES_TRANSIENT=(Starting Stopping Restarting)                                                         # unsorted: 'Is' & 'IsNt'
     PACKAGE_ACTIONS=(Download Rebuild Reassign Backup Stop Disable Uninstall Upgrade Reinstall Install Restore Clean Enable Start Restart)  # ordered
 
@@ -204,7 +204,7 @@ Self.Init()
         readonly "$(Uppercase "$action")"_LOG_FILE="$(Lowercase "$action")".log
     done
 
-    [[ -e $GNU_SETTERM ]] && $GNU_SETTERM --cursor off
+    HideCursor
     [[ ! -e $GNU_SED_CMD ]] && boring=true
 
     # KLUDGE: service scripts prior to 2022-12-08 would use these paths (by-default) to build/cache Python packages. This has been fixed, but still need to free-up this space to prevent out-of-space issues.
@@ -5085,6 +5085,9 @@ _QPKG.Install_()
             # add essential IPKs needed immediately
             DebugAsProc 'installing essential IPKs'
             RunAndLog "$OPKG_CMD install --force-overwrite $ESSENTIAL_IPKS --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.essential.$INSTALL_LOG_FILE" log:failure-only
+            SendEnvChange 'HideCursor'
+            boring=false
+            SendEnvChange 'boring=false'
             DebugAsDone 'installed essential IPKs'
         fi
 
@@ -5151,15 +5154,15 @@ _QPKG.Reinstall_()
         MarkThisActionAsOk
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
-            NoteQPKGStateAsIsEnabled "$PACKAGE_NAME"
+            SendPackageStateChange IsEnabled
         else
-            NoteQPKGStateAsIsNtEnabled "$PACKAGE_NAME"
+            SendPackageStateChange IsNtEnabled
         fi
 
         if QPKG.IsStarted "$PACKAGE_NAME"; then
-            NoteQPKGStateAsIsStarted "$PACKAGE_NAME"
+            SendPackageStateChange IsStarted
         else
-            NoteQPKGStateAsIsNtStarted "$PACKAGE_NAME"
+            SendPackageStateChange IsNtStarted
         fi
 
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
@@ -5313,23 +5316,28 @@ _QPKG.Uninstall_()
     if [[ -e $QPKG_UNINSTALLER_PATHFILE ]]; then
         DebugAsProc "uninstalling $(FormatAsPackName "$PACKAGE_NAME")"
         Self.Debug.ToScreen.IsSet && debug_cmd='DEBUG_QPKG=true '
+
+        if [[ $PACKAGE_NAME = Entware ]]; then
+            SendEnvChange 'ShowCursor'
+            boring=true
+            SendEnvChange 'boring=true'
+        fi
+
         RunAndLog "${debug_cmd}${SH_CMD} $QPKG_UNINSTALLER_PATHFILE" "$LOG_PATHFILE" log:failure-only
         result_code=$?
 
         if [[ $result_code -eq 0 ]]; then
-            if [[ ! -e $GNU_SED_CMD ]]; then    # disable ANSI codes as soon as we can't strip them from output
-                boring=true
-                SendEnvChange 'boring=true'
-            fi
-
             DebugAsDone "uninstalled $(FormatAsPackName "$PACKAGE_NAME")"
             /sbin/rmcfg "$PACKAGE_NAME" -f /etc/config/qpkg.conf
             DebugAsDone 'removed icon information from App Center'
             [[ $PACKAGE_NAME = Entware ]] && ModPathToEntware
             MarkThisActionAsOk
             SendPackageStateChange IsNtInstalled
+            SendPackageStateChange IsNtStarted
+            SendPackageStateChange IsNtEnabled
         else
             DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+            [[ $PACKAGE_NAME = Entware ]] && SendEnvChange 'HideCursor'
             MarkThisActionAsFailed
             result_code=1    # remap to 1
         fi
@@ -5383,9 +5391,11 @@ _QPKG.Restart_()
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "restarted $(FormatAsPackName "$PACKAGE_NAME")"
         MarkThisActionAsOk
+        SendPackageStateChange IsRestarted
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         MarkThisActionAsFailed
+        SendPackageStateChange IsNtRestarted
         result_code=1    # remap to 1
     fi
 
@@ -5445,10 +5455,17 @@ _QPKG.Start_()
         DebugAsDone "started $(FormatAsPackName "$PACKAGE_NAME")"
         MarkThisActionAsOk
         SendPackageStateChange IsStarted
-        [[ $PACKAGE_NAME = Entware ]] && ModPathToEntware
+
+        if [[ $PACKAGE_NAME = Entware ]]; then
+            ModPathToEntware
+            SendEnvChange 'HideCursor'
+            boring=false
+            SendEnvChange 'boring=false'
+        fi
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         MarkThisActionAsFailed
+        SendPackageStateChange IsNtStarted
         result_code=1    # remap to 1
     fi
 
@@ -5498,6 +5515,13 @@ _QPKG.Stop_()
 
     DebugAsProc "stopping $(FormatAsPackName "$PACKAGE_NAME")"
     Self.Debug.ToScreen.IsSet && debug_cmd='DEBUG_QPKG=true '
+
+    if [[ $PACKAGE_NAME = Entware ]]; then
+        SendEnvChange 'ShowCursor'
+        boring=true
+        SendEnvChange 'boring=true'
+    fi
+
     RunAndLog "${debug_cmd}${PACKAGE_INIT_PATHFILE} stop" "$LOG_PATHFILE" log:failure-only
     result_code=$?
 
@@ -7450,6 +7474,20 @@ StripANSI()
 
     }
 
+HideCursor()
+    {
+
+    [[ -e $GNU_SETTERM ]] && $GNU_SETTERM --cursor off
+
+    }
+
+ShowCursor()
+    {
+
+    [[ -e $GNU_SETTERM ]] && $GNU_SETTERM --cursor on
+
+    }
+
 FormatSecsToHoursMinutesSecs()
     {
 
@@ -7497,7 +7535,7 @@ CTRL_C_Captured()
 CleanupOnExit()
     {
 
-    [[ -e $GNU_SETTERM ]] && $GNU_SETTERM --cursor on
+    ShowCursor
 
     }
 
