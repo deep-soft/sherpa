@@ -1023,6 +1023,7 @@ Self.Results()
     Self.Debug.ToArchive.IsSet && ArchiveActiveSessLog
     ResetActiveSessLog
     ReleaseLockFile
+    SmartCR
     DisplayLineSpaceIfNoneAlready   # final on-screen linespace
 
     return 0
@@ -4051,7 +4052,6 @@ QPKGs.States.Build()
     done
 
     QPKGs.States.Built.Set
-    SmartCR >&2
     DebugFuncEx
 
     }
@@ -4208,6 +4208,7 @@ QPKGs.Statuses.Show()
     local maxcols=$(CalcMaxStatusColsToDisplay)
 
     QPKGs.States.Build
+    SmartCR
     DisplayLineSpaceIfNoneAlready
 
     for tier in Standalone Dependent; do
@@ -4311,6 +4312,7 @@ QPKGs.IsInstalled.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
+    SmartCR
 
     for package in $(QPKGs.IsInstalled.Array); do
         Display "$package"
@@ -4326,6 +4328,7 @@ QPKGs.ScInstallable.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
+    SmartCR
 
     for package in $(QPKGs.ScInstallable.Array); do
         Display "$package"
@@ -4341,6 +4344,7 @@ QPKGs.IsNtInstalled.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
+    SmartCR
 
     for package in $(QPKGs.IsNtInstalled.Array); do
         Display "$package"
@@ -4356,6 +4360,7 @@ QPKGs.IsStarted.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
+    SmartCR
 
     for package in $(QPKGs.IsStarted.Array); do
         Display "$package"
@@ -4371,6 +4376,7 @@ QPKGs.IsNtStarted.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
+    SmartCR
 
     for package in $(QPKGs.IsNtStarted.Array); do
         Display "$package"
@@ -4386,6 +4392,7 @@ QPKGs.ScUpgradable.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
+    SmartCR
 
     for package in $(QPKGs.ScUpgradable.Array); do
         Display "$package"
@@ -4401,6 +4408,7 @@ QPKGs.ScStandalone.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
+    SmartCR
 
     for package in $(QPKGs.ScStandalone.Array); do
         Display "$package"
@@ -4416,6 +4424,7 @@ QPKGs.ScDependent.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
+    SmartCR
 
     for package in $(QPKGs.ScDependent.Array); do
         Display "$package"
