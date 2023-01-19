@@ -47,7 +47,6 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
-boring=false
 
 Self.Init()
     {
@@ -60,7 +59,10 @@ Self.Init()
     IsQNAP || return
     IsSU || return
     ClaimLockFile /var/run/sherpa.lock || return
+    trap CTRL_C_Captured INT
     trap CleanupOnExit EXIT
+    boring=false
+    fd_pipe=1       # use stdout as-default until updated later
 
     [[ ! -e /dev/fd ]] && ln -s /proc/self/fd /dev/fd       # KLUDGE: `/dev/fd` isn't always created by QTS during startup
 
@@ -138,6 +140,10 @@ Self.Init()
     readonly PIP_CMD="$PYTHON3_CMD -m pip"
     readonly PERL_CMD=/opt/bin/perl
 
+    HideKeys
+    HideCursor
+    UpdateColourisation
+
     local -r PROJECT_BRANCH=develop
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
@@ -203,9 +209,6 @@ Self.Init()
     for action in "${PACKAGE_ACTIONS[@]}" check debug update; do
         readonly "$(Uppercase "$action")"_LOG_FILE="$(Lowercase "$action")".log
     done
-
-    HideCursor
-    [[ ! -e $GNU_SED_CMD ]] && boring=true
 
     # KLUDGE: service scripts prior to 2022-12-08 would use these paths (by-default) to build/cache Python packages. This has been fixed, but still need to free-up this space to prevent out-of-space issues.
     [[ -d /root/.cache ]] && rm -rf /root/.cache
@@ -804,86 +807,85 @@ Tier.Proc()
             InitForkCounts
             OpenMessagePipe
 
-            trap CTRL_C_Captured INT
-                _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
-                forkpid=$!
+            _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
+            forkpid=$!
 
-                # read message pipe and process QPKGs and actions as per requests contained within
-                while [[ ${#target_packages[@]} -gt 0 ]]; do
-                    # shellcheck disable=2162
-                    read message1_key message1_value message2_key message2_value
+            # read message pipe and process QPKGs and actions as per requests contained within
+            while [[ ${#target_packages[@]} -gt 0 ]]; do
+                # shellcheck disable=2162
+                read message1_key message1_value message2_key message2_value
 
-                    case $message1_key in
-                        env)        # change the state of the sherpa environment
-                            eval "$message1_value"      # run this as executable
-                            ;;
-                        change)     # change the state of a single QPKG in the parent shell
-                            while true; do
-                                for scope in "${PACKAGE_SCOPES[@]}"; do
-                                    case $message1_value in
-                                        "Sc${scope}")
-                                            QPKGs.ScNt${scope}.Remove "$message2_value"
-                                            QPKGs.Sc${scope}.Add "$message2_value"
-                                            break 2
-                                            ;;
-                                        "ScNt${scope}")
-                                            QPKGs.Sc${scope}.Remove "$message2_value"
-                                            QPKGs.ScNt${scope}.Add "$message2_value"
-                                            break 2
-                                    esac
-                                done
-
-                                for state in "${PACKAGE_STATES[@]}"; do
-                                    case $message1_value in
-                                        "Is${state}")
-                                            QPKGs.IsNt${state}.Remove "$message2_value"
-                                            QPKGs.Is${state}.Add "$message2_value"
-                                            [[ $message2_value = Entware && $state = Installed ]] && ModPathToEntware
-                                            break 2
-                                            ;;
-                                        "IsNt${state}")
-                                            QPKGs.Is${state}.Remove "$message2_value"
-                                            QPKGs.IsNt${state}.Add "$message2_value"
-                                            [[ $message2_value = Entware && $state = Uninstalled ]] && ModPathToEntware
-                                            break 2
-                                    esac
-                                done
-
-                                DebugAsWarn "ignore unidentified $message2_value change in message queue: '$message1_value'"
-                                break
+                case $message1_key in
+                    env)        # change the state of the sherpa environment
+                        eval "$message1_value"      # run this as executable
+                        ;;
+                    change)     # change the state of a single QPKG in the parent shell
+                        while true; do
+                            for scope in "${PACKAGE_SCOPES[@]}"; do
+                                case $message1_value in
+                                    "Sc${scope}")
+                                        QPKGs.ScNt${scope}.Remove "$message2_value"
+                                        QPKGs.Sc${scope}.Add "$message2_value"
+                                        break 2
+                                        ;;
+                                    "ScNt${scope}")
+                                        QPKGs.Sc${scope}.Remove "$message2_value"
+                                        QPKGs.ScNt${scope}.Add "$message2_value"
+                                        break 2
+                                esac
                             done
-                            ;;
-                        status)     # update the status of a single action fork in the parent shell
-                            case $message1_value in
-                                ok)
-                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
-                                    QPKGs.AcOk${TARGET_ACTION}.Add "$message2_value"
-                                    ((ok_count++))
-                                    ;;
-                                skipped)
-                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
-                                    QPKGs.AcSk${TARGET_ACTION}.Add "$message2_value"
-                                    ((skip_count++))
-                                    ;;
-                                failed)
-                                    QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
-                                    QPKGs.AcEr${TARGET_ACTION}.Add "$message2_value"
-                                    ((fail_count++))
-                                    ;;
-                                exit)
-                                    for package_index in "${!target_packages[@]}"; do
-                                        if [[ ${target_packages[package_index]} = "$message2_value" ]]; then
-                                            unset 'target_packages[package_index]'
-                                            break
-                                        fi
-                                    done
-                                    ;;
-                                *)
-                                    DebugAsWarn "ignore unidentified $message2_value status in message queue: '$message1_value'"
-                            esac
-                    esac
-                done <&$fd_pipe
-            trap - INT
+
+                            for state in "${PACKAGE_STATES[@]}"; do
+                                case $message1_value in
+                                    "Is${state}")
+                                        QPKGs.IsNt${state}.Remove "$message2_value"
+                                        QPKGs.Is${state}.Add "$message2_value"
+                                        [[ $message2_value = Entware && $state = Installed ]] && ModPathToEntware
+                                        break 2
+                                        ;;
+                                    "IsNt${state}")
+                                        QPKGs.Is${state}.Remove "$message2_value"
+                                        QPKGs.IsNt${state}.Add "$message2_value"
+                                        [[ $message2_value = Entware && $state = Uninstalled ]] && ModPathToEntware
+                                        break 2
+                                esac
+                            done
+
+                            DebugAsWarn "ignore unidentified $message2_value change in message queue: '$message1_value'"
+                            break
+                        done
+                        ;;
+                    status)     # update the status of a single action fork in the parent shell
+                        case $message1_value in
+                            ok)
+                                QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
+                                QPKGs.AcOk${TARGET_ACTION}.Add "$message2_value"
+                                ((ok_count++))
+                                ;;
+                            skipped)
+                                QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
+                                QPKGs.AcSk${TARGET_ACTION}.Add "$message2_value"
+                                ((skip_count++))
+                                ;;
+                            failed)
+                                QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
+                                QPKGs.AcEr${TARGET_ACTION}.Add "$message2_value"
+                                ((fail_count++))
+                                ;;
+                            exit)
+                                for package_index in "${!target_packages[@]}"; do
+                                    if [[ ${target_packages[package_index]} = "$message2_value" ]]; then
+                                        unset 'target_packages[package_index]'
+                                        break
+                                    fi
+                                done
+                                ;;
+                            *)
+                                DebugAsWarn "ignore unidentified $message2_value status in message queue: '$message1_value'"
+                        esac
+                esac
+            done <&$fd_pipe
+
             wait 2>/dev/null    # wait here until all forked jobs have exited
             CloseMessagePipe
             ;;
@@ -2380,13 +2382,12 @@ IPKs.Upgrade()
     if [[ $total_count -gt 0 ]]; then
         ShowAsProc "downloading & upgrading $total_count IPK$(Pluralise "$total_count")"
 
-        trap CTRL_C_Captured INT
-            _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
-            forkpid=$!
+        _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
+        forkpid=$!
 
-            RunAndLog "$OPKG_CMD upgrade --force-overwrite $(IPKs.AcToDownload.List) --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.$UPGRADE_LOG_FILE" log:failure-only
-            result_code=$?
-        trap - INT
+        RunAndLog "$OPKG_CMD upgrade --force-overwrite $(IPKs.AcToDownload.List) --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.$UPGRADE_LOG_FILE" log:failure-only
+        result_code=$?
+
         KillActiveFork
 
         if [[ $result_code -eq 0 ]]; then
@@ -2445,13 +2446,12 @@ IPKs.Install()
     if [[ $total_count -gt 0 ]]; then
         ShowAsProc "downloading & installing $total_count IPK$(Pluralise "$total_count"): "
 
-        trap CTRL_C_Captured INT
-            _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
-            forkpid=$!
+        _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
+        forkpid=$!
 
-            RunAndLog "$OPKG_CMD install --force-overwrite $(IPKs.AcToDownload.List) --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.$INSTALL_LOG_FILE" log:failure-only
-            result_code=$?
-        trap - INT
+        RunAndLog "$OPKG_CMD install --force-overwrite $(IPKs.AcToDownload.List) --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.$INSTALL_LOG_FILE" log:failure-only
+        result_code=$?
+
         KillActiveFork
 
         if [[ $result_code -eq 0 ]]; then
@@ -4472,7 +4472,7 @@ SendMessageIntoPipe()
 
     # Send a message into message stream to update parent shell environment
 
-    echo "$1 $2 $3 $4"
+    [[ $fd_pipe -ge 10 && -e /proc/$$/fd/$fd_pipe ]] && echo "$1 $2 $3 $4"
 
     } >&$fd_pipe
 
@@ -5047,11 +5047,7 @@ _QPKG.Install_()
     result_code=$?
 
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
-        if [[ -e $GNU_SED_CMD ]]; then      # enable ANSI codes as soon as possible
-            boring=false
-            SendEnvChange 'boring=false'
-        fi
-
+        UpdateColourisation
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         MarkThisActionAsOk
         SendPackageStateChange IsInstalled
@@ -5085,9 +5081,9 @@ _QPKG.Install_()
             # add essential IPKs needed immediately
             DebugAsProc 'installing essential IPKs'
             RunAndLog "$OPKG_CMD install --force-overwrite $ESSENTIAL_IPKS --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.essential.$INSTALL_LOG_FILE" log:failure-only
+            SendEnvChange 'HideKeys'
             SendEnvChange 'HideCursor'
-            boring=false
-            SendEnvChange 'boring=false'
+            UpdateColourisation
             DebugAsDone 'installed essential IPKs'
         fi
 
@@ -5319,8 +5315,8 @@ _QPKG.Uninstall_()
 
         if [[ $PACKAGE_NAME = Entware ]]; then
             SendEnvChange 'ShowCursor'
-            boring=true
-            SendEnvChange 'boring=true'
+            SendEnvChange 'ShowKeys'
+            UpdateColourisation
         fi
 
         RunAndLog "${debug_cmd}${SH_CMD} $QPKG_UNINSTALLER_PATHFILE" "$LOG_PATHFILE" log:failure-only
@@ -5337,7 +5333,12 @@ _QPKG.Uninstall_()
             SendPackageStateChange IsNtEnabled
         else
             DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-            [[ $PACKAGE_NAME = Entware ]] && SendEnvChange 'HideCursor'
+
+            if [[ $PACKAGE_NAME = Entware ]]; then
+                SendEnvChange 'HideKeys'
+                SendEnvChange 'HideCursor'
+            fi
+
             MarkThisActionAsFailed
             result_code=1    # remap to 1
         fi
@@ -5458,9 +5459,7 @@ _QPKG.Start_()
 
         if [[ $PACKAGE_NAME = Entware ]]; then
             ModPathToEntware
-            SendEnvChange 'HideCursor'
-            boring=false
-            SendEnvChange 'boring=false'
+            UpdateColourisation
         fi
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
@@ -5515,13 +5514,7 @@ _QPKG.Stop_()
 
     DebugAsProc "stopping $(FormatAsPackName "$PACKAGE_NAME")"
     Self.Debug.ToScreen.IsSet && debug_cmd='DEBUG_QPKG=true '
-
-    if [[ $PACKAGE_NAME = Entware ]]; then
-        SendEnvChange 'ShowCursor'
-        boring=true
-        SendEnvChange 'boring=true'
-    fi
-
+    [[ $PACKAGE_NAME = Entware ]] && UpdateColourisation
     RunAndLog "${debug_cmd}${PACKAGE_INIT_PATHFILE} stop" "$LOG_PATHFILE" log:failure-only
     result_code=$?
 
@@ -7102,8 +7095,8 @@ ShowAsAbort()
 
     local capitalised="$(Capitalise "${1:-}")"
 
-    WriteToDisplayNew "$(ColourTextBrightRed bort)" "$capitalised: aborting"
-    WriteToLog bort "$capitalised: aborting"
+    WriteToDisplayNew "$(ColourTextBrightRed bort)" "$capitalised"
+    WriteToLog bort "$capitalised"
     Self.Error.Set
 
     }
@@ -7474,6 +7467,21 @@ StripANSI()
 
     }
 
+UpdateColourisation()
+    {
+
+    if [[ -e $GNU_SED_CMD ]]; then
+        boring=false
+        SendEnvChange 'boring=false'
+        return 0
+    else
+        boring=true
+        SendEnvChange 'boring=true'
+        return 1
+    fi
+
+    }
+
 HideCursor()
     {
 
@@ -7485,6 +7493,20 @@ ShowCursor()
     {
 
     [[ -e $GNU_SETTERM ]] && $GNU_SETTERM --cursor on
+
+    }
+
+HideKeys()
+    {
+
+    [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD -echo
+
+    }
+
+ShowKeys()
+    {
+
+    [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD echo
 
     }
 
@@ -7535,7 +7557,9 @@ CTRL_C_Captured()
 CleanupOnExit()
     {
 
+    ShowKeys
     ShowCursor
+    trap - INT
 
     }
 
