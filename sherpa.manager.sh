@@ -228,7 +228,7 @@ Self.Init()
 
     ArchivePriorSessLogs
 
-    local re=\\breset\\b        # create BASH 3.2 compatible regex with word boundaries: https://stackoverflow.com/a/9793094
+    local re=\\breset\\b        # BASH 3.2 regex with word boundaries: https://stackoverflow.com/a/9793094
 
     if [[ $USER_ARGS_RAW =~ $re ]]; then
         ResetArchivedLogs
@@ -285,7 +285,7 @@ Self.Init()
     readonly CONCURRENCY=$CPU_CORES     # maximum concurrent package actions to run. Should probably make this account for CPU speed too.
     readonly LOG_TAIL_LINES=5000        # note: a full download and install of everything generates a session log of around 1600 lines, but include a bunch of opkg updates and it can get much longer
     previous_msg=' '
-    forkpid=''
+    fork_pid=''
     [[ ${NAS_FIRMWARE_VER//.} -lt 426 ]] && curl_insecure_arg=' --insecure' || curl_insecure_arg=''
     QPKG.IsInstalled Entware && [[ $ENTWARE_VER = none ]] && DebugAsWarn "$(FormatAsPackName Entware) appears to be installed but is not visible"
 
@@ -808,7 +808,7 @@ Tier.Proc()
             OpenMessagePipe
 
             _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
-            forkpid=$!
+            fork_pid=$!
 
             # read message pipe and process QPKGs and actions as per requests contained within
             while [[ ${#target_packages[@]} -gt 0 ]]; do
@@ -2369,7 +2369,6 @@ IPKs.Upgrade()
     UpdateEntwarePackageList
     Self.Error.IsSet && return
     DebugFuncEn
-    local action=upgrade
     local -i result_code=0
     IPKs.AcToUpgrade.Init
     IPKs.AcToDownload.Init
@@ -2384,7 +2383,7 @@ IPKs.Upgrade()
         ShowAsProc "downloading & upgrading $total_count IPK$(Pluralise "$total_count")"
 
         _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
-        forkpid=$!
+        fork_pid=$!
 
         RunAndLog "$OPKG_CMD upgrade --force-overwrite $(IPKs.AcToDownload.List) --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.$UPGRADE_LOG_FILE" log:failure-only
         result_code=$?
@@ -2393,10 +2392,10 @@ IPKs.Upgrade()
 
         if [[ $result_code -eq 0 ]]; then
 #             ShowAsDone "downloaded & upgraded $total_count IPK$(Pluralise "$total_count")"
-            NoteIPKAcAsOk "$(IPKs.AcToUpgrade.Array)" "$action"
+            NoteIPKAcAsOk "$(IPKs.AcToUpgrade.Array)" upgrade
         else
             ShowAsFail "download & upgrade $total_count IPK$(Pluralise "$total_count") failed $(FormatAsExitcode "$result_code")"
-            NoteIPKAcAsEr "$(IPKs.AcToUpgrade.Array)" "$action"
+            NoteIPKAcAsEr "$(IPKs.AcToUpgrade.Array)" upgrade
         fi
     fi
 
@@ -2415,7 +2414,6 @@ IPKs.Install()
     UpdateEntwarePackageList
     Self.Error.IsSet && return
     DebugFuncEn
-    local action=install
     local -i index=0
     local -i result_code=0
     IPKs.AcToInstall.Init
@@ -2448,7 +2446,7 @@ IPKs.Install()
         ShowAsProc "downloading & installing $total_count IPK$(Pluralise "$total_count"): "
 
         _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
-        forkpid=$!
+        fork_pid=$!
 
         RunAndLog "$OPKG_CMD install --force-overwrite $(IPKs.AcToDownload.List) --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.$INSTALL_LOG_FILE" log:failure-only
         result_code=$?
@@ -2457,11 +2455,11 @@ IPKs.Install()
 
         if [[ $result_code -eq 0 ]]; then
             ok_count=$total_count           # assume they all passed
-            NoteIPKAcAsOk "$(IPKs.AcToDownload.Array)" "$action"
+            NoteIPKAcAsOk "$(IPKs.AcToDownload.Array)" install
         else
             fail_count=$total_count         # assume they all failed
             ShowAsFail "download & install $total_count IPK$(Pluralise "$total_count") failed $(FormatAsExitcode "$result_code")"
-            NoteIPKAcAsEr "$(IPKs.AcToDownload.Array)" "$action"
+            NoteIPKAcAsEr "$(IPKs.AcToDownload.Array)" install
         fi
     fi
 
@@ -2482,31 +2480,29 @@ PIPs.Install()
     local exec_cmd=''
     local -i result_code=0
     local -r PACKAGE_TYPE='PyPI group'
-    local ACTION_PRESENT=installing
-    local ACTION_PAST=installed
     local -r RUNTIME=long
     ModPathToEntware
 
     if Opts.Deps.Check.IsSet || IPKs.AcOkInstall.Exist python3-pip; then
         ((total_count++))
-        ShowAsActionProgress '' "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
+        ShowAsActionProgress '' "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" installing "$RUNTIME"
 
         exec_cmd="$PIP_CMD install --upgrade --no-input $ESSENTIAL_PIPS --cache-dir $PIP_CACHE_PATH 2> >($GREP_CMD -v \"Running pip as the 'root' user\") >&2"
         local desc="'PyPI' essential modules"
         local log_pathfile=$LOGS_PATH/pypi.$INSTALL_LOG_FILE
-        DebugAsProc "$ACTION_PRESENT $desc"
+        DebugAsProc "installing $desc"
         RunAndLog "$exec_cmd" "$log_pathfile" log:failure-only
         result_code=$?
 
         if [[ $result_code -eq 0 ]]; then
-            DebugAsDone "$ACTION_PAST $desc"
+            DebugAsDone "installed $desc"
             ((ok_count++))
         else
-            ShowAsFail "$ACTION_PAST $desc failed $(FormatAsResult "$result_code")"
+            ShowAsFail "installed $desc failed $(FormatAsResult "$result_code")"
             ((fail_count++))
         fi
 
-        ShowAsActionProgress '' "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PRESENT" "$RUNTIME"
+        ShowAsActionProgress '' "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" installing "$RUNTIME"
     fi
 
     DebugFuncEx $result_code
@@ -2527,7 +2523,6 @@ OpenIPKArchive()
     fi
 
     RunAndLog "/usr/local/sbin/7z e -o$($DIRNAME_CMD "$EXTERNAL_PACKAGES_PATHFILE") $EXTERNAL_PACKAGES_ARCHIVE_PATHFILE" "$WORK_PATH/ipk.archive.extract" log:failure-only
-    result_code=$?
 
     if [[ ! -e $EXTERNAL_PACKAGES_PATHFILE ]]; then
         ShowAsError 'unable to open the IPK list file'
@@ -2560,6 +2555,7 @@ _LaunchQPKGActionForks_()
     #   $fork_count = number of currently running forks
     #   $max_forks = maximum number of permitted concurrent forks given the current environment
 
+    local package=''
     local target_function="${1:-function null}"
     shift   # `shift` all arguments one position to the left
     local -a target_packages=("$@")
@@ -2570,7 +2566,7 @@ _LaunchQPKGActionForks_()
         done
 
         IncForkProgressIndex
-        MarkThisActionAsEntry    # must create runfile here, as it takes too long to happen in background function
+        MarkThisActionForkAsStarted    # must create runfile here, as it takes too long to happen in background function
         $target_function "$package" &
         UpdateForkProgress
     done
@@ -2689,7 +2685,7 @@ UpdateInPlace()
 KillActiveFork()
     {
 
-    [[ -n ${forkpid:-} && ${forkpid:-0} -gt 0 && -d /proc/$forkpid ]] && kill -9 "$forkpid"
+    [[ -n ${fork_pid:-} && ${fork_pid:-0} -gt 0 && -d /proc/$fork_pid ]] && kill -9 "$fork_pid"
 
     }
 
@@ -3596,17 +3592,6 @@ Self.Vers.Show()
 
     }
 
-Display2to1()
-    {
-
-    if [[ ${1:-0} -eq ${2:-0} ]]; then
-        echo "${1:-0}"
-    else
-        echo "${1:-0}/${2:-0}"
-    fi
-
-    }
-
 InitForkCounts()
     {
 
@@ -4503,14 +4488,14 @@ FindNextFD()
 
     }
 
-MarkThisActionAsEntry()
+MarkThisActionForkAsStarted()
     {
 
     [[ -n ${proc_fork_pathfile:-} ]] && touch "$proc_fork_pathfile"
 
     }
 
-MarkThisActionAsOk()
+MarkThisActionForkAsOk()
     {
 
     [[ -n ${proc_fork_pathfile:-} && -e $proc_fork_pathfile ]] && mv "$proc_fork_pathfile" "$proc_ok_pathfile"
@@ -4518,7 +4503,7 @@ MarkThisActionAsOk()
 
     }
 
-MarkThisActionAsSkipped()
+MarkThisActionForkAsSkipped()
     {
 
     [[ -n ${proc_fork_pathfile:-} && -e $proc_fork_pathfile ]] && mv "$proc_fork_pathfile" "$proc_skip_pathfile"
@@ -4526,7 +4511,7 @@ MarkThisActionAsSkipped()
 
     }
 
-MarkThisActionAsFailed()
+MarkThisActionForkAsFailed()
     {
 
     [[ -n ${proc_fork_pathfile:-} && -e $proc_fork_pathfile ]] && mv "$proc_fork_pathfile" "$proc_fail_pathfile"
@@ -4888,7 +4873,7 @@ _QPKG.Reassign_()
     fi
 
     if [[ $result_code -eq 2 ]]; then
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx $result_code
     fi
 
@@ -4898,11 +4883,11 @@ _QPKG.Reassign_()
 
     if [[ $result_code -eq 0 ]]; then
         DebugAsDone "reassigned $(FormatAsPackName "$PACKAGE_NAME") to sherpa"
-        MarkThisActionAsOk
+        MarkThisActionForkAsOk
         SendPackageStateChange IsReassigned
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionAsFailed
+        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
     fi
 
@@ -4934,12 +4919,12 @@ _QPKG.Download_()
 
     if [[ -z $REMOTE_URL || -z $REMOTE_MD5 ]]; then
         DebugAsWarn "no URL or MD5 found for this package $(FormatAsPackName "$PACKAGE_NAME") (unsupported arch?)"
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         result_code=2
     elif [[ -f $LOCAL_PATHFILE ]]; then
         if FileMatchesMD5 "$LOCAL_PATHFILE" "$REMOTE_MD5"; then
             DebugInfo "existing file $(FormatAsFileName "$LOCAL_FILENAME") checksum correct: skipping download"
-            MarkThisActionAsSkipped
+            MarkThisActionForkAsSkipped
             result_code=2
         else
             DebugAsError "existing file $(FormatAsFileName "$LOCAL_FILENAME") checksum incorrect"
@@ -4948,7 +4933,7 @@ _QPKG.Download_()
                 DebugInfo "deleting $(FormatAsFileName "$LOCAL_FILENAME")"
                 rm -f "$LOCAL_PATHFILE"
             fi
-            MarkThisActionAsFailed
+            MarkThisActionForkAsFailed
             result_code=1
         fi
     fi
@@ -4969,16 +4954,16 @@ _QPKG.Download_()
             if FileMatchesMD5 "$LOCAL_PATHFILE" "$REMOTE_MD5"; then
                 DebugAsDone "downloaded $(FormatAsFileName "$REMOTE_FILENAME")"
 #                 QPKGs.AcOkDownload.Add "$PACKAGE_NAME"
-                MarkThisActionAsOk
+                MarkThisActionForkAsOk
             else
                 DebugAsError "downloaded file $(FormatAsFileName "$LOCAL_PATHFILE") has incorrect checksum"
 #                 QPKGs.AcErDownload.Add "$PACKAGE_NAME"
-                MarkThisActionAsFailed
+                MarkThisActionForkAsFailed
                 result_code=1
             fi
         else
             DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-            MarkThisActionAsFailed
+            MarkThisActionForkAsFailed
             result_code=1    # remap to 1 (last time I checked, 'curl' had 92 return codes)
         fi
     fi
@@ -5017,7 +5002,7 @@ _QPKG.Install_()
     fi
 
     if [[ $result_code -eq 2 ]]; then
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx $result_code
     fi
 
@@ -5030,7 +5015,7 @@ _QPKG.Install_()
 
     if [[ -z $local_pathfile ]]; then
         DebugAsInfo "skipped $(FormatAsPackName "$PACKAGE_NAME") as this NAS has insufficient RAM"
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     fi
 
@@ -5058,7 +5043,7 @@ _QPKG.Install_()
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         UpdateColourisation
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
-        MarkThisActionAsOk
+        MarkThisActionForkAsOk
         SendPackageStateChange IsInstalled
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
@@ -5099,7 +5084,7 @@ _QPKG.Install_()
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionAsFailed
+        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
     fi
 
@@ -5127,7 +5112,7 @@ _QPKG.Reinstall_()
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
         DebugAsInfo "skipped $(FormatAsPackName "$PACKAGE_NAME") as it's not installed - use 'install' instead"
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     fi
 
@@ -5140,7 +5125,7 @@ _QPKG.Reinstall_()
 
     if [[ -z $local_pathfile ]]; then
         DebugAsInfo "skipped $(FormatAsPackName "$PACKAGE_NAME"): no local file found for processing - this error should be reported"
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     fi
 
@@ -5156,7 +5141,7 @@ _QPKG.Reinstall_()
 
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
-        MarkThisActionAsOk
+        MarkThisActionForkAsOk
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
             SendPackageStateChange IsEnabled
@@ -5175,7 +5160,7 @@ _QPKG.Reinstall_()
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionAsFailed
+        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
     fi
 
@@ -5218,7 +5203,7 @@ _QPKG.Upgrade_()
     fi
 
     if [[ $result_code -eq 2 ]]; then
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx $result_code
     fi
 
@@ -5231,7 +5216,7 @@ _QPKG.Upgrade_()
 
     if [[ -z $local_pathfile ]]; then
         DebugAsInfo "skipped $(FormatAsPackName "$PACKAGE_NAME"): no local file found for processing - this error should be reported"
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     fi
 
@@ -5248,7 +5233,7 @@ _QPKG.Upgrade_()
 
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
-        MarkThisActionAsOk
+        MarkThisActionForkAsOk
         SendPackageStateChange ScNtUpgradable
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
@@ -5274,7 +5259,7 @@ _QPKG.Upgrade_()
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionAsFailed
+        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
     fi
 
@@ -5309,7 +5294,7 @@ _QPKG.Uninstall_()
     fi
 
     if [[ $result_code -eq 2 ]]; then
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx $result_code
     fi
 
@@ -5324,7 +5309,7 @@ _QPKG.Uninstall_()
 
         if [[ $PACKAGE_NAME = Entware ]]; then
             SendEnvChange 'ShowCursor'
-            SendEnvChange 'ShowKeys'
+            SendEnvChange 'ShowKeystrokes'
             UpdateColourisation
         fi
 
@@ -5336,7 +5321,7 @@ _QPKG.Uninstall_()
             /sbin/rmcfg "$PACKAGE_NAME" -f /etc/config/qpkg.conf
             DebugAsDone 'removed icon information from App Center'
             [[ $PACKAGE_NAME = Entware ]] && ModPathToEntware
-            MarkThisActionAsOk
+            MarkThisActionForkAsOk
             SendPackageStateChange IsNtInstalled
             SendPackageStateChange IsNtStarted
             SendPackageStateChange IsNtEnabled
@@ -5348,7 +5333,7 @@ _QPKG.Uninstall_()
                 SendEnvChange 'HideCursor'
             fi
 
-            MarkThisActionAsFailed
+            MarkThisActionForkAsFailed
             result_code=1    # remap to 1
         fi
     fi
@@ -5380,7 +5365,7 @@ _QPKG.Restart_()
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
         DebugAsInfo "skipped $(FormatAsPackName "$PACKAGE_NAME") as it's not installed"
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     fi
 
@@ -5400,11 +5385,11 @@ _QPKG.Restart_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "restarted $(FormatAsPackName "$PACKAGE_NAME")"
-        MarkThisActionAsOk
+        MarkThisActionForkAsOk
         SendPackageStateChange IsRestarted
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionAsFailed
+        MarkThisActionForkAsFailed
         SendPackageStateChange IsNtRestarted
         result_code=1    # remap to 1
     fi
@@ -5443,7 +5428,7 @@ _QPKG.Start_()
     fi
 
     if [[ $result_code -eq 2 ]]; then
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx $result_code
     fi
 
@@ -5463,7 +5448,7 @@ _QPKG.Start_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "started $(FormatAsPackName "$PACKAGE_NAME")"
-        MarkThisActionAsOk
+        MarkThisActionForkAsOk
         SendPackageStateChange IsStarted
 
         if [[ $PACKAGE_NAME = Entware ]]; then
@@ -5472,7 +5457,7 @@ _QPKG.Start_()
         fi
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionAsFailed
+        MarkThisActionForkAsFailed
         SendPackageStateChange IsNtStarted
         result_code=1    # remap to 1
     fi
@@ -5514,7 +5499,7 @@ _QPKG.Stop_()
     fi
 
     if [[ $result_code -eq 2 ]]; then
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx $result_code
     fi
 
@@ -5535,11 +5520,11 @@ _QPKG.Stop_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "stopped $(FormatAsPackName "$PACKAGE_NAME")"
-        MarkThisActionAsOk
+        MarkThisActionForkAsOk
         SendPackageStateChange IsNtStarted
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionAsFailed
+        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
     fi
 
@@ -5617,7 +5602,7 @@ _QPKG.Backup_()
     fi
 
     if [[ $result_code -eq 2 ]]; then
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx $result_code
     fi
 
@@ -5632,11 +5617,11 @@ _QPKG.Backup_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "backed-up $(FormatAsPackName "$PACKAGE_NAME") configuration"
-        MarkThisActionAsOk
+        MarkThisActionForkAsOk
         SendPackageStateChange IsBackedUp
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionAsFailed
+        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
     fi
 
@@ -5671,7 +5656,7 @@ _QPKG.Restore_()
     fi
 
     if [[ $result_code -eq 2 ]]; then
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx $result_code
     fi
 
@@ -5686,11 +5671,11 @@ _QPKG.Restore_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "restored $(FormatAsPackName "$PACKAGE_NAME") configuration"
-        MarkThisActionAsOk
+        MarkThisActionForkAsOk
         SendPackageStateChange IsRestored
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionAsFailed
+        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
     fi
 
@@ -5725,7 +5710,7 @@ _QPKG.Clean_()
     fi
 
     if [[ $result_code -eq 2 ]]; then
-        MarkThisActionAsSkipped
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx $result_code
     fi
 
@@ -5740,11 +5725,11 @@ _QPKG.Clean_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "cleaned $(FormatAsPackName "$PACKAGE_NAME")"
-        MarkThisActionAsOk
+        MarkThisActionForkAsOk
         SendPackageStateChange IsCleaned
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionAsFailed
+        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
     fi
 
@@ -6412,25 +6397,6 @@ Pluralise()
 
     }
 
-PluralTense()
-    {
-
-    # $1 = count to check
-    # $2 = emit this word if $1 is 1            e.g. `has`
-    # $3 = emit this word if $1 is zero or < 1  e.g. `have`
-
-    case ${1:-} in
-        1)
-            echo "${2:-}"
-            ;;
-        *)
-            echo "${3:-}"
-    esac
-
-    return 0
-
-    }
-
 Capitalise()
     {
 
@@ -6830,7 +6796,7 @@ DebugErrorTabld()
 DebugVar()
     {
 
-    # had to split this onto its own line so Kate editor wouldnt choke when highlighting syntax
+    # had to split this onto its own line so Kate editor wouldn't choke when highlighting syntax
     local temp=${!1}
 
     DebugAsVar "\$$1 : '$temp'"
@@ -6988,7 +6954,7 @@ DebugThis()
     {
 
     [[ $(type -t Self.Debug.ToScreen.Init) = function ]] && Self.Debug.ToScreen.IsSet && ShowAsDebug "${1:-}"
-    WriteAsDebug "${1:-}"
+    WriteToLog dbug "${1:-}"
 
     }
 
@@ -7268,13 +7234,6 @@ ShowAsActionResult()
 
     }
 
-WriteAsDebug()
-    {
-
-    WriteToLog dbug "${1:-}"
-
-    }
-
 WriteToDisplayWait()
     {
 
@@ -7482,11 +7441,9 @@ UpdateColourisation()
     if [[ -e $GNU_SED_CMD ]]; then
         colourful=true
         SendEnvChange 'colourful=true'
-        return 0
     else
         colourful=false
         SendEnvChange 'colourful=false'
-        return 1
     fi
 
     }
@@ -7512,7 +7469,7 @@ HideKeys()
 
     }
 
-ShowKeys()
+ShowKeystrokes()
     {
 
     [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD echo
@@ -7566,7 +7523,7 @@ CTRL_C_Captured()
 CleanupOnExit()
     {
 
-    ShowKeys
+    ShowKeystrokes
     ShowCursor
     trap - INT
 
