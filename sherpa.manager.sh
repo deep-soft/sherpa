@@ -61,7 +61,7 @@ Self.Init()
     ClaimLockFile /var/run/sherpa.lock || return
     trap CTRL_C_Captured INT
     trap CleanupOnExit EXIT
-    boring=false
+    colourful=true
     fd_pipe=1       # use stdout as-default until updated later
 
     [[ ! -e /dev/fd ]] && ln -s /proc/self/fd /dev/fd       # KLUDGE: `/dev/fd` isn't always created by QTS during startup
@@ -7287,10 +7287,10 @@ WriteToDisplayWait()
     # output:
     #   $previous_msg = global and will be used again later
 
-    if [[ $boring = true ]]; then
-        previous_msg=$(printf "%-4s: %s" "${1:-}" "${2:-}")
+    if [[ $colourful = true ]]; then
+        previous_msg=$(printf "%-10s: %s" "${1:-}" "${2:-}")    # allow extra length for ANSI codes
     else
-        previous_msg=$(printf "%-10s: %s" "${1:-}" "${2:-}")    # allow for ANSI codes
+        previous_msg=$(printf "%-4s: %s" "${1:-}" "${2:-}")
     fi
 
     DisplayWait "$previous_msg"
@@ -7319,10 +7319,10 @@ WriteToDisplayNew()
 
     [[ ${previous_msg:-_none_} = _none_ ]] && previous_msg=''
 
-    if [[ $boring = true ]]; then
-        this_message=$(printf "%-4s: %s" "${1:-}" "${2:-}")
+    if [[ $colourful = true ]]; then
+        this_message=$(printf "%-10s: %s" "${1:-}" "${2:-}")    # allow extra length for ANSI codes
     else
-        this_message=$(printf "%-10s: %s" "${1:-}" "${2:-}")    # allow for ANSI codes
+        this_message=$(printf "%-4s: %s" "${1:-}" "${2:-}")
     fi
 
     if [[ $this_message != "${previous_msg}" ]]; then
@@ -7360,10 +7360,10 @@ WriteToLog()
 ColourTextBrightGreen()
     {
 
-    if [[ $boring = true ]]; then
-        echo -n "${1:-}"
-    else
+    if [[ $colourful = true ]]; then
         echo -en '\033[1;32m'"$(ColourReset "${1:-}")"
+    else
+        echo -n "${1:-}"
     fi
 
     }
@@ -7371,10 +7371,10 @@ ColourTextBrightGreen()
 ColourTextBrightYellow()
     {
 
-    if [[ $boring = true ]]; then
-        echo -n "${1:-}"
-    else
+    if [[ $colourful = true ]]; then
         echo -en '\033[1;33m'"$(ColourReset "${1:-}")"
+    else
+        echo -n "${1:-}"
     fi
 
     }
@@ -7382,10 +7382,10 @@ ColourTextBrightYellow()
 ColourTextBrightOrange()
     {
 
-    if [[ $boring = true ]]; then
-        echo -n "${1:-}"
-    else
+    if [[ $colourful = true ]]; then
         echo -en '\033[1;38;5;214m'"$(ColourReset "${1:-}")"
+    else
+        echo -n "${1:-}"
     fi
 
     }
@@ -7393,10 +7393,10 @@ ColourTextBrightOrange()
 ColourTextBrightOrangeBlink()
     {
 
-    if [[ $boring = true ]]; then
-        echo -n "${1:-}"
-    else
+    if [[ $colourful = true ]]; then
         echo -en '\033[1;5;38;5;214m'"$(ColourReset "${1:-}")"
+    else
+        echo -n "${1:-}"
     fi
 
     }
@@ -7404,10 +7404,10 @@ ColourTextBrightOrangeBlink()
 ColourTextBrightRed()
     {
 
-    if [[ $boring = true ]]; then
-        echo -n "${1:-}"
-    else
+    if [[ $colourful = true ]]; then
         echo -en '\033[1;31m'"$(ColourReset "${1:-}")"
+    else
+        echo -n "${1:-}"
     fi
 
     }
@@ -7415,10 +7415,10 @@ ColourTextBrightRed()
 ColourTextBrightRedBlink()
     {
 
-    if [[ $boring = true ]]; then
-        echo -n "${1:-}"
-    else
+    if [[ $colourful = true ]]; then
         echo -en '\033[1;5;31m'"$(ColourReset "${1:-}")"
+    else
+        echo -n "${1:-}"
     fi
 
     }
@@ -7426,10 +7426,10 @@ ColourTextBrightRedBlink()
 ColourTextUnderlinedCyan()
     {
 
-    if [[ $boring = true ]]; then
-        echo -n "${1:-}"
-    else
+    if [[ $colourful = true ]]; then
         echo -en '\033[4;36m'"$(ColourReset "${1:-}")"
+    else
+        echo -n "${1:-}"
     fi
 
     }
@@ -7437,10 +7437,10 @@ ColourTextUnderlinedCyan()
 ColourTextBlackOnCyan()
     {
 
-    if [[ $boring = true ]]; then
-        echo -n "${1:-}"
-    else
+    if [[ $colourful = true ]]; then
         echo -en '\033[30;46m'"$(ColourReset "${1:-}")"
+    else
+        echo -n "${1:-}"
     fi
 
     }
@@ -7448,10 +7448,10 @@ ColourTextBlackOnCyan()
 ColourTextBrightWhite()
     {
 
-    if [[ $boring = true ]]; then
-        echo -n "${1:-}"
-    else
+    if [[ $colourful = true ]]; then
         echo -en '\033[1;97m'"$(ColourReset "${1:-}")"
+    else
+        echo -n "${1:-}"
     fi
 
     }
@@ -7480,12 +7480,12 @@ UpdateColourisation()
     {
 
     if [[ -e $GNU_SED_CMD ]]; then
-        boring=false
-        SendEnvChange 'boring=false'
+        colourful=true
+        SendEnvChange 'colourful=true'
         return 0
     else
-        boring=true
-        SendEnvChange 'boring=true'
+        colourful=false
+        SendEnvChange 'colourful=false'
         return 1
     fi
 
