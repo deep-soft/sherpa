@@ -731,6 +731,7 @@ Tiers.Proc()
     IPKs.Actions.List
     QPKGs.Actions.List
     QPKGs.States.List rebuild       # rebuild these after processing QPKGs to get current states
+    Opts.Deps.Check.IsSet && ShowAsDone "check OK"
     DebugFuncEx
 
     }
