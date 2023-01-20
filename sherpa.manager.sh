@@ -848,13 +848,11 @@ Tier.Proc()
                                     "Is${state}")
                                         QPKGs.IsNt${state}.Remove "$message2_value"
                                         QPKGs.Is${state}.Add "$message2_value"
-#                                         [[ $message2_value = Entware ]] && [[ $state = Installed || $state = Started ]] && ModPathToEntware
                                         break 2
                                         ;;
                                     "IsNt${state}")
                                         QPKGs.Is${state}.Remove "$message2_value"
                                         QPKGs.IsNt${state}.Add "$message2_value"
-#                                         [[ $message2_value = Entware ]] && [[ $state = Uninstalled || $state = Stopped ]] && ModPathToEntware
                                         break 2
                                 esac
                             done
@@ -2586,7 +2584,7 @@ _LaunchQPKGActionForks_()
         IncForkProgressIndex
         MarkThisActionForkAsStarted    # must create runfile here, as it takes too long to happen in background function
         $target_function "$package" &
-#         DebugAsInfo "forked new $target_function action for $package: $! $$ $PPID"
+        DebugAsInfo "forked new $target_function() action for $package: \$!:$! \$\$:$$ \$PPID:$PPID"
         UpdateForkProgress
     done
 
@@ -2594,11 +2592,9 @@ _LaunchQPKGActionForks_()
 
     while [[ $fork_count -gt 0 ]]; do
         UpdateForkProgress      # update display while running forks complete
-#         echo "fork_count=[$fork_count]"
         sleep 1
     done
 
-#     echo "all forks have exited"
     # all forks have exited
 
     }
@@ -7313,15 +7309,13 @@ WriteToDisplayNew()
     local -i this_length=0
     local -i blanking_length=0
 
-    [[ ${previous_msg:-_none_} = _none_ ]] && previous_msg=''
-
     if [[ $colourful = true ]]; then
         this_message=$(printf "%-10s: %s" "${1:-}" "${2:-}")    # allow extra length for ANSI codes
     else
         this_message=$(printf "%-4s: %s" "${1:-}" "${2:-}")
     fi
 
-    if [[ $this_message != "${previous_msg}" ]]; then
+    if [[ $this_message != "${previous_msg:=''}" ]]; then
         previous_length=$((${#previous_msg}+1))
         this_length=$((${#this_message}+1))
 
