@@ -54,7 +54,7 @@ Self.Init()
     DebugFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230120
+    local -r SCRIPT_VER=230121
 
     IsQNAP || return
     IsSU || return
@@ -857,28 +857,28 @@ Tier.Proc()
                                 esac
                             done
 
-                            DebugAsWarn "ignore unidentified $message2_value change in message queue: '$message1_value'"
+                            DebugAsWarn "ignore unidentified change in message queue: '$message1_value'"
                             break
                         done
                         ;;
                     status)     # update the status of a single action fork in the parent shell
                         case $message1_value in
-                            ok)
+                            Ok)     # completed OK
                                 QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
                                 QPKGs.AcOk${TARGET_ACTION}.Add "$message2_value"
                                 ((ok_count++))
                                 ;;
-                            skipped)
+                            Sk)     # action was skipped
                                 QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
                                 QPKGs.AcSk${TARGET_ACTION}.Add "$message2_value"
                                 ((skip_count++))
                                 ;;
-                            failed)
+                            Er)     # action failed
                                 QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
                                 QPKGs.AcEr${TARGET_ACTION}.Add "$message2_value"
                                 ((fail_count++))
                                 ;;
-                            exit)
+                            Ex)     # action has exited
                                 for package_index in "${!target_packages[@]}"; do
                                     if [[ ${target_packages[package_index]} = "$message2_value" ]]; then
                                         unset 'target_packages[package_index]'
@@ -887,8 +887,11 @@ Tier.Proc()
                                 done
                                 ;;
                             *)
-                                DebugAsWarn "ignore unidentified $message2_value status in message queue: '$message1_value'"
+                                DebugAsWarn "ignore unidentified status in message queue: '$message1_value'"
                         esac
+                        ;;
+                    *)
+                        DebugAsWarn "ignore unidentified key in message queue: '$message1_key'"
                 esac
             done <&$message_pipe_fd
 
@@ -920,7 +923,7 @@ Tier.Proc()
 OpenActionMessagePipe()
     {
 
-    # create a message pipe, so forks can send data back to parent
+    # create a message pipe, so action forks can send data back to parent
 
     [[ -p $ACTION_MESSAGE_PIPE ]] && rm "$ACTION_MESSAGE_PIPE"
     [[ ! -p $ACTION_MESSAGE_PIPE ]] && mknod "$ACTION_MESSAGE_PIPE" p
@@ -3638,7 +3641,7 @@ IncForkProgressIndex()
     {
 
     ((progress_index++))
-    local formatted_index="$(printf "%02d" "$progress_index")"
+    local formatted_index="$(printf '%02d' "$progress_index")"
 
     proc_fork_pathfile="$proc_fork_count_path/$formatted_index"
     proc_ok_pathfile="$proc_ok_count_path/$formatted_index"
@@ -3708,7 +3711,6 @@ UpdateForkProgress()
         progress_message+="$(ColourTextBrightRed "$fail_count") failed"
     fi
 
-    [[ $((ok_count+skip_count+fail_count)) -eq $total_count ]] && progress_message=' '
     [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
 
     return 0
@@ -4071,10 +4073,8 @@ QPKGs.IsCanBackup.Build()
 
     for package in $(QPKGs.ScAll.Array); do
         if QPKG.IsCanBackup "$package"; then
-#             QPKGs.ScNtCanBackup.Remove "$package"
             QPKGs.ScCanBackup.Add "$package"
         else
-#             QPKGs.ScCanBackup.Remove "$package"
             QPKGs.ScNtCanBackup.Add "$package"
         fi
     done
@@ -4095,10 +4095,8 @@ QPKGs.IsCanRestartToUpdate.Build()
 
     for package in $(QPKGs.ScAll.Array); do
         if QPKG.IsCanRestartToUpdate "$package"; then
-#             QPKGs.ScNtCanRestartToUpdate.Remove "$package"
             QPKGs.ScCanRestartToUpdate.Add "$package"
         else
-#             QPKGs.ScCanRestartToUpdate.Remove "$package"
             QPKGs.ScNtCanRestartToUpdate.Add "$package"
         fi
     done
@@ -4110,7 +4108,7 @@ QPKGs.IsCanRestartToUpdate.Build()
 QPKGs.Backups.Show()
     {
 
-    local epochtime=0       # float as seconds have a fractional component
+    local epochtime=0       # allow float as seconds have a fractional component
     local filename=''
     local highlight_older_than='2 weeks ago'
     local format=''
@@ -4518,7 +4516,7 @@ MarkThisActionForkAsOk()
     {
 
     [[ -n ${proc_fork_pathfile:-} && -e $proc_fork_pathfile ]] && mv "$proc_fork_pathfile" "$proc_ok_pathfile"
-    SendActionStatus ok
+    SendActionStatus Ok
 
     }
 
@@ -4526,7 +4524,7 @@ MarkThisActionForkAsSkipped()
     {
 
     [[ -n ${proc_fork_pathfile:-} && -e $proc_fork_pathfile ]] && mv "$proc_fork_pathfile" "$proc_skip_pathfile"
-    SendActionStatus skipped
+    SendActionStatus Sk
 
     }
 
@@ -4534,7 +4532,7 @@ MarkThisActionForkAsFailed()
     {
 
     [[ -n ${proc_fork_pathfile:-} && -e $proc_fork_pathfile ]] && mv "$proc_fork_pathfile" "$proc_fail_pathfile"
-    SendActionStatus failed
+    SendActionStatus Er
 
     }
 
@@ -4703,7 +4701,8 @@ GetCPUCores()
 GetInstalledRAM()
     {
 
-    $GREP_CMD MemTotal /proc/meminfo | cut -f2 -d':' | $SED_CMD 's|kB||;s| ||g'
+#     $GREP_CMD MemTotal /proc/meminfo | cut -f2 -d':' | $SED_CMD 's|kB||;s| ||g'
+    $GREP_CMD MemTotal /proc/meminfo | $SED_CMD 's|.*: ||;s|kB||;s| ||g'
 
     }
 
@@ -4972,11 +4971,11 @@ _QPKG.Download_()
         if [[ $result_code -eq 0 ]]; then
             if FileMatchesMD5 "$LOCAL_PATHFILE" "$REMOTE_MD5"; then
                 DebugAsDone "downloaded $(FormatAsFileName "$REMOTE_FILENAME")"
-#                 QPKGs.AcOkDownload.Add "$PACKAGE_NAME"
+                SendPackageStateChange IsDownloaded
                 MarkThisActionForkAsOk
             else
                 DebugAsError "downloaded file $(FormatAsFileName "$LOCAL_PATHFILE") has incorrect checksum"
-#                 QPKGs.AcErDownload.Add "$PACKAGE_NAME"
+                SendPackageStateChange IsNtDownloaded
                 MarkThisActionForkAsFailed
                 result_code=1
             fi
@@ -4987,7 +4986,6 @@ _QPKG.Download_()
         fi
     fi
 
-#     QPKGs.AcToDownload.Remove "$PACKAGE_NAME"
     DebugForkFuncEx $result_code
 
     }
@@ -5062,7 +5060,6 @@ _QPKG.Install_()
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         UpdateColourisation
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
-        MarkThisActionForkAsOk
         SendPackageStateChange IsInstalled
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
@@ -5100,6 +5097,7 @@ _QPKG.Install_()
             DebugAsDone 'installed essential IPKs'
         fi
 
+        MarkThisActionForkAsOk
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
@@ -5782,7 +5780,7 @@ QPKG.ClearAppCenterNotifier()
 
     QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME" && return 0
 
-    # KLUDGE: need this for `Entware` and `Par2` packages as they don't add a status line to qpkg.conf
+    # need to do this when installing QPKGs at the CLI
     $SETCFG_CMD "$PACKAGE_NAME" Status complete -f /etc/config/qpkg.conf
 
     return 0
@@ -5808,7 +5806,7 @@ QPKG.StoreServiceStatus()
     local -r PACKAGE_NAME=${1:?package name null}
 
     if ! local status=$(QPKG.GetServiceStatus "$PACKAGE_NAME"); then
-        DebugAsWarn "unable to get status of $(FormatAsPackName "$PACKAGE_NAME") service. It may be a non-sherpa package, or a package earlier than 200816c that doesn't support service results."
+        DebugAsWarn "unable to get status of $(FormatAsPackName "$PACKAGE_NAME") service. It may be a non-sherpa package, or a sherpa package earlier than 200816c that doesn't support service results."
         return 1
     fi
 
@@ -5828,7 +5826,7 @@ QPKG.StoreServiceStatus()
             fi
             ;;
         *)
-            DebugAsWarn "$(FormatAsPackName "$PACKAGE_NAME") service status is unrecognised or unsupported by this QPKG"
+            DebugAsWarn "$(FormatAsPackName "$PACKAGE_NAME") service status is unrecognised or unsupported"
     esac
 
     return 0
@@ -6124,9 +6122,7 @@ QPKG.PathFilename()
     local -r URL=$(QPKG.URL "${1:?package name null}")
 
     [[ -n ${URL:-} ]] || return
-
     echo "$QPKG_DL_PATH/$($BASENAME_CMD "$URL")"
-
     return 0
 
     }
@@ -6457,7 +6453,7 @@ FormatAsThous()
     # Format as thousands
 
     # A string-based thousands-group formatter totally unreliant on locale
-    # Why? Because builtin 'printf' in 32b ARM QTS versions doesn't follow locale ¯\_(ツ)_/¯
+    # Why? Because builtin `printf` in 32b ARM QTS versions doesn't follow locale ¯\_(ツ)_/¯
 
     # $1 = integer value
 
@@ -6495,6 +6491,8 @@ FormatAsISOBytes()
 
 FormatAsTitle()
     {
+
+    # format as script title
 
     ColourTextBrightWhite sherpa
 
@@ -6539,12 +6537,16 @@ FormatAsPackName()
 FormatAsFileName()
     {
 
+    # format as filename
+
     echo "(${1:?filename null})"
 
     }
 
 FormatAsURL()
     {
+
+    # format as URL
 
     ColourTextUnderlinedCyan "${1:-}"
 
@@ -6579,34 +6581,6 @@ FormatAsResult()
     else
         echo "! result_code: $(FormatAsExitcode "${1:-}")"
     fi
-
-    }
-
-FormatAsScript()
-    {
-
-    echo SCRIPT
-
-    }
-
-FormatAsHardware()
-    {
-
-    echo HARDWARE
-
-    }
-
-FormatAsFirmware()
-    {
-
-    echo FIRMWARE
-
-    }
-
-FormatAsUserspace()
-    {
-
-    echo USERSPACE
 
     }
 
@@ -6670,42 +6644,42 @@ DebugExtLogMinSepr()
 DebugScript()
     {
 
-    DebugDetectTabld "$(FormatAsScript)" "${1:-}" "${2:-}"
+    DebugDetectTabld SCRIPT "${1:-}" "${2:-}"
 
     }
 
 DebugHardwareOK()
     {
 
-    DebugDetectTabld "$(FormatAsHardware)" "${1:-}" "${2:-}"
+    DebugDetectTabld HARDWARE "${1:-}" "${2:-}"
 
     }
 
 DebugFirmwareOK()
     {
 
-    DebugDetectTabld "$(FormatAsFirmware)" "${1:-}" "${2:-}"
+    DebugDetectTabld FIRMWARE "${1:-}" "${2:-}"
 
     }
 
 DebugFirmwareWarning()
     {
 
-    DebugWarningTabld "$(FormatAsFirmware)" "${1:-}" "${2:-}"
+    DebugWarningTabld FIRMWARE "${1:-}" "${2:-}"
 
     }
 
 DebugUserspaceOK()
     {
 
-    DebugDetectTabld "$(FormatAsUserspace)" "${1:-}" "${2:-}"
+    DebugDetectTabld USERSPACE "${1:-}" "${2:-}"
 
     }
 
 DebugUserspaceWarning()
     {
 
-    DebugWarningTabld "$(FormatAsUserspace)" "${1:-}" "${2:-}"
+    DebugWarningTabld USERSPACE "${1:-}" "${2:-}"
 
     }
 
@@ -6917,7 +6891,7 @@ DebugForkFuncEx()
         elapsed_time=$(FormatSecsToHoursMinutesSecs "$((diff_milliseconds/1000))")
     fi
 
-    SendActionStatus exit
+    SendActionStatus Ex
     DebugThis "(<<) ${FUNCNAME[1]}|${1:-0}|$elapsed_time"
     $CAT_CMD "$sess_active_pathfile" >> "$original_session_log_pathfile" && rm "$sess_active_pathfile"
 
@@ -7092,7 +7066,7 @@ ShowAsWarn()
     local capitalised="$(Capitalise "${1:-}")"
 
     WriteToDisplayNew "$(ColourTextBrightOrange warn)" "$capitalised"
-    WriteToLog warn "$capitalised."
+    WriteToLog warn "$capitalised"
 
     }
 
@@ -7118,8 +7092,8 @@ ShowAsFail()
 
     local capitalised="$(Capitalise "${1:-}")"
 
-    WriteToDisplayNew "$(ColourTextBrightRed fail)" "$capitalised."
-    WriteToLog fail "$capitalised."
+    WriteToDisplayNew "$(ColourTextBrightRed fail)" "$capitalised"
+    WriteToLog fail "$capitalised"
 
     }
 
@@ -7131,7 +7105,7 @@ ShowAsError()
     SmartCR
 
     local capitalised="$(Capitalise "${1:-}")"
-    [[ ${1: -1} != ':' ]] && capitalised+='.'
+#     [[ ${1: -1} != ':' ]] && capitalised+='.'
 
     WriteToDisplayNew "$(ColourTextBrightRed derp)" "$capitalised"
     WriteToLog derp "$capitalised"
@@ -7280,9 +7254,9 @@ WriteToDisplayWait()
     #   $previous_msg = global and will be used again later
 
     if [[ $colourful = true ]]; then
-        previous_msg=$(printf "%-10s: %s" "${1:-}" "${2:-}")    # allow extra length for ANSI codes
+        previous_msg=$(printf '%-10s: %s' "${1:-}" "${2:-}")    # allow extra length for ANSI codes
     else
-        previous_msg=$(printf "%-4s: %s" "${1:-}" "${2:-}")
+        previous_msg=$(printf '%-4s: %s' "${1:-}" "${2:-}")
     fi
 
     DisplayWait "$previous_msg"
@@ -7310,9 +7284,9 @@ WriteToDisplayNew()
     local -i blanking_length=0
 
     if [[ $colourful = true ]]; then
-        this_message=$(printf "%-10s: %s" "${1:-}" "${2:-}")    # allow extra length for ANSI codes
+        this_message=$(printf '%-10s: %s' "${1:-}" "${2:-}")    # allow extra length for ANSI codes
     else
-        this_message=$(printf "%-4s: %s" "${1:-}" "${2:-}")
+        this_message=$(printf '%-4s: %s' "${1:-}" "${2:-}")
     fi
 
     if [[ $this_message != "${previous_msg:=''}" ]]; then
@@ -7343,7 +7317,7 @@ WriteToLog()
     #   $2 = message
 
     [[ $(type -t Self.Debug.ToFile.Init) = function ]] && Self.Debug.ToFile.IsNt && return
-    [[ -n ${sess_active_pathfile:-} ]] && printf "%-4s: %s\n" "$(StripANSI "${1:-}")" "$(StripANSI "${2:-}")" >> "$sess_active_pathfile"
+    [[ -n ${sess_active_pathfile:-} ]] && printf '%-4s: %s\n' "$(StripANSI "${1:-}")" "$(StripANSI "${2:-}")" >> "$sess_active_pathfile"
 
     }
 
@@ -7516,11 +7490,11 @@ FormatSecsToHoursMinutesSecs()
     # input:
     #   $1 = a time in seconds to convert to `HHh:MMm:SSs`
 
-    ((h=${1:-0} / 3600))
-    ((m=(${1:-0} % 3600) / 60))
-    ((s=${1:-0} % 60))
+    ((h=${1:-0}/3600))
+    ((m=(${1:-0}%3600)/60))
+    ((s=${1:-0}%60))
 
-    printf "%01dh:%02dm:%02ds\n" "$h" "$m" "$s"
+    printf '%01dh:%02dm:%02ds\n' "$h" "$m" "$s"
 
     }
 
@@ -7531,14 +7505,14 @@ FormatLongMinutesSecs()
     #   $1 = a time in long minutes and seconds to convert to `MMMm:SSs`
 
     # separate minutes from seconds
-    m=${1%%:*}
-    s=${1#*:}
+    local m=${1%%:*}
+    local s=${1#*:}
 
     # remove leading whitespace
     m=${m##* }
     s=${s##* }
 
-    printf "%01dm:%02ds\n" "$((10#$m))" "$((10#$s))"
+    printf '%01dm:%02ds\n' "$((10#$m))" "$((10#$s))"
 
     }
 
