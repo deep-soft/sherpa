@@ -894,7 +894,8 @@ Tier.Proc()
                 esac
             done <&$message_pipe_fd
 
-            wait 2>/dev/null    # wait here until all forked jobs have exited
+            [[ ${#target_packages[@]} -gt 0 ]] && KillActiveFork        # this should only happen if an action fork hasn't exited properly, and didn't mark its status as `ok`, `skipped`, or `failed`.
+            wait 2>/dev/null
             CloseActionMessagePipe
             HideKeystrokes
             ;;
@@ -903,7 +904,7 @@ Tier.Proc()
             $targets_function       # only process these packages in groups, not individually
     esac
 
-    # need to show completed line in colour if colour was enabled earlier as ANSI codes create a longer onscreen message due to extra characters used. Showing completed line without colour means part of previous onscreen message will not be blanked.
+    # need to show completed line in colour if colour was enabled earlier as ANSI codes create a longer onscreen message due to extra characters used. Showing completed line without colour means part of previous onscreen message may not be blanked.
     if [[ $original_colourful = true && $colourful = false ]]; then
         colourful=true
         ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PAST"
@@ -5098,7 +5099,6 @@ _QPKG.Install_()
             # add essential IPKs needed immediately
             DebugAsProc 'installing essential IPKs'
             RunAndLog "$OPKG_CMD install --force-overwrite $ESSENTIAL_IPKS --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.essential.$INSTALL_LOG_FILE" log:failure-only
-#             SendParentChangeEnv 'HideKeystrokes'
             SendParentChangeEnv 'HideCursor'
             UpdateColourisation
             DebugAsDone 'installed essential IPKs'
