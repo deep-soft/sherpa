@@ -54,7 +54,7 @@ Self.Init()
     DebugFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230119
+    local -r SCRIPT_VER=230120
 
     IsQNAP || return
     IsSU || return
@@ -62,7 +62,7 @@ Self.Init()
     trap CTRL_C_Captured INT
     trap CleanupOnExit EXIT
     colourful=true
-    fd_pipe=1       # use stdout as-default until updated later
+    message_pipe_fd=1       # use stdout as-default until updated later
 
     [[ ! -e /dev/fd ]] && ln -s /proc/self/fd /dev/fd       # KLUDGE: `/dev/fd` isn't always created by QTS during startup
 
@@ -133,15 +133,15 @@ Self.Init()
     readonly GNU_GREP_CMD=/opt/bin/grep
     readonly GNU_LESS_CMD=/opt/bin/less
     readonly GNU_SED_CMD=/opt/bin/sed
-    readonly GNU_SETTERM=/opt/bin/setterm
+    readonly GNU_SETTERM_CMD=/opt/bin/setterm
     readonly GNU_STTY_CMD=/opt/bin/stty
     readonly PYTHON_CMD=/opt/bin/python
     readonly PYTHON3_CMD=/opt/bin/python3
     readonly PIP_CMD="$PYTHON3_CMD -m pip"
     readonly PERL_CMD=/opt/bin/perl
 
-    HideKeys
     HideCursor
+    HideKeystrokes
     UpdateColourisation
 
     local -r PROJECT_BRANCH=develop
@@ -153,7 +153,7 @@ Self.Init()
     readonly IPK_CACHE_PATH=$WORK_PATH/ipks
     readonly PIP_CACHE_PATH=$WORK_PATH/pips
     readonly BACKUP_PATH=$(GetDefVol)/.qpkg_config_backup
-    readonly QPKG_MESSAGES_PIPE=/var/run/qpkg.messages.pipe
+    readonly ACTION_MESSAGE_PIPE=/var/run/qpkg.messages.pipe
 
     local -r MANAGER_ARCHIVE_FILE=${MANAGER_FILE%.*}.tar.gz
     readonly MANAGER_ARCHIVE_PATHFILE=$WORK_PATH/$MANAGER_ARCHIVE_FILE
@@ -779,6 +779,7 @@ Tier.Proc()
     local -r ACTION_PRESENT=${6:?null}
     local -r ACTION_PAST=${7:?null}
     local -r RUNTIME=${8:-short}
+    local original_colourful=$colourful
 
 #     if [[ $RUNTIME = short ]]; then
         ShowAsProc "$ACTION_INTRANSITIVE $([[ $TIER != All ]] && Lowercase "$TIER ")${PACKAGE_TYPE}s" >&2
@@ -805,10 +806,17 @@ Tier.Proc()
 
             AdjustMaxForks "$TARGET_ACTION"
             InitForkCounts
-            OpenMessagePipe
+            OpenActionMessagePipe
+
+            local re=\\bEntware\\b        # BASH 3.2 regex with word boundaries: https://stackoverflow.com/a/9793094
+
+            if [[ $TARGET_ACTION = Uninstall && ${target_packages[*]} =~ $re ]]; then
+                ShowKeystrokes      # must enable this before removing Entware & GNU stty
+            fi
 
             _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
             fork_pid=$!
+            DebugVar fork_pid
 
             # read message pipe and process QPKGs and actions as per requests contained within
             while [[ ${#target_packages[@]} -gt 0 ]]; do
@@ -840,13 +848,13 @@ Tier.Proc()
                                     "Is${state}")
                                         QPKGs.IsNt${state}.Remove "$message2_value"
                                         QPKGs.Is${state}.Add "$message2_value"
-                                        [[ $message2_value = Entware && $state = Installed ]] && ModPathToEntware
+#                                         [[ $message2_value = Entware ]] && [[ $state = Installed || $state = Started ]] && ModPathToEntware
                                         break 2
                                         ;;
                                     "IsNt${state}")
                                         QPKGs.Is${state}.Remove "$message2_value"
                                         QPKGs.IsNt${state}.Add "$message2_value"
-                                        [[ $message2_value = Entware && $state = Uninstalled ]] && ModPathToEntware
+#                                         [[ $message2_value = Entware ]] && [[ $state = Uninstalled || $state = Stopped ]] && ModPathToEntware
                                         break 2
                                 esac
                             done
@@ -884,45 +892,55 @@ Tier.Proc()
                                 DebugAsWarn "ignore unidentified $message2_value status in message queue: '$message1_value'"
                         esac
                 esac
-            done <&$fd_pipe
+            done <&$message_pipe_fd
 
             wait 2>/dev/null    # wait here until all forked jobs have exited
-            CloseMessagePipe
+            CloseActionMessagePipe
+            HideKeystrokes
             ;;
         IPK|PIP)
             InitForkCounts
             $targets_function       # only process these packages in groups, not individually
     esac
 
-    ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PAST"
+    # need to show completed line in colour if colour was enabled earlier as ANSI codes create a longer onscreen message due to extra characters used. Showing completed line without colour means part of previous onscreen message will not be blanked.
+    if [[ $original_colourful = true && $colourful = false ]]; then
+        colourful=true
+        ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PAST"
+        colourful=false
+    else
+        ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PAST"
+    fi
+
     EraseForkCountPaths
     DebugFuncEx
     Self.Error.IsNt
 
     }
 
-OpenMessagePipe()
+OpenActionMessagePipe()
     {
 
     # create a message pipe, so forks can send data back to parent
 
-    [[ -p $QPKG_MESSAGES_PIPE ]] && rm "$QPKG_MESSAGES_PIPE"
-    [[ ! -p $QPKG_MESSAGES_PIPE ]] && mknod "$QPKG_MESSAGES_PIPE" p
+    [[ -p $ACTION_MESSAGE_PIPE ]] && rm "$ACTION_MESSAGE_PIPE"
+    [[ ! -p $ACTION_MESSAGE_PIPE ]] && mknod "$ACTION_MESSAGE_PIPE" p
 
-    fd_pipe=$(FindNextFD)
+    message_pipe_fd=$(FindNextFD)
+    DebugVar message_pipe_fd
 
     # open a 2-way channel to this pipe, so it will receive data without blocking the sender
-    eval "exec $fd_pipe<>$QPKG_MESSAGES_PIPE"
+    eval "exec $message_pipe_fd<>$ACTION_MESSAGE_PIPE"
 
     }
 
-CloseMessagePipe()
+CloseActionMessagePipe()
     {
 
     # close messages file descriptor and remove message pipe
 
-    eval "exec $fd_pipe<&-"
-    [[ -p $QPKG_MESSAGES_PIPE ]] && rm "$QPKG_MESSAGES_PIPE"
+    eval "exec $message_pipe_fd<&-"
+    [[ -p $ACTION_MESSAGE_PIPE ]] && rm "$ACTION_MESSAGE_PIPE"
 
     }
 
@@ -945,7 +963,6 @@ AdjustMaxForks()
     esac
 
     [[ $max_forks -eq 0 ]] && max_forks=$CONCURRENCY
-
     DebugVar max_forks
 
     }
@@ -2568,6 +2585,7 @@ _LaunchQPKGActionForks_()
         IncForkProgressIndex
         MarkThisActionForkAsStarted    # must create runfile here, as it takes too long to happen in background function
         $target_function "$package" &
+#         DebugAsInfo "forked new $target_function action for $package: $! $$ $PPID"
         UpdateForkProgress
     done
 
@@ -2575,8 +2593,11 @@ _LaunchQPKGActionForks_()
 
     while [[ $fork_count -gt 0 ]]; do
         UpdateForkProgress      # update display while running forks complete
+#         echo "fork_count=[$fork_count]"
+        sleep 1
     done
 
+#     echo "all forks have exited"
     # all forks have exited
 
     }
@@ -3690,6 +3711,7 @@ UpdateForkProgress()
         progress_message+="$(ColourTextBrightRed "$fail_count") failed"
     fi
 
+    [[ $((ok_count+skip_count+fail_count)) -eq $total_count ]] && progress_message=' '
     [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
 
     return 0
@@ -4419,7 +4441,7 @@ QPKGs.ScDependent.Show()
 
     }
 
-SendEnvChange()
+SendParentChangeEnv()
     {
 
     # Send a message into message stream to change the sherpa environment
@@ -4466,9 +4488,9 @@ SendMessageIntoPipe()
 
     # Send a message into message stream to update parent shell environment
 
-    [[ $fd_pipe -ge 10 && -e /proc/$$/fd/$fd_pipe ]] && echo "$1 $2 $3 $4"
+    [[ $message_pipe_fd -ge 10 && -e /proc/$$/fd/$message_pipe_fd ]] && echo "$1 $2 $3 $4"
 
-    } >&$fd_pipe
+    } >&$message_pipe_fd
 
 FindNextFD()
     {
@@ -5063,9 +5085,10 @@ _QPKG.Install_()
 
         if [[ $PACKAGE_NAME = Entware ]]; then
             ModPathToEntware
+            SendParentChangeEnv 'ModPathToEntware'
             PatchEntwareService
 
-            # copy all files from original [/opt] into new [/opt]
+            # shift all files from original [/opt] into new [/opt]
             if [[ -L ${OPT_PATH:-} && -d ${OPT_BACKUP_PATH:-} ]]; then
                 DebugAsProc 'restoring original /opt'
                 mv "$OPT_BACKUP_PATH"/* "$OPT_PATH" && rm -rf "$OPT_BACKUP_PATH"
@@ -5075,8 +5098,8 @@ _QPKG.Install_()
             # add essential IPKs needed immediately
             DebugAsProc 'installing essential IPKs'
             RunAndLog "$OPKG_CMD install --force-overwrite $ESSENTIAL_IPKS --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.essential.$INSTALL_LOG_FILE" log:failure-only
-            SendEnvChange 'HideKeys'
-            SendEnvChange 'HideCursor'
+#             SendParentChangeEnv 'HideKeystrokes'
+            SendParentChangeEnv 'HideCursor'
             UpdateColourisation
             DebugAsDone 'installed essential IPKs'
         fi
@@ -5278,7 +5301,6 @@ _QPKG.Uninstall_()
 
     # output:
     #   $? = none, this function executes in background
-
     DebugForkFuncEn
 
     PACKAGE_NAME=${1:?package name null}
@@ -5308,8 +5330,7 @@ _QPKG.Uninstall_()
         Self.Debug.ToScreen.IsSet && debug_cmd='DEBUG_QPKG=true '
 
         if [[ $PACKAGE_NAME = Entware ]]; then
-            SendEnvChange 'ShowCursor'
-            SendEnvChange 'ShowKeystrokes'
+            SendParentChangeEnv 'ShowCursor'
             UpdateColourisation
         fi
 
@@ -5320,25 +5341,32 @@ _QPKG.Uninstall_()
             DebugAsDone "uninstalled $(FormatAsPackName "$PACKAGE_NAME")"
             /sbin/rmcfg "$PACKAGE_NAME" -f /etc/config/qpkg.conf
             DebugAsDone 'removed icon information from App Center'
-            [[ $PACKAGE_NAME = Entware ]] && ModPathToEntware
+
+            if [[ $PACKAGE_NAME = Entware ]]; then
+                ModPathToEntware
+                SendParentChangeEnv 'ModPathToEntware'
+            fi
+
             MarkThisActionForkAsOk
             SendPackageStateChange IsNtInstalled
             SendPackageStateChange IsNtStarted
             SendPackageStateChange IsNtEnabled
         else
-            DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+            ShowAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
 
             if [[ $PACKAGE_NAME = Entware ]]; then
-                SendEnvChange 'HideKeys'
-                SendEnvChange 'HideCursor'
+                SendParentChangeEnv 'HideCursor'
             fi
 
             MarkThisActionForkAsFailed
             result_code=1    # remap to 1
         fi
+    else
+        # standard QPKG .uninstall.sh was not found, so can't continue with uninstallation (maybe force this instead with `rm -r` ?)
+        DebugAsError "unable to uninstall $(FormatAsPackName "$PACKAGE_NAME") as .uninstall.sh script is missing"
+        MarkThisActionForkAsFailed
     fi
 
-    QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
     DebugForkFuncEx $result_code
 
     }
@@ -5448,13 +5476,15 @@ _QPKG.Start_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "started $(FormatAsPackName "$PACKAGE_NAME")"
-        MarkThisActionForkAsOk
-        SendPackageStateChange IsStarted
 
         if [[ $PACKAGE_NAME = Entware ]]; then
             ModPathToEntware
+            SendParentChangeEnv 'ModPathToEntware'
             UpdateColourisation
         fi
+
+        MarkThisActionForkAsOk
+        SendPackageStateChange IsStarted
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         MarkThisActionForkAsFailed
@@ -5520,6 +5550,13 @@ _QPKG.Stop_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "stopped $(FormatAsPackName "$PACKAGE_NAME")"
+
+        if [[ $PACKAGE_NAME = Entware ]]; then
+            ModPathToEntware
+            SendParentChangeEnv 'ModPathToEntware'
+            UpdateColourisation
+        fi
+
         MarkThisActionForkAsOk
         SendPackageStateChange IsNtStarted
     else
@@ -7427,6 +7464,7 @@ StripANSI()
 
     # QTS 4.2.6 BusyBox `sed` doesn't fully support extended regexes, so code stripping only works with a real `sed`
 
+#     if [[ -e $GNU_SED_CMD && -e $GNU_SED_CMD && $PATH =~ .*/opt/bin:/opt/sbin.* ]]; then   # KLUDGE: yes, it looks weird, but during Entware startup, weird things happen. Need to check for this file multiple times to ensure it's there before attempting to run it.
     if [[ -e $GNU_SED_CMD && -e $GNU_SED_CMD ]]; then   # KLUDGE: yes, it looks weird, but during Entware startup, weird things happen. Need to check for this file multiple times to ensure it's there before attempting to run it.
         $GNU_SED_CMD -r 's/\x1b\[[0-9;]*m//g' <<< "${1:-}"
     else
@@ -7440,10 +7478,10 @@ UpdateColourisation()
 
     if [[ -e $GNU_SED_CMD ]]; then
         colourful=true
-        SendEnvChange 'colourful=true'
+        SendParentChangeEnv 'colourful=true'
     else
         colourful=false
-        SendEnvChange 'colourful=false'
+        SendParentChangeEnv 'colourful=false'
     fi
 
     }
@@ -7451,18 +7489,18 @@ UpdateColourisation()
 HideCursor()
     {
 
-    [[ -e $GNU_SETTERM ]] && $GNU_SETTERM --cursor off
+    [[ -e $GNU_SETTERM_CMD ]] && $GNU_SETTERM_CMD --cursor off
 
     }
 
 ShowCursor()
     {
 
-    [[ -e $GNU_SETTERM ]] && $GNU_SETTERM --cursor on
+    [[ -e $GNU_SETTERM_CMD ]] && $GNU_SETTERM_CMD --cursor on
 
     }
 
-HideKeys()
+HideKeystrokes()
     {
 
     [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD -echo
@@ -7472,7 +7510,7 @@ HideKeys()
 ShowKeystrokes()
     {
 
-    [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD echo
+    [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD 'echo'
 
     }
 
