@@ -239,8 +239,6 @@ Self.Init()
     fi
 
     Objects.Load || return
-    Self.Debug.ToArchive.Set
-    Self.Debug.ToFile.Set
 
     if [[ -e $GNU_STTY_CMD ]]; then
         local terminal_dimensions=$($GNU_STTY_CMD size)
@@ -255,6 +253,8 @@ Self.Init()
         if [[ $USER_ARGS_RAW =~ $re ]]; then
             Display >&2
             Self.Debug.ToScreen.Set
+            Self.Debug.ToArchive.Set
+            Self.Debug.ToFile.Set
             break
         fi
     done
@@ -824,7 +824,6 @@ Tier.Proc()
 
                 case $message1_key in
                     env)        # change the state of the sherpa environment
-                        DebugAsProc "evaluating '$message1_value'"
                         eval "$message1_value"      # run this as executable
                         ;;
                     change)     # change the state of a single QPKG in the parent shell
@@ -2595,7 +2594,6 @@ _LaunchQPKGActionForks_()
 
     while [[ $fork_count -gt 0 ]]; do
         UpdateForkProgress      # update display while running forks complete
-        sleep 1
     done
 
     # all forks have exited
@@ -3687,18 +3685,16 @@ UpdateForkProgress()
 
     RefreshForkCounts
 
-    if [[ $total_count -gt 0 ]]; then
-        progress_message+="$(ColourTextBrightWhite "$total_count") total"
-    fi
+    progress_message+="$(PercFrac "$ok_count" "$skip_count" "$fail_count" "$total_count")"
 
     if [[ $fork_count -gt 0 ]]; then
         [[ -n $progress_message ]] && progress_message+=': '
-        progress_message+="$(ColourTextBrightOrange "$fork_count") in progress"
+        progress_message+="$(ColourTextBrightOrange "$fork_count") in-progress"
     fi
 
     if [[ $ok_count -gt 0 ]]; then
         [[ -n $progress_message ]] && progress_message+=': '
-        progress_message+="$(ColourTextBrightGreen "$ok_count") completed OK"
+        progress_message+="$(ColourTextBrightGreen "$ok_count") OK"
     fi
 
     if [[ $skip_count -gt 0 ]]; then
@@ -3711,8 +3707,13 @@ UpdateForkProgress()
         progress_message+="$(ColourTextBrightRed "$fail_count") failed"
     fi
 
-    [[ $((ok_count+skip_count+fail_count)) -eq $total_count ]] && progress_message=' '
-    [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
+    if [[ $((ok_count+skip_count+fail_count)) -eq $total_count ]]; then
+        [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
+        sleep 1         # pause to show 100%, before erasing
+        UpdateInPlace " "
+    else
+        [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
+    fi
 
     return 0
 
@@ -4839,7 +4840,7 @@ ClaimLockFile()
     readonly RUNTIME_LOCK_PATHFILE=${1:?null}
 
     if [[ -e $RUNTIME_LOCK_PATHFILE && -d /proc/$(<"$RUNTIME_LOCK_PATHFILE") && $(</proc/"$(<"$RUNTIME_LOCK_PATHFILE")"/cmdline) =~ $MANAGER_FILE ]]; then
-        ShowAsAbort "another instance is running (PID $(<"$RUNTIME_LOCK_PATHFILE"))"
+        ShowAsAbort "another instance is running (PID: $(<"$RUNTIME_LOCK_PATHFILE"))"
         return 1
     fi
 
@@ -7184,7 +7185,7 @@ PercFrac()
         percent="$((200*(progress_count)/(TOTAL_COUNT+1)%2+100*(progress_count)/(TOTAL_COUNT+1)))%"
     fi
 
-    echo "$percent ($progress_count/$TOTAL_COUNT)"
+    echo "$percent ($(ColourTextBrightWhite "$progress_count")/$(ColourTextBrightWhite "$TOTAL_COUNT"))"
 
     return 0
 
