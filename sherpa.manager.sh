@@ -54,7 +54,7 @@ Self.Init()
     DebugFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230121
+    local -r SCRIPT_VER=230122
 
     IsQNAP || return
     IsSU || return
@@ -62,7 +62,8 @@ Self.Init()
     trap CTRL_C_Captured INT
     trap CleanupOnExit EXIT
     colourful=true
-    message_pipe_fd=null
+    message_pipe_write_fd=null
+    message_pipe_read_fd=null
 
     [[ ! -e /dev/fd ]] && ln -s /proc/self/fd /dev/fd       # KLUDGE: `/dev/fd` isn't always created by QTS during startup
 
@@ -140,6 +141,7 @@ Self.Init()
     readonly PIP_CMD="$PYTHON3_CMD -m pip"
     readonly PERL_CMD=/opt/bin/perl
 
+#     HideKeystrokes
     HideCursor
     UpdateColourisation
 
@@ -810,6 +812,10 @@ Tier.Proc()
 
             local re=\\bEntware\\b        # BASH 3.2 regex with word boundaries: https://stackoverflow.com/a/9793094
 
+            if [[ $TARGET_ACTION = Uninstall && ${target_packages[*]} =~ $re ]]; then
+                ShowKeystrokes      # must enable this before removing Entware & GNU stty
+            fi
+
             _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
             fork_pid=$!
 
@@ -887,7 +893,7 @@ Tier.Proc()
                     *)
                         DebugAsWarn "unidentified key in message queue: '$message1_key'"
                 esac
-            done <&$message_pipe_fd
+            done <&$message_pipe_read_fd
 
             [[ ${#target_packages[@]} -gt 0 ]] && KillActiveFork        # this should only happen if an action fork hasn't exited properly, and didn't mark its status as `ok`, `skipped`, or `failed`.
             wait 2>/dev/null
@@ -921,11 +927,22 @@ OpenActionMessagePipe()
     [[ -p $ACTION_MESSAGE_PIPE ]] && rm "$ACTION_MESSAGE_PIPE"
     [[ ! -p $ACTION_MESSAGE_PIPE ]] && mknod "$ACTION_MESSAGE_PIPE" p
 
-    message_pipe_fd=$(FindNextFD)
-    DebugVar message_pipe_fd
+    # ensure pipe remains open for writing
+    cat "$ACTION_MESSAGE_PIPE" &
 
-    # open a 2-way channel to this pipe, so it will receive data without blocking the sender
-    [[ $message_pipe_fd != null ]] && eval "exec $message_pipe_fd<>$ACTION_MESSAGE_PIPE"
+    # locate next available file descriptor
+    message_pipe_write_fd=$(FindNextFD)
+    DebugVar message_pipe_write_fd
+
+    # open a write-only channel to this pipe
+    [[ $message_pipe_write_fd != null ]] && eval "exec $message_pipe_write_fd>$ACTION_MESSAGE_PIPE"
+
+    # locate next available file descriptor
+    message_pipe_read_fd=$(FindNextFD)
+    DebugVar message_pipe_read_fd
+
+    # open a read-only channel to this pipe
+    [[ $message_pipe_read_fd != null ]] && eval "exec $message_pipe_read_fd<$ACTION_MESSAGE_PIPE"
 
     }
 
@@ -934,9 +951,8 @@ CloseActionMessagePipe()
 
     # close messages file descriptor and remove message pipe
 
-    [[ $message_pipe_fd != null ]] && eval "exec $message_pipe_fd<&-"
-#     eval "exec $message_pipe_fd<&-"
-#     eval "exec $message_pipe_fd>&-"
+    [[ $message_pipe_write_fd != null ]] && eval "exec $message_pipe_write_fd>&-"
+    [[ $message_pipe_read_fd != null ]] && eval "exec $message_pipe_read_fd<&-"
     [[ -p $ACTION_MESSAGE_PIPE ]] && rm "$ACTION_MESSAGE_PIPE"
 
     }
@@ -2584,13 +2600,14 @@ _MonitorDirSize_()
     [[ -z ${1:?path null} || ! -d ${1:-} || -z ${2:?total bytes null} || ${2:-} -eq 0 ]] && exit
     IsNtSysFileExist $GNU_FIND_CMD && exit
 
+    local -i current_bytes=-1
     local -i total_bytes=$2
     local -i last_bytes=0
     local -i stall_seconds=0
     local -i stall_seconds_threshold=4
-    local stall_message=''
-    local -i current_bytes=-1
     local percent=''
+    local progress_message=''
+    local stall_message=''
 
     InitProgress
 
@@ -2606,7 +2623,7 @@ _MonitorDirSize_()
         fi
 
         percent="$((200*(current_bytes)/(total_bytes)%2+100*(current_bytes)/(total_bytes)))%"
-        [[ $current_bytes -lt $total_bytes && $percent = '100%' ]] && percent='99%' # ensure we don't hit 100% until the last byte is downloaded
+        [[ $current_bytes -lt $total_bytes && $percent = '100%' ]] && percent='99%'     # ensure we don't hit 100% until the last byte is downloaded
         progress_message="$percent ($(FormatAsISOBytes "$current_bytes")/$(FormatAsISOBytes "$total_bytes"))"
 
         if [[ $stall_seconds -ge $stall_seconds_threshold ]]; then
@@ -2650,6 +2667,8 @@ UpdateInPlace()
     # input:
     #   $1 = message to display
 
+    local -i this_length=0
+    local -i blanking_length=0
     local this_clean_msg=$(StripANSI "${1:-}")
 
     if [[ $this_clean_msg != "$previous_clean_msg" ]]; then
@@ -2658,10 +2677,10 @@ UpdateInPlace()
         if [[ $this_length -lt $previous_length ]]; then
             blanking_length=$((this_length-previous_length))
             # backspace to start of previous msg, print new msg, add additional spaces, then backspace to end of new msg
-            printf "%${previous_length}s" | tr ' ' '\b'; DisplayWait "$1"; printf "%${blanking_length}s"; printf "%${blanking_length}s" | tr ' ' '\b'
+            printf "%${previous_length}s" | tr ' ' '\b'; echo -en "$1"; printf "%${blanking_length}s"; printf "%${blanking_length}s" | tr ' ' '\b'
         else
             # backspace to start of previous msg, print new msg
-            printf "%${previous_length}s" | tr ' ' '\b'; DisplayWait "$1"
+            printf "%${previous_length}s" | tr ' ' '\b'; echo -en "$1"
         fi
 
         previous_length=$this_length
@@ -3678,8 +3697,8 @@ UpdateForkProgress()
 
     if [[ $((ok_count+skip_count+fail_count)) -eq $total_count ]]; then
         [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
-        $SLEEP_CMD 1         # pause to show 100%, before erasing
-        UpdateInPlace " "
+        $SLEEP_CMD 1            # pause to show 100%, before erasing
+        UpdateInPlace '      '    # a lazy, lazy fix
     else
         [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
     fi
@@ -4417,7 +4436,7 @@ SendParentChangeEnv()
     # input:
     #   $1 = action request
 
-    SendMessageIntoPipe env "$1" '' ''
+    WriteMessageToActionPipe env "$1" '' ''
 
     }
 
@@ -4431,7 +4450,7 @@ SendPackageStateChange()
     # input:
     #   $1 = action request
 
-    SendMessageIntoPipe change "$1" package "$PACKAGE_NAME"
+    WriteMessageToActionPipe change "$1" package "$PACKAGE_NAME"
 
     }
 
@@ -4445,16 +4464,16 @@ SendActionStatus()
     # input:
     #   $1 = status update
 
-    SendMessageIntoPipe status "$1" package "$PACKAGE_NAME"
+    WriteMessageToActionPipe status "$1" package "$PACKAGE_NAME"
 
     }
 
-SendMessageIntoPipe()
+WriteMessageToActionPipe()
     {
 
     # Send a message into message stream to update parent shell environment
 
-    [[ $message_pipe_fd != null && -e /proc/$$/fd/$message_pipe_fd ]] && echo "$1#$2#$3#$4" >&$message_pipe_fd
+    [[ $message_pipe_write_fd != null && -e /proc/$$/fd/$message_pipe_write_fd ]] && echo "$1#$2#$3#$4" >&$message_pipe_write_fd
 
     }
 
@@ -7399,7 +7418,6 @@ StripANSI()
 
     # QTS 4.2.6 BusyBox `sed` doesn't fully support extended regexes, so code stripping only works with a real `sed`
 
-#     if [[ -e $GNU_SED_CMD && -e $GNU_SED_CMD && $PATH =~ .*/opt/bin:/opt/sbin.* ]]; then   # KLUDGE: yes, it looks weird, but during Entware startup, weird things happen. Need to check for this file multiple times to ensure it's there before attempting to run it.
     if [[ -e $GNU_SED_CMD && -e $GNU_SED_CMD ]]; then   # KLUDGE: yes, it looks weird, but during Entware startup, weird things happen. Need to check for this file multiple times to ensure it's there before attempting to run it.
         $GNU_SED_CMD -r 's/\x1b\[[0-9;]*m//g' <<< "${1:-}"
     else
@@ -7445,7 +7463,8 @@ HideKeystrokes()
 ShowKeystrokes()
     {
 
-    [[ -e $GNU_STTY_CMD && -t 0 ]] && $GNU_STTY_CMD 'echo'
+#     [[ -e $GNU_STTY_CMD && -t 0 ]] && $GNU_STTY_CMD 'echo'
+    [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD 'echo'
 
     }
 
@@ -7480,25 +7499,6 @@ FormatLongMinutesSecs()
     s=${s##* }
 
     printf '%01dm:%02ds\n' "$((10#$m))" "$((10#$s))"
-
-    }
-
-CTRL_C_Captured()
-    {
-
-    SmartCR
-    ShowAsAbort 'caught SIGINT' >&2
-    KillActiveFork
-    CloseActionMessagePipe
-    exit
-
-    }
-
-CleanupOnExit()
-    {
-
-    ShowCursor
-    trap - INT
 
     }
 
@@ -7586,6 +7586,27 @@ Packages.Load()
     QPKGs.ScAll.Add "${QPKG_NAME[*]}"
     QPKGs.StandaloneDependent.Build
     DebugFuncEx
+
+    }
+
+CTRL_C_Captured()
+    {
+
+    SmartCR
+    ShowAsAbort 'caught SIGINT' >&2
+    KillActiveFork
+    CloseActionMessagePipe
+    exit
+
+    }
+
+CleanupOnExit()
+    {
+
+#     exec &>/dev/tty
+#     ShowKeystrokes
+    ShowCursor
+    trap - INT
 
     }
 
