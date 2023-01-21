@@ -62,7 +62,7 @@ Self.Init()
     trap CTRL_C_Captured INT
     trap CleanupOnExit EXIT
     colourful=true
-    message_pipe_fd=1       # use stdout as-default until updated later
+    message_pipe_fd=null
 
     [[ ! -e /dev/fd ]] && ln -s /proc/self/fd /dev/fd       # KLUDGE: `/dev/fd` isn't always created by QTS during startup
 
@@ -141,7 +141,6 @@ Self.Init()
     readonly PERL_CMD=/opt/bin/perl
 
     HideCursor
-    HideKeystrokes
     UpdateColourisation
 
     local -r PROJECT_BRANCH=develop
@@ -240,7 +239,7 @@ Self.Init()
 
     Objects.Load || return
 
-    if [[ -e $GNU_STTY_CMD ]]; then
+    if [[ -e $GNU_STTY_CMD && -t 0 ]]; then
         local terminal_dimensions=$($GNU_STTY_CMD size)
         readonly SESS_ROWS=${terminal_dimensions% *}
         readonly SESS_COLS=${terminal_dimensions#* }
@@ -811,10 +810,6 @@ Tier.Proc()
 
             local re=\\bEntware\\b        # BASH 3.2 regex with word boundaries: https://stackoverflow.com/a/9793094
 
-            if [[ $TARGET_ACTION = Uninstall && ${target_packages[*]} =~ $re ]]; then
-                ShowKeystrokes      # must enable this before removing Entware & GNU stty
-            fi
-
             _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
             fork_pid=$!
 
@@ -897,7 +892,6 @@ Tier.Proc()
             [[ ${#target_packages[@]} -gt 0 ]] && KillActiveFork        # this should only happen if an action fork hasn't exited properly, and didn't mark its status as `ok`, `skipped`, or `failed`.
             wait 2>/dev/null
             CloseActionMessagePipe
-            HideKeystrokes
             ;;
         IPK|PIP)
             InitForkCounts
@@ -931,7 +925,7 @@ OpenActionMessagePipe()
     DebugVar message_pipe_fd
 
     # open a 2-way channel to this pipe, so it will receive data without blocking the sender
-    eval "exec $message_pipe_fd<>$ACTION_MESSAGE_PIPE"
+    [[ $message_pipe_fd != null ]] && eval "exec $message_pipe_fd<>$ACTION_MESSAGE_PIPE"
 
     }
 
@@ -940,7 +934,9 @@ CloseActionMessagePipe()
 
     # close messages file descriptor and remove message pipe
 
-    eval "exec $message_pipe_fd<&-"
+    [[ $message_pipe_fd != null ]] && eval "exec $message_pipe_fd<&-"
+#     eval "exec $message_pipe_fd<&-"
+#     eval "exec $message_pipe_fd>&-"
     [[ -p $ACTION_MESSAGE_PIPE ]] && rm "$ACTION_MESSAGE_PIPE"
 
     }
@@ -1892,14 +1888,12 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
                                 for prospect in $(QPKGs.IsInstalled.Array); do
                                     QPKGs.ScCanRestartToUpdate.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
                                 ;;
                             Dependent|Standalone)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
                                 for prospect in $(QPKGs.IsInstalled.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1909,12 +1903,10 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtInstalled' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsNtInstalled.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtInstalled' packages"
                                 for prospect in $(QPKGs.IsNtInstalled.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1924,12 +1916,10 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'ScCanBackup' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.ScCanBackup.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'ScCanBackup' packages"
                                 for prospect in $(QPKGs.ScCanBackup.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1939,12 +1929,10 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsStarted' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsStarted.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsStarted' packages"
                                 for prospect in $(QPKGs.IsStarted.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1954,12 +1942,10 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtStarted' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsNtStarted.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtStarted' packages"
                                 for prospect in $(QPKGs.IsNtStarted.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1969,12 +1955,10 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsInstalled.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
                                 for prospect in $(QPKGs.IsInstalled.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -1984,20 +1968,14 @@ AllocGroupPacksToAcs()
                         case $scope in
                             All)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsUpgradable' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.ScUpgradable.Array)"
-#                                 DebugAsProc "action: 'Restart': adding 'ScCanRestartToUpdate' packages"
                                 QPKGs.AcToRestart.Add "$(QPKGs.ScCanRestartToUpdate.Array)"
-#                                 DebugAsProc "action: 'Restart': removing 'IsNtInstalled' packages"
                                 QPKGs.AcToRestart.Remove "$(QPKGs.IsNtInstalled.Array)"
-#                                 DebugAsProc "action: 'Restart': removing 'AcToUpgrade' packages"
                                 QPKGs.AcToRestart.Remove "$(QPKGs.AcToUpgrade.Array)"
-#                                 DebugAsProc "action: 'Restart': removing 'ScStandalone' packages"
                                 QPKGs.AcToRestart.Remove "$(QPKGs.ScStandalone.Array)"
                                 ;;
                             Dependent|Standalone)
                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsInstalled' packages"
                                 for prospect in $(QPKGs.IsInstalled.Array); do
                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
@@ -2005,14 +1983,13 @@ AllocGroupPacksToAcs()
                 esac
 
                 if [[ $found = false ]]; then
-                    DebugAsProc "action: '$action', scope: '$scope': adding 'Sc${scope}' packages"
                     QPKGs.AcTo${action}.Add "$(QPKGs.Sc${scope}.Array)"
                 fi
 
                 if QPKGs.AcTo${action}.IsAny; then
                     DebugAsDone "action: '$action', scope: '$scope': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
                 else
-                    ShowAsWarn "unable to find any $scope packages to $(Lowercase "$action")"
+                    ShowAsWarn "unable to find any packages to $(Lowercase "$action")"
                 fi
             elif QPKGs.Ac${action}.ScNt${scope}.IsSet; then
 #                 case $action in
@@ -2028,14 +2005,13 @@ AllocGroupPacksToAcs()
 #               esac
 
                 if [[ $found = false ]]; then
-                    DebugAsProc "action: '$action', scope: '$scope': adding 'ScNt${scope}' packages"
                     QPKGs.AcTo${action}.Add "$(QPKGs.ScNt${scope}.Array)"
                 fi
 
                 if QPKGs.AcTo${action}.IsAny; then
                     DebugAsDone "action: '$action', scope: 'Nt${scope}': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
                 else
-                    ShowAsWarn "unable to find any Nt${scope} packages to $(Lowercase "$action")"
+                    ShowAsWarn "unable to find any packages to $(Lowercase "$action")"
                 fi
             fi
         done
@@ -2051,12 +2027,10 @@ AllocGroupPacksToAcs()
                         case $state in
                             BackedUp|Cleaned|Downloaded|Enabled|Installed|Started|Upgradable)
                                 found=true
-#                                 DebugAsProc "action: '$action', state: '$state': adding 'Is${state}' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.Is${state}.Array)"
                                 ;;
                             Stopped)
                                 found=true
-#                                 DebugAsProc "action: '$action', state: '$state': adding 'IsNtStarted' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsNtStarted.Array)"
                         esac
                         ;;
@@ -2064,19 +2038,17 @@ AllocGroupPacksToAcs()
                         case $state in
                             Enabled|Installed|Started|Stopped)
                                 found=true
-#                                 DebugAsProc "action: '$action', state: '$state': not adding 'Is${state}' packages"
                         esac
                 esac
 
                 if [[ $found = false ]]; then
-#                     DebugAsProc "action: '$action', state: '$state': adding 'Is${state}' packages"
                     QPKGs.AcTo${action}.Add "$(QPKGs.Is${state}.Array)"
                 fi
 
                 if QPKGs.AcTo${action}.IsAny; then
                     DebugAsDone "action: '$action', state: '$state': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
                 else
-                    ShowAsWarn "unable to find any $state packages to $(Lowercase "$action")"
+                    ShowAsWarn "unable to find any packages to $(Lowercase "$action")"
                 fi
             elif QPKGs.Ac${action}.IsNt${state}.IsSet; then
                 case $action in
@@ -2084,25 +2056,22 @@ AllocGroupPacksToAcs()
                         case $state in
                             Installed|Started)
                                 found=true
-#                                 DebugAsProc "action: '$action', state: 'Nt${state}': adding 'IsNt${state}' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsNt${state}.Array)"
                                 ;;
                             Stopped)
                                 found=true
-#                                 DebugAsProc "action: '$action', state: 'Nt${state}': adding 'IsStarted' packages"
                                 QPKGs.AcTo${action}.Add "$(QPKGs.IsStarted.Array)"
                         esac
                 esac
 
                 if [[ $found = false ]]; then
-#                     DebugAsProc "action: '$action', state: '$state': adding 'IsNt${state}' packages"
                     QPKGs.AcTo${action}.Add "$(QPKGs.IsNt${state}.Array)"
                 fi
 
                 if QPKGs.AcTo${action}.IsAny; then
                     DebugAsDone "action: '$action', state: 'Nt${state}': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
                 else
-                    ShowAsWarn "unable to find any Nt${state} packages to $(Lowercase "$action")"
+                    ShowAsWarn "unable to find any packages to $(Lowercase "$action")"
                 fi
             fi
         done
@@ -2149,9 +2118,9 @@ Quiz()
     local response=''
 
     ShowAsQuiz "$prompt"
-    [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD igncr       # ignore CR to prevent an onscreen linefeed (which disrupts same-line rewrite used later, and looks bad)
+    [[ -e $GNU_STTY_CMD && -t 0 ]] && $GNU_STTY_CMD igncr       # ignore CR to prevent an onscreen linefeed (which disrupts same-line rewrite used later, and looks bad)
     read -rn1 response
-    [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD -igncr      # re-allow CR
+    [[ -e $GNU_STTY_CMD && -t 0 ]] && $GNU_STTY_CMD -igncr      # re-allow CR
     DebugVar response
 
     ShowAsQuizDone "$prompt: $response"
@@ -2293,7 +2262,7 @@ CalcIpkDepsToInstall()
         DebugFuncEx 1; return
     fi
 
-    ShowAsProc 'calculating IPK dependencies'
+    ShowAsProc 'calculating IPK dependencies' >&2
     DebugInfo "$requested_count IPK$(Pluralise "$requested_count") requested" "'$req_list' "
 
     while [[ $iterations -lt $ITERATION_LIMIT ]]; do
@@ -2398,7 +2367,7 @@ IPKs.Upgrade()
     total_count=$(IPKs.AcToDownload.Count)
 
     if [[ $total_count -gt 0 ]]; then
-        ShowAsProc "downloading & upgrading $total_count IPK$(Pluralise "$total_count")"
+        ShowAsProc "downloading & upgrading $total_count IPK$(Pluralise "$total_count")" >&2
 
         _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
         fork_pid=$!
@@ -2461,7 +2430,7 @@ IPKs.Install()
     total_count=$(IPKs.AcToDownload.Count)
 
     if [[ $total_count -gt 0 ]]; then
-        ShowAsProc "downloading & installing $total_count IPK$(Pluralise "$total_count"): "
+        ShowAsProc "downloading & installing $total_count IPK$(Pluralise "$total_count"): " >&2
 
         _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
         fork_pid=$!
@@ -2714,7 +2683,7 @@ IsQNAP()
     # is this a QNAP NAS?
 
     if [[ ! -e /etc/init.d/functions ]]; then
-        ShowAsAbort 'QTS functions missing (is this a QNAP NAS?)'
+        ShowAsAbort 'QTS functions missing (is this a QNAP NAS?)' >&2
         return 1
     fi
 
@@ -2729,10 +2698,10 @@ IsSU()
 
     if [[ $EUID -ne 0 ]]; then
         if [[ -e /usr/bin/sudo ]]; then
-            ShowAsError 'this utility must be run with superuser privileges. Try again as:'
-            echo "$ sudo sherpa"
+            ShowAsError 'this utility must be run with superuser privileges. Try again as:' >&2
+            echo "$ sudo sherpa" >&2
         else
-            ShowAsError "this utility must be run as the 'admin' user. Please login via SSH as 'admin' and try again"
+            ShowAsError "this utility must be run as the 'admin' user. Please login via SSH as 'admin' and try again" >&2
         fi
 
         return 1
@@ -2825,7 +2794,7 @@ IsSysFileExist()
     #   $? = 0 (exists) or 1 (not exists)
 
     if ! [[ -f ${1:?pathfile null} || -L ${1:?pathfile null} ]]; then
-        ShowAsAbort "a required NAS system file is missing $(FormatAsFileName "$1")"
+        ShowAsAbort "a required NAS system file is missing $(FormatAsFileName "$1")" >&2
         return 1
     fi
 
@@ -3444,14 +3413,14 @@ Log.Last.Paste()
 
     if [[ -e $SESS_LAST_PATHFILE ]]; then
         if Quiz "Press 'Y' to post the most-recent session in your $(FormatAsTitle) log to a public pastebin, or any other key to abort"; then
-            ShowAsProc "uploading $(FormatAsTitle) log"
+            ShowAsProc "uploading $(FormatAsTitle) log" >&2
             # with thanks to https://github.com/solusipse/fiche
             link=$($CAT_CMD --number "$SESS_LAST_PATHFILE" | (exec 3<>/dev/tcp/termbin.com/9999; $CAT_CMD >&3; $CAT_CMD <&3; exec 3<&-))
 
             if [[ $? -eq 0 ]]; then
                 ShowAsDone "your $(FormatAsTitle) log is now online at $(FormatAsURL "$link") and will be deleted in 1 month"
             else
-                ShowAsFail "a link could not be generated. Most likely a problem occurred when talking with $(FormatAsURL 'https://termbin.com')"
+                ShowAsFail "a link could not be generated. Most likely a problem occurred when talking with $(FormatAsURL 'https://termbin.com')" >&2
             fi
         else
             DebugInfoMinSepr
@@ -3476,7 +3445,7 @@ Log.Tail.Paste()
 
     if [[ -e $SESS_TAIL_PATHFILE ]]; then
         if Quiz "Press 'Y' to post the most-recent $(FormatAsThous "$LOG_TAIL_LINES") lines in your $(FormatAsTitle) log to a public pastebin, or any other key to abort"; then
-            ShowAsProc "uploading $(FormatAsTitle) log"
+            ShowAsProc "uploading $(FormatAsTitle) log" >&2
             # with thanks to https://github.com/solusipse/fiche
             link=$($CAT_CMD --number "$SESS_TAIL_PATHFILE" | (exec 3<>/dev/tcp/termbin.com/9999; $CAT_CMD >&3; $CAT_CMD <&3; exec 3<&-))
 
@@ -3709,7 +3678,7 @@ UpdateForkProgress()
 
     if [[ $((ok_count+skip_count+fail_count)) -eq $total_count ]]; then
         [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
-        sleep 1         # pause to show 100%, before erasing
+        $SLEEP_CMD 1         # pause to show 100%, before erasing
         UpdateInPlace " "
     else
         [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
@@ -3717,7 +3686,7 @@ UpdateForkProgress()
 
     return 0
 
-    }
+    } 2>/dev/null
 
 QPKGs.NewVers.Show()
     {
@@ -4485,16 +4454,16 @@ SendMessageIntoPipe()
 
     # Send a message into message stream to update parent shell environment
 
-    [[ $message_pipe_fd -ge 10 && -e /proc/$$/fd/$message_pipe_fd ]] && echo "$1#$2#$3#$4"
+    [[ $message_pipe_fd != null && -e /proc/$$/fd/$message_pipe_fd ]] && echo "$1#$2#$3#$4" >&$message_pipe_fd
 
-    } >&$message_pipe_fd
+    }
 
 FindNextFD()
     {
 
     # find next available file descriptor: https://stackoverflow.com/a/41603891
 
-    local -i fd=0
+    local -i fd=-1
 
     for fd in {10..100}; do
         if [[ ! -e /proc/$$/fd/$fd ]]; then
@@ -4840,7 +4809,7 @@ ClaimLockFile()
     readonly RUNTIME_LOCK_PATHFILE=${1:?null}
 
     if [[ -e $RUNTIME_LOCK_PATHFILE && -d /proc/$(<"$RUNTIME_LOCK_PATHFILE") && $(</proc/"$(<"$RUNTIME_LOCK_PATHFILE")"/cmdline) =~ $MANAGER_FILE ]]; then
-        ShowAsAbort "another instance is running (PID: $(<"$RUNTIME_LOCK_PATHFILE"))"
+        ShowAsAbort "another instance is running (PID: $(<"$RUNTIME_LOCK_PATHFILE"))" >&2
         return 1
     fi
 
@@ -6998,7 +6967,7 @@ AddFileToDebug()
 ShowAsProcLong()
     {
 
-    ShowAsProc "${1:-} (might take a while)" "${2:-}"
+    ShowAsProc "${1:-} (might take a while)" "${2:-}" >&2
 
     }
 
@@ -7065,11 +7034,8 @@ ShowAsWarn()
     # warning only
 
     SmartCR
-
-    local capitalised="$(Capitalise "${1:-}")"
-
-    WriteToDisplayNew "$(ColourTextBrightOrange warn)" "$capitalised"
-    WriteToLog warn "$capitalised"
+    WriteToDisplayNew "$(ColourTextBrightOrange warn)" "${1:-}"
+    WriteToLog warn "$1"
 
     }
 
@@ -7078,10 +7044,8 @@ ShowAsAbort()
 
     # fatal abort
 
-    local capitalised="$(Capitalise "${1:-}")"
-
-    WriteToDisplayNew "$(ColourTextBrightRed bort)" "$capitalised"
-    WriteToLog bort "$capitalised"
+    WriteToDisplayNew "$(ColourTextBrightRed bort)" "${1:-}"
+    WriteToLog bort "$1"
     Self.Error.Set
 
     }
@@ -7189,7 +7153,7 @@ PercFrac()
 
     return 0
 
-    }
+    } 2>/dev/null
 
 ShowAsActionResult()
     {
@@ -7474,14 +7438,14 @@ ShowCursor()
 HideKeystrokes()
     {
 
-    [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD -echo
+    [[ -e $GNU_STTY_CMD && -t 0 ]] && $GNU_STTY_CMD -echo
 
     }
 
 ShowKeystrokes()
     {
 
-    [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD 'echo'
+    [[ -e $GNU_STTY_CMD && -t 0 ]] && $GNU_STTY_CMD 'echo'
 
     }
 
@@ -7522,9 +7486,10 @@ FormatLongMinutesSecs()
 CTRL_C_Captured()
     {
 
-    Display
-    ShowAsAbort 'caught SIGINT'
+    SmartCR
+    ShowAsAbort 'caught SIGINT' >&2
     KillActiveFork
+    CloseActionMessagePipe
     exit
 
     }
@@ -7532,7 +7497,6 @@ CTRL_C_Captured()
 CleanupOnExit()
     {
 
-    ShowKeystrokes
     ShowCursor
     trap - INT
 
@@ -7555,7 +7519,7 @@ Objects.Load()
     fi
 
     if [[ ! -e $OBJECTS_PATHFILE ]]; then
-        ShowAsAbort 'objects missing'
+        ShowAsAbort 'objects missing' >&2
         DebugFuncEx 1; exit
     fi
 
@@ -7586,7 +7550,7 @@ Packages.Load()
     fi
 
     if [[ ! -e $PACKAGES_PATHFILE ]]; then
-        ShowAsAbort 'package list missing'
+        ShowAsAbort 'package list missing' >&2
         DebugFuncEx 1; exit
     fi
 
