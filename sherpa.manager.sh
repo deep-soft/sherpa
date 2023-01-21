@@ -516,8 +516,7 @@ Self.Validate()
         else
             for package in $(QPKGs.AcToRebuild.Array); do
                 if ! QPKGs.IsBackedUp.Exist "$package"; then
-#                     NoteQPKGAcAsSk "$package" rebuild 'does not have a backup to rebuild from'
-                    :
+                    DebugAsWarn "$package does not have a backup to rebuild from"
                 else
                     (QPKGs.IsNtInstalled.Exist "$package" || QPKGs.AcToUninstall.Exist "$package") && QPKGs.AcToInstall.Add "$package"
                     QPKGs.AcToRestore.Add "$package"
@@ -731,7 +730,7 @@ Tiers.Proc()
     IPKs.Actions.List
     QPKGs.Actions.List
     QPKGs.States.List rebuild       # rebuild these after processing QPKGs to get current states
-    Opts.Deps.Check.IsSet && ShowAsDone "check OK"
+    Opts.Deps.Check.IsSet && ShowAsDone 'check OK'
     DebugFuncEx
 
     }
@@ -799,6 +798,7 @@ Tier.Proc()
             fi
 
             total_count=${#target_packages[@]}
+            DebugVar total_count
 
             if [[ $total_count -eq 0 ]]; then
                 DebugInfo 'nothing to process'
@@ -817,15 +817,14 @@ Tier.Proc()
 
             _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
             fork_pid=$!
-            DebugVar fork_pid
 
             # read message pipe and process QPKGs and actions as per requests contained within
             while [[ ${#target_packages[@]} -gt 0 ]]; do
-                # shellcheck disable=2162
-                read message1_key message1_value message2_key message2_value
+                IFS='#' read -r message1_key message1_value message2_key message2_value
 
                 case $message1_key in
                     env)        # change the state of the sherpa environment
+                        DebugAsProc "evaluating '$message1_value'"
                         eval "$message1_value"      # run this as executable
                         ;;
                     change)     # change the state of a single QPKG in the parent shell
@@ -858,7 +857,7 @@ Tier.Proc()
                                 esac
                             done
 
-                            DebugAsWarn "ignore unidentified change in message queue: '$message1_value'"
+                            DebugAsWarn "unidentified change in message queue: '$message1_value'"
                             break
                         done
                         ;;
@@ -888,11 +887,11 @@ Tier.Proc()
                                 done
                                 ;;
                             *)
-                                DebugAsWarn "ignore unidentified status in message queue: '$message1_value'"
+                                DebugAsWarn "unidentified status in message queue: '$message1_value'"
                         esac
                         ;;
                     *)
-                        DebugAsWarn "ignore unidentified key in message queue: '$message1_key'"
+                        DebugAsWarn "unidentified key in message queue: '$message1_key'"
                 esac
             done <&$message_pipe_fd
 
@@ -2588,7 +2587,7 @@ _LaunchQPKGActionForks_()
         IncForkProgressIndex
         MarkThisActionForkAsStarted    # must create runfile here, as it takes too long to happen in background function
         $target_function "$package" &
-        DebugAsInfo "forked new $target_function() action for $package: \$!:$! \$\$:$$ \$PPID:$PPID"
+        DebugAsDone "forked $target_function for $package"
         UpdateForkProgress
     done
 
@@ -3712,6 +3711,7 @@ UpdateForkProgress()
         progress_message+="$(ColourTextBrightRed "$fail_count") failed"
     fi
 
+    [[ $((ok_count+skip_count+fail_count)) -eq $total_count ]] && progress_message=' '
     [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
 
     return 0
@@ -4484,7 +4484,7 @@ SendMessageIntoPipe()
 
     # Send a message into message stream to update parent shell environment
 
-    [[ $message_pipe_fd -ge 10 && -e /proc/$$/fd/$message_pipe_fd ]] && echo "$1 $2 $3 $4"
+    [[ $message_pipe_fd -ge 10 && -e /proc/$$/fd/$message_pipe_fd ]] && echo "$1#$2#$3#$4"
 
     } >&$message_pipe_fd
 
@@ -5093,6 +5093,7 @@ _QPKG.Install_()
             # add essential IPKs needed immediately
             DebugAsProc 'installing essential IPKs'
             RunAndLog "$OPKG_CMD install --force-overwrite $ESSENTIAL_IPKS --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.essential.$INSTALL_LOG_FILE" log:failure-only
+#             SendParentChangeEnv 'IPKs.AcOkInstall.Add "$ESSENTIAL_IPKS"'
             SendParentChangeEnv 'HideCursor'
             UpdateColourisation
             DebugAsDone 'installed essential IPKs'
