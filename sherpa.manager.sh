@@ -2353,7 +2353,7 @@ IPKs.Upgrade()
         KillActiveFork
 
         if [[ $result_code -eq 0 ]]; then
-#             ShowAsDone "downloaded & upgraded $total_count IPK$(Pluralise "$total_count")"
+            ok_count=$total_count           # assume they all passed
             NoteIPKAcAsOk "$(IPKs.AcToUpgrade.Array)" upgrade
         else
             ShowAsFail "download & upgrade $total_count IPK$(Pluralise "$total_count") failed $(FormatAsExitcode "$result_code")"
@@ -2654,7 +2654,11 @@ UpdateInPlace()
 KillActiveFork()
     {
 
-    [[ -n ${fork_pid:-} && ${fork_pid:-0} -gt 0 && -d /proc/$fork_pid ]] && kill -9 "$fork_pid"
+    if [[ -n ${fork_pid:-} && ${fork_pid:-0} -gt 0 && -d /proc/$fork_pid ]]; then
+        $SLEEP_CMD 1
+        kill -9 "$fork_pid"
+        wait 2>/dev/null
+    fi
 
     }
 
