@@ -1003,6 +1003,8 @@ Self.Results()
             Help.Tips.Show
         elif Opts.Help.Abbreviations.IsSet; then
             Help.PackageAbbreviations.Show
+        elif Opts.Help.Scopes.IsSet; then
+            Help.Scopes.Show
         elif Opts.Vers.View.IsSet; then
             Self.Vers.Show
         elif Opts.Log.Last.View.IsSet; then
@@ -1160,7 +1162,7 @@ ParseArgs()
         # stage 1
         if [[ -z $action ]]; then
             case $arg in
-                a|abs|action|actions|actions-all|all-actions|b|backups|dependent|dependents|installable|installed|l|last|log|missing|not-installed|option|options|p|package|packages|problems|r|repo|repos|standalone|standalones|started|stopped|tail|tips|updatable|updateable|upgradable|v|version|versions|whole)
+                a|abs|action|actions|actions-all|all-actions|b|backups|dependent|dependents|installable|installed|l|last|log|missing|not-installed|option|options|p|package|packages|problems|r|repo|repos|scopes|standalone|standalones|started|stopped|tail|tips|updatable|updateable|upgradable|v|version|versions|whole)
                     action=help_
                     arg_identified=true
                     scope=''
@@ -1175,7 +1177,7 @@ ParseArgs()
         if [[ -n $action ]]; then
             case $arg in
             # these cases use only a single word or char to specify a single scope
-                installable|installed|missing|not-installed|problems|started|stopped|tail|tips)
+                installable|installed|missing|not-installed|problems|scopes|started|stopped|tail|tips)
                     scope=${arg}_
                     ;;
             # all cases below can use multiple words or chars to specify a single scope
@@ -1362,6 +1364,9 @@ ParseArgs()
                         ;;
                     repos_)
                         Opts.Help.Repos.Set
+                        ;;
+                    scopes_)
+                        Opts.Help.Scopes.Set
                         ;;
                     standalone_)
                         QPKGs.List.ScStandalone.Set
@@ -1749,33 +1754,8 @@ ParseArgs()
     # when an action has been determined, but no scope has been found, then show default information. This will usually be the help screen.
     if [[ -n $action && $scope_identified = false ]]; then
         case $action in
-            abs_)
-                Opts.Help.Abbreviations.Set
-                ;;
-            backups_)
-                Opts.Help.Backups.Set
-                ;;
             help_|paste_)
                 Opts.Help.Basic.Set
-                ;;
-            options_)
-                Opts.Help.Options.Set
-                ;;
-            packages_)
-                Opts.Help.Packages.Set
-                ;;
-            problems_)
-                Opts.Help.Problems.Set
-                ;;
-            repos_)
-                Opts.Help.Repos.Set
-                ;;
-            tips_)
-                Opts.Help.Tips.Set
-                ;;
-            versions_)
-                Opts.Vers.View.Set
-                Self.Display.Clean.Set
         esac
     fi
 
@@ -3280,6 +3260,24 @@ Help.Problems.Show()
 
     }
 
+Help.Scopes.Show()
+    {
+
+    DisableDebugToArchiveAndFile
+    Help.Basic.Show
+    DisplayLineSpaceIfNoneAlready
+    DisplayAsHelpTitle "scopes explained:"
+    Display "all: all packages will be selected"
+    Display "standalone: all standalone packages will be selected. These are not dependent on other packages."
+    Display "dependent: all dependent packages will be selected. These depend on another package being present."
+    Display
+    DisplayAsProjSynExam "multiple scopes are supported like this" "$(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpAc) $(FormatAsHelpPacks)"
+    DisplayAsProjSynIndentExam '' 'reinstall dependents stopped'
+
+    return 0
+
+    }
+
 Help.Issue.Show()
     {
 
@@ -4086,7 +4084,7 @@ QPKGs.Backups.Show()
     Display
 
     if [[ -e $GNU_FIND_CMD ]]; then
-        DisplayAsHelpTitle "backups are listed oldest-first, and those $(ColourTextBrightRed 'in red') were updated more than $highlight_older_than"
+        DisplayAsHelpTitle "backups are listed oldest-first, and those $(ColourTextBrightRed 'in red') were last updated more than $highlight_older_than"
         Display
         DisplayAsHelpTitleFileNamePlusSomething 'backup file' 'last backup date'
 
