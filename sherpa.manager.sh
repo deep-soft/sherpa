@@ -51,23 +51,41 @@ readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
 Self.Init()
     {
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230122
+    local -r SCRIPT_VER=230123
 
     IsQNAP || return
     IsSU || return
     ClaimLockFile /var/run/sherpa.lock || return
-    trap CTRL_C_Captured INT
-    trap CleanupOnExit EXIT
+
+    trap RunOnEXIT EXIT
+    trap RunOnSIGINT INT
     colourful=true
     message_pipe_fd=null
     backup_stdin_fd=null
 
     [[ ! -e /dev/fd ]] && ln -s /proc/self/fd /dev/fd       # KLUDGE: `/dev/fd` isn't always created by QTS during startup
 
-    # cherry-pick required binaries
+    # cherry-pick required Entware binaries
+    readonly OPKG_CMD=/opt/bin/opkg
+    readonly GNU_FIND_CMD=/opt/bin/find
+    readonly GNU_GREP_CMD=/opt/bin/grep
+    readonly GNU_LESS_CMD=/opt/bin/less
+    readonly GNU_SED_CMD=/opt/bin/sed
+    readonly GNU_SETTERM_CMD=/opt/bin/setterm
+    readonly GNU_STTY_CMD=/opt/bin/stty
+    readonly PYTHON_CMD=/opt/bin/python
+    readonly PYTHON3_CMD=/opt/bin/python3
+    readonly PIP_CMD="$PYTHON3_CMD -m pip"
+    readonly PERL_CMD=/opt/bin/perl
+
+    HideKeystrokes
+    HideCursor
+    UpdateColourisation
+
+    # cherry-pick required OS binaries
     readonly AWK_CMD=/bin/awk
     readonly CAT_CMD=/bin/cat
     readonly DATE_CMD=/bin/date
@@ -128,22 +146,6 @@ Self.Init()
     IsSysFileExist $UNZIP_CMD || return
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
-
-    readonly OPKG_CMD=/opt/bin/opkg
-    readonly GNU_FIND_CMD=/opt/bin/find
-    readonly GNU_GREP_CMD=/opt/bin/grep
-    readonly GNU_LESS_CMD=/opt/bin/less
-    readonly GNU_SED_CMD=/opt/bin/sed
-    readonly GNU_SETTERM_CMD=/opt/bin/setterm
-    readonly GNU_STTY_CMD=/opt/bin/stty
-    readonly PYTHON_CMD=/opt/bin/python
-    readonly PYTHON3_CMD=/opt/bin/python3
-    readonly PIP_CMD="$PYTHON3_CMD -m pip"
-    readonly PERL_CMD=/opt/bin/perl
-
-    HideKeystrokes
-    HideCursor
-    UpdateColourisation
 
     local -r PROJECT_BRANCH=develop
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
@@ -309,7 +311,7 @@ Self.Init()
 
     if ! QPKGs.Conflicts.Check; then
         QPKGs.SkProc.Set
-        DebugFuncEx 1; return
+        DebugScriptFuncEx 1; return
     fi
 
     QPKGs.Warnings.Check
@@ -321,7 +323,7 @@ Self.Init()
         $SETCFG_CMD sherpa max_versions_cleared TRUE -f /etc/config/qpkg.conf
     fi
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -330,7 +332,7 @@ Self.LogEnv()
 
     Self.ArgSuggests.Show
     QPKGs.SkProc.IsSet && return
-    DebugFuncEn
+    DebugScriptFuncEn
     ShowAsProc environment
 
     local -i max_width=70
@@ -410,7 +412,7 @@ Self.LogEnv()
     RunAndLog "$DF_CMD -h | $GREP_CMD '^Filesystem\|^none\|^tmpfs\|ram'" /var/log/ramdisks.freespace.log
 
     QPKGs.States.Build
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -471,7 +473,7 @@ Self.Validate()
     # If a package isn't being processed by the correct action, odds-are it's due to a logic error in this function.
 
     QPKGs.SkProc.IsSet && return
-    DebugFuncEn
+    DebugScriptFuncEn
     ShowAsProc arguments
 
     local avail_ver=''
@@ -638,7 +640,7 @@ Self.Validate()
     # KLUDGE: just in-case `python` has disappeared again ... ¯\_(ツ)_/¯
     [[ ! -L $PYTHON_CMD && -e $PYTHON3_CMD ]] && ln -s $PYTHON3_CMD $PYTHON_CMD
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -676,7 +678,7 @@ Tiers.Proc()
     {
 
     QPKGs.SkProc.IsSet && return
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local tier=''
     local action=''
@@ -731,8 +733,7 @@ Tiers.Proc()
     IPKs.Actions.List
     QPKGs.Actions.List
     QPKGs.States.List rebuild       # rebuild these after processing QPKGs to get current states
-    Opts.Deps.Check.IsSet && ShowAsDone 'check OK'
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -751,7 +752,7 @@ Tier.Proc()
     #   $7 = $ACTION_PAST                       e.g. `started` ...
     #   $8 = $RUNTIME (optional)                e.g. `long` - default is `short`
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local target_function=''
     local targets_function=''
@@ -765,7 +766,7 @@ Tier.Proc()
             ;;
         *)
             DebugAsError "unknown \$PACKAGE_TYPE: '$PACKAGE_TYPE'"
-            DebugFuncEx 1; return
+            DebugScriptFuncEx 1; return
     esac
 
     total_count=0
@@ -803,7 +804,7 @@ Tier.Proc()
 
             if [[ $total_count -eq 0 ]]; then
                 DebugInfo 'nothing to process'
-                DebugFuncEx; return
+                DebugScriptFuncEx; return
             fi
 
             AdjustMaxForks "$TARGET_ACTION"
@@ -813,14 +814,14 @@ Tier.Proc()
             local re=\\bEntware\\b        # BASH 3.2 regex with word boundaries: https://stackoverflow.com/a/9793094
 
             if [[ $TARGET_ACTION = Uninstall && ${target_packages[*]} =~ $re ]]; then
-                ShowKeystrokes      # must enable this before removing Entware & GNU stty
+                ShowKeystrokes  # must enable this before removing Entware & GNU stty
                 ShowCursor
             fi
 
             _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
             fork_pid=$!
 
-            # read message pipe and process QPKGs and actions as per requests contained within
+            # read message pipe and process QPKGs and actions as-per requests contained within
             while [[ ${#target_packages[@]} -gt 0 ]]; do
                 IFS='#' read -r message1_key message1_value message2_key message2_value
 
@@ -905,7 +906,7 @@ Tier.Proc()
             $targets_function       # only process these packages in groups, not individually
     esac
 
-    # need to show completed line in colour if colour was enabled earlier as ANSI codes create a longer onscreen message due to extra characters used. Showing completed line without colour means part of previous onscreen message may not be blanked.
+    # Need to show completed line in colour if colour was enabled earlier, as ANSI codes create a longer onscreen message due to extra characters used. Showing completed line without colour means part of previous onscreen message may not be blanked.
     if [[ $original_colourful = true && $colourful = false ]]; then
         colourful=true
         ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PAST"
@@ -915,7 +916,7 @@ Tier.Proc()
     fi
 
     EraseForkCountPaths
-    DebugFuncEx
+    DebugScriptFuncEx
     Self.Error.IsNt
 
     }
@@ -963,28 +964,29 @@ CloseActionMessagePipe()
 AdjustMaxForks()
     {
 
-    max_forks=0
+    max_forks=$CONCURRENCY
 
     # no-point running actions async in debug mode: their stdout will make a confusing mess of the screen
     if Self.Debug.ToScreen.IsSet; then
-        DebugInfo "reducing \$max_forks to 1 because debug mode is active"
+        DebugInfo "limiting \$max_forks to 1 because debug mode is active"
         max_forks=1
     fi
 
-    # don't execute these actions async: QTS installer for each package aborts (looks like QTS can only manage a single package at-a-time, packages overwrite each other and package source files end-up in the wrong install paths)
+    # don't execute these actions async: QTS installer for each package eventually aborts (looks like QTS can only manage a single package at-a-time, because packages overwrite each other, and package source files end-up in the wrong install paths)
     case ${1:-} in
         Install|Reinstall|Upgrade)
-            DebugInfo "reducing \$max_forks to 1 because '$1' has been requested"
+            DebugInfo "limiting \$max_forks to 1 because '$(Lowercase "$1")' was requested"
             max_forks=1
     esac
 
-    [[ $max_forks -eq 0 ]] && max_forks=$CONCURRENCY
     DebugVar max_forks
 
     }
 
 Self.Results()
     {
+
+    Opts.Deps.Check.IsSet && ShowAsDone 'check OK'
 
     if Args.Unknown.IsNone; then
         if Opts.Help.Actions.IsSet; then
@@ -1055,7 +1057,6 @@ Self.Results()
     DebugInfoMajSepr
     Self.Debug.ToArchive.IsSet && ArchiveActiveSessLog
     ResetActiveSessLog
-    ReleaseLockFile
     EraseThisLine
     DisplayLineSpaceIfNoneAlready   # final on-screen linespace
 
@@ -1069,7 +1070,7 @@ ParseArgs()
     # basic argument syntax:
     #   scriptname [action] [scopes] [options]
 
-    DebugFuncEn
+    DebugScriptFuncEn
     DebugVar USER_ARGS_RAW
 
     local user_args_fixed=$(Lowercase "${USER_ARGS_RAW//,/ }")
@@ -1176,80 +1177,55 @@ ParseArgs()
             # these cases use only a single word or char to specify a single scope
                 installable|installed|missing|not-installed|problems|started|stopped|tail|tips)
                     scope=${arg}_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
             # all cases below can use multiple words or chars to specify a single scope
                 a|abs)
                     scope=abs_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 actions-all|all-actions)
                     scope=all-actions_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 action|actions)
                     scope=actions_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 all|entire|everything)
                     scope=all_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 b|backups)
                     scope=backups_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 dependent|dependents)
                     scope=dependent_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 l|last)
                     scope=last_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 log|whole)
                     scope=log_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 option|options)
                     scope=options_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 p|package|packages)
                     scope=packages_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 r|repo|repos)
                     scope=repos_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 standalone|standalones)
                     scope=standalone_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 updatable|updateable|upgradable)
                     scope=upgradable_
-                    scope_identified=true
-                    arg_identified=true
                     ;;
                 v|version|versions)
                     scope=versions_
-                    scope_identified=true
-                    arg_identified=true
             esac
+
+            if [[ -n $scope ]]; then
+                scope_identified=true
+                arg_identified=true
+            fi
         fi
 
         # identify options
@@ -1809,14 +1785,14 @@ ParseArgs()
         Self.Display.Clean.UnSet
     fi
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
 Self.ArgSuggests.Show()
     {
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local arg=''
 
@@ -1878,14 +1854,14 @@ Self.ArgSuggests.Show()
         done
     fi
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
 AllocGroupPacksToAcs()
     {
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local action=''
     local scope=''
@@ -2096,7 +2072,7 @@ AllocGroupPacksToAcs()
         done
     done
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -2258,7 +2234,7 @@ CalcIpkDepsToInstall()
     # From a specified list of IPK names, find all dependent IPKs, exclude those already installed, then generate a list to download
 
     IsNtSysFileExist $GNU_GREP_CMD && return 1
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local -a this_list=()
     local -a dep_acc=()
@@ -2278,7 +2254,7 @@ CalcIpkDepsToInstall()
 
     if [[ $requested_count -eq 0 ]]; then
         DebugAsWarn 'no IPKs requested'
-        DebugFuncEx 1; return
+        DebugScriptFuncEx 1; return
     fi
 
     ShowAsProc 'calculating IPK dependencies'
@@ -2335,7 +2311,7 @@ CalcIpkDepsToInstall()
         DebugAsDone 'no IPKs to exclude'
     fi
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -2344,7 +2320,7 @@ CalcIpkDownloadSize()
 
     # calculate size of required IPKs
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local -a size_array=()
     local -i size_count=0
@@ -2360,7 +2336,7 @@ CalcIpkDownloadSize()
         DebugAsDone 'no IPKs to size'
     fi
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -2374,7 +2350,7 @@ IPKs.Upgrade()
     QPKGs.IsNtStarted.Exist Entware && return
     UpdateEntwarePackageList
     Self.Error.IsSet && return
-    DebugFuncEn
+    DebugScriptFuncEn
     local -i result_code=0
     IPKs.AcToUpgrade.Init
     IPKs.AcToDownload.Init
@@ -2405,7 +2381,7 @@ IPKs.Upgrade()
         fi
     fi
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -2419,7 +2395,7 @@ IPKs.Install()
     QPKGs.IsNtStarted.Exist Entware && return
     UpdateEntwarePackageList
     Self.Error.IsSet && return
-    DebugFuncEn
+    DebugScriptFuncEn
     local -i index=0
     local -i result_code=0
     IPKs.AcToInstall.Init
@@ -2469,7 +2445,7 @@ IPKs.Install()
         fi
     fi
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -2481,7 +2457,7 @@ PIPs.Install()
     QPKGs.IsNtStarted.Exist Entware && return
     ! $OPKG_CMD status python3-pip | $GREP_CMD -q "Status:.*installed" && return
     Self.Error.IsSet && return
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local exec_cmd=''
     local -i result_code=0
@@ -2511,7 +2487,7 @@ PIPs.Install()
         ShowAsActionProgress '' "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" installing "$RUNTIME"
     fi
 
-    DebugFuncEx $result_code
+    DebugScriptFuncEx $result_code
 
     }
 
@@ -3790,7 +3766,7 @@ QPKGs.Warnings.Check()
 IPKs.Actions.List()
     {
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local action=''
     local prefix=''
@@ -3816,14 +3792,14 @@ IPKs.Actions.List()
     done
 
     DebugInfoMinSepr
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
 QPKGs.Actions.List()
     {
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local action=''
     local prefix=''
@@ -3849,7 +3825,7 @@ QPKGs.Actions.List()
     done
 
     DebugInfoMinSepr
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -3858,7 +3834,7 @@ QPKGs.Actions.ListAll()
 
     # only used when debugging
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local action=''
     local prefix=''
@@ -3875,7 +3851,7 @@ QPKGs.Actions.ListAll()
     done
 
     DebugInfoMinSepr
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -3884,7 +3860,7 @@ QPKGs.States.List()
 
     # $1 (optional passthrough) = `rebuild` - clear existing lists and rebuild them from scratch
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local state=''
     local prefix=''
@@ -3920,7 +3896,7 @@ QPKGs.States.List()
     done
 
     DebugInfoMinSepr
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -3977,7 +3953,7 @@ QPKGs.States.Build()
     fi
 
     QPKGs.States.Built.IsSet && return
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local -i index=0
     local package=''
@@ -4048,7 +4024,7 @@ QPKGs.States.Build()
     done
 
     QPKGs.States.Built.Set
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -4057,7 +4033,7 @@ QPKGs.IsCanBackup.Build()
 
     # Build a list of QPKGs that do and don't support `backup` and `restore` actions
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local package=''
 
@@ -4069,7 +4045,7 @@ QPKGs.IsCanBackup.Build()
         fi
     done
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -4079,7 +4055,7 @@ QPKGs.IsCanRestartToUpdate.Build()
     # Build a list of QPKGs that do and don't support application updating on QPKG restart
     # these packages also do and don't support `clean` actions
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local package=''
 
@@ -4091,7 +4067,7 @@ QPKGs.IsCanRestartToUpdate.Build()
         fi
     done
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -4852,8 +4828,6 @@ DisableDebugToArchiveAndFile()
 
     }
 
-# QPKG tasks
-
 _QPKG.Reassign_()
     {
 
@@ -4895,8 +4869,8 @@ _QPKG.Reassign_()
         MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
+        MarkThisActionForkAsFailed
     fi
 
     DebugForkFuncEx $result_code
@@ -4941,8 +4915,9 @@ _QPKG.Download_()
                 DebugInfo "deleting $(FormatAsFileName "$LOCAL_FILENAME")"
                 rm -f "$LOCAL_PATHFILE"
             fi
-            MarkThisActionForkAsFailed
+
             result_code=1
+            MarkThisActionForkAsFailed
         fi
     fi
 
@@ -4966,13 +4941,13 @@ _QPKG.Download_()
             else
                 DebugAsError "downloaded file $(FormatAsFileName "$LOCAL_PATHFILE") has incorrect checksum"
                 SendPackageStateChange IsNtDownloaded
-                MarkThisActionForkAsFailed
                 result_code=1
+                MarkThisActionForkAsFailed
             fi
         else
             DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-            MarkThisActionForkAsFailed
             result_code=1    # remap to 1 (last time I checked, 'curl' had 92 return codes)
+            MarkThisActionForkAsFailed
         fi
     fi
 
@@ -5049,7 +5024,7 @@ _QPKG.Install_()
 
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         UpdateColourisation
-        QPKG.StoreServiceStatus "$PACKAGE_NAME"
+        QPKG.LogServiceStatus "$PACKAGE_NAME"
         SendPackageStateChange IsInstalled
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
@@ -5089,12 +5064,12 @@ _QPKG.Install_()
             DebugAsDone 'installed essential IPKs'
         fi
 
-        MarkThisActionForkAsOk
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
+        MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
+        MarkThisActionForkAsFailed
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
@@ -5149,7 +5124,7 @@ _QPKG.Reinstall_()
     result_code=$?
 
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
-        QPKG.StoreServiceStatus "$PACKAGE_NAME"
+        QPKG.LogServiceStatus "$PACKAGE_NAME"
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
             SendPackageStateChange IsEnabled
@@ -5165,12 +5140,12 @@ _QPKG.Reinstall_()
 
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
         DebugAsDone "reinstalled $(FormatAsPackName "$PACKAGE_NAME") $current_ver"
-        MarkThisActionForkAsOk
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
+        MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
+        MarkThisActionForkAsFailed
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
@@ -5241,7 +5216,7 @@ _QPKG.Upgrade_()
     result_code=$?
 
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
-        QPKG.StoreServiceStatus "$PACKAGE_NAME"
+        QPKG.LogServiceStatus "$PACKAGE_NAME"
         SendPackageStateChange ScNtUpgradable
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
@@ -5264,12 +5239,12 @@ _QPKG.Upgrade_()
             DebugAsDone "upgraded $(FormatAsPackName "$PACKAGE_NAME") from $previous_ver to $current_ver"
         fi
 
-        MarkThisActionForkAsOk
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
+        MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
+        MarkThisActionForkAsFailed
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
@@ -5347,8 +5322,8 @@ _QPKG.Uninstall_()
                 SendParentChangeEnv 'HideCursor'
             fi
 
-            MarkThisActionForkAsFailed
             result_code=1    # remap to 1
+            MarkThisActionForkAsFailed
         fi
     else
         # standard QPKG .uninstall.sh was not found, so can't continue with uninstallation (maybe force this instead with `rm -r` ?)
@@ -5400,15 +5375,15 @@ _QPKG.Restart_()
     fi
 
     if [[ $result_code -eq 0 ]]; then
-        QPKG.StoreServiceStatus "$PACKAGE_NAME"
+        QPKG.LogServiceStatus "$PACKAGE_NAME"
         DebugAsDone "restarted $(FormatAsPackName "$PACKAGE_NAME")"
         SendPackageStateChange IsRestarted
         MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         SendPackageStateChange IsNtRestarted
-        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
+        MarkThisActionForkAsFailed
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
@@ -5463,7 +5438,7 @@ _QPKG.Start_()
     fi
 
     if [[ $result_code -eq 0 ]]; then
-        QPKG.StoreServiceStatus "$PACKAGE_NAME"
+        QPKG.LogServiceStatus "$PACKAGE_NAME"
         DebugAsDone "started $(FormatAsPackName "$PACKAGE_NAME")"
 
         if [[ $PACKAGE_NAME = Entware ]]; then
@@ -5477,8 +5452,8 @@ _QPKG.Start_()
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         SendPackageStateChange IsNtStarted
-        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
+        MarkThisActionForkAsFailed
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
@@ -5537,7 +5512,7 @@ _QPKG.Stop_()
     fi
 
     if [[ $result_code -eq 0 ]]; then
-        QPKG.StoreServiceStatus "$PACKAGE_NAME"
+        QPKG.LogServiceStatus "$PACKAGE_NAME"
         DebugAsDone "stopped $(FormatAsPackName "$PACKAGE_NAME")"
 
         if [[ $PACKAGE_NAME = Entware ]]; then
@@ -5550,8 +5525,8 @@ _QPKG.Stop_()
         MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
+        MarkThisActionForkAsFailed
     fi
 
     QPKG.ClearAppCenterNotifier "$PACKAGE_NAME"
@@ -5641,14 +5616,14 @@ _QPKG.Backup_()
     result_code=$?
 
     if [[ $result_code -eq 0 ]]; then
-        QPKG.StoreServiceStatus "$PACKAGE_NAME"
+        QPKG.LogServiceStatus "$PACKAGE_NAME"
         DebugAsDone "backed-up $(FormatAsPackName "$PACKAGE_NAME") configuration"
         SendPackageStateChange IsBackedUp
         MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
+        MarkThisActionForkAsFailed
     fi
 
     DebugForkFuncEx $result_code
@@ -5695,14 +5670,14 @@ _QPKG.Restore_()
     result_code=$?
 
     if [[ $result_code -eq 0 ]]; then
-        QPKG.StoreServiceStatus "$PACKAGE_NAME"
+        QPKG.LogServiceStatus "$PACKAGE_NAME"
         DebugAsDone "restored $(FormatAsPackName "$PACKAGE_NAME") configuration"
         SendPackageStateChange IsRestored
         MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
+        MarkThisActionForkAsFailed
     fi
 
     DebugForkFuncEx $result_code
@@ -5749,14 +5724,14 @@ _QPKG.Clean_()
     result_code=$?
 
     if [[ $result_code -eq 0 ]]; then
-        QPKG.StoreServiceStatus "$PACKAGE_NAME"
+        QPKG.LogServiceStatus "$PACKAGE_NAME"
         DebugAsDone "cleaned $(FormatAsPackName "$PACKAGE_NAME")"
         SendPackageStateChange IsCleaned
         MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
+        MarkThisActionForkAsFailed
     fi
 
     DebugForkFuncEx $result_code
@@ -5771,7 +5746,7 @@ QPKG.ClearAppCenterNotifier()
     local -r PACKAGE_NAME=${1:?package name null}
 
     # KLUDGE: `clean` QTS 4.5.1 App Center notifier status
-    [[ -e /sbin/qpkg_cli ]] && /sbin/qpkg_cli --clean "$PACKAGE_NAME" &>/dev/null
+    [[ -e /sbin/qpkg_cli ]] && /sbin/qpkg_cli --clean "$PACKAGE_NAME"
 
     QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME" && return 0
 
@@ -5780,7 +5755,7 @@ QPKG.ClearAppCenterNotifier()
 
     return 0
 
-    }
+    } &>/dev/null
 
 QPKG.ClearServiceStatus()
     {
@@ -5790,9 +5765,9 @@ QPKG.ClearServiceStatus()
 
     [[ -e /var/run/${1:?package name null}.last.operation ]] && rm /var/run/"${1:?package name null}".last.operation
 
-    }
+    } &>/dev/null
 
-QPKG.StoreServiceStatus()
+QPKG.LogServiceStatus()
     {
 
     # input:
@@ -5827,8 +5802,6 @@ QPKG.StoreServiceStatus()
     return 0
 
     }
-
-# QPKG capabilities
 
 QPKG.InstallationPath()
     {
@@ -6267,8 +6240,6 @@ QPKG.GetDependents()
 
     }
 
-# QPKG states
-
 QPKG.IsInstalled()
     {
 
@@ -6330,8 +6301,9 @@ QPKG.GetServiceStatus()
 MakePath()
     {
 
-    # $1 = path to create
-    # $2 = summarised reason for this path
+    # input:
+    #   $1 = path to create
+    #   $2 = summarised reason for this path
 
     if ! mkdir -p "${1:?path null}"; then
         ShowAsError "unable to create ${2:?null} path $(FormatAsFileName "$1") $(FormatAsExitcode "$?")"
@@ -6359,7 +6331,7 @@ RunAndLog()
     #   pathfile ($2) = commandstring ($1) stdout and stderr
     #   $? = result_code of commandstring
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     local -r LOG_PATHFILE=$(/bin/mktemp /var/log/"${FUNCNAME[0]}"_XXXXXX)
     local -i result_code=0
@@ -6392,7 +6364,7 @@ RunAndLog()
             DebugAsError 'exec complete, but with errors'
     esac
 
-    DebugFuncEx $result_code
+    DebugScriptFuncEx $result_code
 
     }
 
@@ -6734,7 +6706,7 @@ DebugDetectTabld()
 
     if [[ -z ${3:-} ]]; then                # if $3 is nothing, then assume only 2 fields are required
         DebugAsDetect "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s\n" "${1:-}" "${2:-}")"
-    elif [[ ${3:-} = ' ' ]]; then           # if $3 is only a whitespace then print $2 with trailing colon and 'none' as third field
+    elif [[ ${3:-} = ' ' ]]; then           # if $3 is only a whitespace then print $2 with trailing colon and `none` as third field
         DebugAsDetect "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s: none\n" "${1:-}" "${2:-}")"
     elif [[ ${3: -1} = ' ' ]]; then     # if $3 has a trailing whitespace then print $3 without the trailing whitespace
         DebugAsDetect "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s: %-s\n" "${1:-}" "${2:-}" "$($SED_CMD 's| *$||' <<< "${3:-}")")"
@@ -6751,7 +6723,7 @@ DebugInfoTabld()
 
     if [[ -z ${3:-} ]]; then                # if $3 is nothing, then assume only 2 fields are required
         DebugAsInfo "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s\n" "${1:-}" "${2:-}")"
-    elif [[ ${3:-} = ' ' ]]; then           # if $3 is only a whitespace then print $2 with trailing colon and 'none' as third field
+    elif [[ ${3:-} = ' ' ]]; then           # if $3 is only a whitespace then print $2 with trailing colon and `none` as third field
         DebugAsInfo "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s: none\n" "${1:-}" "${2:-}")"
     elif [[ ${3: -1} = ' ' ]]; then     # if $3 has a trailing whitespace then print $3 without the trailing whitespace
         DebugAsInfo "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s: %-s\n" "${1:-}" "${2:-}" "$($SED_CMD 's| *$||' <<< "${3:-}")")"
@@ -6768,7 +6740,7 @@ DebugWarningTabld()
 
     if [[ -z ${3:-} ]]; then                # if $3 is nothing, then assume only 2 fields are required
         DebugAsWarn "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s\n" "${1:-}" "${2:-}")"
-    elif [[ ${3:-} = ' ' ]]; then           # if $3 is only a whitespace then print $2 with trailing colon and 'none' as third field
+    elif [[ ${3:-} = ' ' ]]; then           # if $3 is only a whitespace then print $2 with trailing colon and `none` as third field
         DebugAsWarn "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s: none\n" "${1:-}" "${2:-}")"
     elif [[ ${3: -1} = ' ' ]]; then     # if $3 has a trailing whitespace then print $3 without the trailing whitespace
         DebugAsWarn "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s: %-s\n" "${1:-}" "${2:-}" "$($SED_CMD 's| *$||' <<< "${3:-}")")"
@@ -6785,7 +6757,7 @@ DebugErrorTabld()
 
     if [[ -z ${3:-} ]]; then                # if $3 is nothing, then assume only 2 fields are required
         DebugAsError "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s\n" "${1:-}" "${2:-}")"
-    elif [[ ${3:-} = ' ' ]]; then           # if $3 is only a whitespace then print $2 with trailing colon and 'none' as third field
+    elif [[ ${3:-} = ' ' ]]; then           # if $3 is only a whitespace then print $2 with trailing colon and `none` as third field
         DebugAsError "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s: none\n" "${1:-}" "${2:-}")"
     elif [[ ${3: -1} = ' ' ]]; then     # if $3 has a trailing whitespace then print $3 without the trailing whitespace
         DebugAsError "$(printf "%${DEBUG_LOG_FIRST_COL_WIDTH}s: %${DEBUG_LOG_SECOND_COL_WIDTH}s: %-s\n" "${1:-}" "${2:-}" "$($SED_CMD 's| *$||' <<< "${3:-}")")"
@@ -6808,7 +6780,7 @@ DebugVar()
 DebugInfo()
     {
 
-    if [[ ${2:-} = ' ' || ${2:-} = "'' " ]]; then   # if $2 has no usable content then print $1 with trailing colon and 'none' as second field
+    if [[ ${2:-} = ' ' || ${2:-} = "'' " ]]; then   # if $2 has no usable content then print $1 with trailing colon and `none` as second field
         DebugAsInfo "${1:-}: none"
     elif [[ -n ${2:-} ]]; then
         DebugAsInfo "${1:-}: ${2:-}"
@@ -6818,20 +6790,20 @@ DebugInfo()
 
     }
 
-DebugFuncEn()
+DebugScriptFuncEn()
     {
 
     # debug function entry
 
     local var_name=${FUNCNAME[1]}_STARTSECONDS
     local var_safe_name=${var_name//[.-]/_}
-    eval "$var_safe_name=$(/bin/date +%s%N)"    # $DATE_CMD hasnt been defined when this function is first called in Self.Init()
+    eval "$var_safe_name=$(/bin/date +%s%N)"
 
-    DebugThis "(>>) ${FUNCNAME[1]}"
+    DebugAsFuncEn
 
     }
 
-DebugFuncEx()
+DebugScriptFuncEx()
     {
 
     # debug function exit
@@ -6847,7 +6819,7 @@ DebugFuncEx()
         elapsed_time=$(FormatSecsToHoursMinutesSecs "$((diff_milliseconds/1000))")
     fi
 
-    DebugThis "(<<) ${FUNCNAME[1]}|${1:-0}|$elapsed_time"
+    DebugAsFuncEx "${1:-0}" "$elapsed_time"
 
     return ${1:-0}
 
@@ -6866,7 +6838,7 @@ DebugForkFuncEn()
     local var_safe_name=${var_name//[.-]/_}
     eval "$var_safe_name=$(/bin/date +%s%N)"    # $DATE_CMD hasnt been defined when this function is first called in Self.Init()
 
-    DebugThis "(>>) ${FUNCNAME[1]}"
+    DebugAsFuncEn
 
     }
 
@@ -6887,17 +6859,30 @@ DebugForkFuncEx()
     fi
 
     SendActionStatus Ex
-    DebugThis "(<<) ${FUNCNAME[1]}|${1:-0}|$elapsed_time"
+    DebugAsFuncEx "${1:-0}" "$elapsed_time"
+
     $CAT_CMD "$sess_active_pathfile" >> "$original_session_log_pathfile" && rm "$sess_active_pathfile"
 
     exit ${1:-0}
 
     }
 
-DebugAsProc()
+DebugAsFuncEn()
     {
 
-    # debug as processing
+    DebugThis "(>>) ${FUNCNAME[2]}"
+
+    }
+
+DebugAsFuncEx()
+    {
+
+    DebugThis "(<<) ${FUNCNAME[2]}|${1:-0}|${2:-}"
+
+    }
+
+DebugAsProc()
+    {
 
     DebugThis "(--) ${1:-}"
 
@@ -7467,10 +7452,9 @@ HideKeystrokes()
 ShowKeystrokes()
     {
 
-#     [[ -e $GNU_STTY_CMD && -t 0 ]] && $GNU_STTY_CMD 'echo'
-    [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD 'echo'
+    [[ -e $GNU_STTY_CMD && -t 0 ]] && $GNU_STTY_CMD 'echo'
 
-    } 2>/dev/null
+    }
 
 FormatSecsToHoursMinutesSecs()
     {
@@ -7511,7 +7495,7 @@ Objects.Load()
 
     # Ensure `objects` in the local work path is up-to-date, then source it
 
-    DebugFuncEn
+    DebugScriptFuncEn
 
     if [[ ! -e $PWD/dont.refresh.objects ]]; then
         if [[ ! -e $OBJECTS_PATHFILE ]] || ! IsThisFileRecent "$OBJECTS_PATHFILE"; then
@@ -7524,7 +7508,7 @@ Objects.Load()
 
     if [[ ! -e $OBJECTS_PATHFILE ]]; then
         ShowAsAbort 'objects missing'
-        DebugFuncEx 1; exit
+        DebugScriptFuncEx 1; exit
     fi
 
     ShowAsProc 'loading objects'
@@ -7532,7 +7516,7 @@ Objects.Load()
 
     readonly OBJECTS_VER
 
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
@@ -7542,7 +7526,7 @@ Packages.Load()
     # Ensure `packages` in the local work path is up-to-date, then source it
 
     QPKGs.Loaded.IsSet && return
-    DebugFuncEn
+    DebugScriptFuncEn
 
     if [[ ! -e $PWD/dont.refresh.packages ]]; then
         if [[ ! -e $PACKAGES_PATHFILE ]] || ! IsThisFileRecent "$PACKAGES_PATHFILE" 60; then
@@ -7555,7 +7539,7 @@ Packages.Load()
 
     if [[ ! -e $PACKAGES_PATHFILE ]]; then
         ShowAsAbort 'package list missing'
-        DebugFuncEx 1; exit
+        DebugScriptFuncEx 1; exit
     fi
 
     ShowAsProc 'loading package list'
@@ -7589,11 +7573,11 @@ Packages.Load()
     DebugScript version "packages: ${PACKAGES_VER:-unknown}"
     QPKGs.ScAll.Add "${QPKG_NAME[*]}"
     QPKGs.StandaloneDependent.Build
-    DebugFuncEx
+    DebugScriptFuncEx
 
     }
 
-CTRL_C_Captured()
+RunOnSIGINT()
     {
 
     EraseThisLine
@@ -7604,12 +7588,13 @@ CTRL_C_Captured()
 
     }
 
-CleanupOnExit()
+RunOnEXIT()
     {
 
+    trap - INT
     ShowKeystrokes
     ShowCursor
-    trap - INT
+    ReleaseLockFile
 
     }
 
