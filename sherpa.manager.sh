@@ -331,7 +331,7 @@ Self.LogEnv()
     Self.ArgSuggests.Show
     QPKGs.SkProc.IsSet && return
     DebugFuncEn
-    ShowAsProc environment >&2
+    ShowAsProc environment
 
     local -i max_width=70
     local -i trimmed_width=$((max_width-3))
@@ -472,7 +472,7 @@ Self.Validate()
 
     QPKGs.SkProc.IsSet && return
     DebugFuncEn
-    ShowAsProc arguments >&2
+    ShowAsProc arguments
 
     local avail_ver=''
     local package=''
@@ -490,7 +490,7 @@ Self.Validate()
                 avail_ver=$(GetDefPython3Ver "$PYTHON3_CMD")
 
                 if [[ ${avail_ver//./} -lt $MIN_PYTHON_VER ]]; then
-                    ShowAsInfo 'installed Python environment will be upgraded' >&2
+                    ShowAsInfo 'installed Python environment will be upgraded'
                     IPKs.AcToUninstall.Add 'python*'
                 fi
             fi
@@ -499,7 +499,7 @@ Self.Validate()
                 avail_ver=$(GetDefPerlVer "$PERL_CMD")
 
                 if [[ ${avail_ver//./} -lt $MIN_PERL_VER ]]; then
-                    ShowAsInfo 'installed Perl environment will be upgraded' >&2
+                    ShowAsInfo 'installed Perl environment will be upgraded'
                     IPKs.AcToUninstall.Add 'perl*'
                 fi
             fi
@@ -513,7 +513,7 @@ Self.Validate()
     # Meta-action pre-processing
     if QPKGs.AcToRebuild.IsAny; then
         if QPKGs.IsBackedUp.IsNone; then
-            ShowAsWarn 'there are no package backups to rebuild from' >&2
+            ShowAsWarn 'there are no package backups to rebuild from'
         else
             for package in $(QPKGs.AcToRebuild.Array); do
                 if ! QPKGs.IsBackedUp.Exist "$package"; then
@@ -783,9 +783,9 @@ Tier.Proc()
     local original_colourful=$colourful
 
 #     if [[ $RUNTIME = short ]]; then
-        ShowAsProc "$ACTION_INTRANSITIVE $([[ $TIER != All ]] && Lowercase "$TIER ")${PACKAGE_TYPE}s" >&2
+        ShowAsProc "$ACTION_INTRANSITIVE $([[ $TIER != All ]] && Lowercase "$TIER ")${PACKAGE_TYPE}s"
 #     else
-#         ShowAsProcLong "$([[ $TIER != All ]] && Lowercase "$TIER ")packages to $ACTION_INTRANSITIVE" >&2
+#         ShowAsProcLong "$([[ $TIER != All ]] && Lowercase "$TIER ")packages to $ACTION_INTRANSITIVE"
 #     fi
 
     case $PACKAGE_TYPE in
@@ -2281,7 +2281,7 @@ CalcIpkDepsToInstall()
         DebugFuncEx 1; return
     fi
 
-    ShowAsProc 'calculating IPK dependencies' >&2
+    ShowAsProc 'calculating IPK dependencies'
     DebugInfo "$requested_count IPK$(Pluralise "$requested_count") requested" "'$req_list' "
 
     while [[ $iterations -lt $ITERATION_LIMIT ]]; do
@@ -2386,7 +2386,7 @@ IPKs.Upgrade()
     total_count=$(IPKs.AcToDownload.Count)
 
     if [[ $total_count -gt 0 ]]; then
-        ShowAsProc "downloading & upgrading $total_count IPK$(Pluralise "$total_count")" >&2
+        ShowAsProc "downloading & upgrading $total_count IPK$(Pluralise "$total_count")"
 
         _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
         fork_pid=$!
@@ -2449,7 +2449,7 @@ IPKs.Install()
     total_count=$(IPKs.AcToDownload.Count)
 
     if [[ $total_count -gt 0 ]]; then
-        ShowAsProc "downloading & installing $total_count IPK$(Pluralise "$total_count"): " >&2
+        ShowAsProc "downloading & installing $total_count IPK$(Pluralise "$total_count"): "
 
         _MonitorDirSize_ "$IPK_DL_PATH" "$(IPKs.AcToDownload.Size)" &
         fork_pid=$!
@@ -2582,6 +2582,7 @@ _LaunchQPKGActionForks_()
 
     while [[ $fork_count -gt 0 ]]; do
         UpdateForkProgress      # update display while running forks complete
+        $SLEEP_CMD 1
     done
 
     # all forks have exited
@@ -2629,7 +2630,7 @@ _MonitorDirSize_()
 
         percent="$((200*(current_bytes)/(total_bytes)%2+100*(current_bytes)/(total_bytes)))%"
         [[ $current_bytes -lt $total_bytes && $percent = '100%' ]] && percent='99%'     # ensure we don't hit 100% until the last byte is downloaded
-        progress_message="$percent ($(FormatAsISOBytes "$current_bytes")/$(FormatAsISOBytes "$total_bytes"))"
+        progress_message="$percent ($(ColourTextBrightWhite "$(FormatAsISOBytes "$current_bytes")")/$(ColourTextBrightWhite "$(FormatAsISOBytes "$total_bytes")"))"
 
         if [[ $stall_seconds -ge $stall_seconds_threshold ]]; then
             # append a message showing stalled time
@@ -2707,7 +2708,7 @@ IsQNAP()
     # is this a QNAP NAS?
 
     if [[ ! -e /etc/init.d/functions ]]; then
-        ShowAsAbort 'QTS functions missing (is this a QNAP NAS?)' >&2
+        ShowAsAbort 'QTS functions missing (is this a QNAP NAS?)'
         return 1
     fi
 
@@ -2722,10 +2723,10 @@ IsSU()
 
     if [[ $EUID -ne 0 ]]; then
         if [[ -e /usr/bin/sudo ]]; then
-            ShowAsError 'this utility must be run with superuser privileges. Try again as:' >&2
+            ShowAsError 'this utility must be run with superuser privileges. Try again as:'
             echo "$ sudo sherpa" >&2
         else
-            ShowAsError "this utility must be run as the 'admin' user. Please login via SSH as 'admin' and try again" >&2
+            ShowAsError "this utility must be run as the 'admin' user. Please login via SSH as 'admin' and try again"
         fi
 
         return 1
@@ -2818,7 +2819,7 @@ IsSysFileExist()
     #   $? = 0 (exists) or 1 (not exists)
 
     if ! [[ -f ${1:?pathfile null} || -L ${1:?pathfile null} ]]; then
-        ShowAsAbort "a required NAS system file is missing $(FormatAsFileName "$1")" >&2
+        ShowAsAbort "a required NAS system file is missing $(FormatAsFileName "$1")"
         return 1
     fi
 
@@ -3437,14 +3438,14 @@ Log.Last.Paste()
 
     if [[ -e $SESS_LAST_PATHFILE ]]; then
         if Quiz "Press 'Y' to post the most-recent session in your $(FormatAsTitle) log to a public pastebin, or any other key to abort"; then
-            ShowAsProc "uploading $(FormatAsTitle) log" >&2
+            ShowAsProc "uploading $(FormatAsTitle) log"
             # with thanks to https://github.com/solusipse/fiche
             link=$($CAT_CMD --number "$SESS_LAST_PATHFILE" | (exec 3<>/dev/tcp/termbin.com/9999; $CAT_CMD >&3; $CAT_CMD <&3; exec 3<&-))
 
             if [[ $? -eq 0 ]]; then
                 ShowAsDone "your $(FormatAsTitle) log is now online at $(FormatAsURL "$link") and will be deleted in 1 month"
             else
-                ShowAsFail "a link could not be generated. Most likely a problem occurred when talking with $(FormatAsURL 'https://termbin.com')" >&2
+                ShowAsFail "a link could not be generated. Most likely a problem occurred when talking with $(FormatAsURL 'https://termbin.com')"
             fi
         else
             DebugInfoMinSepr
@@ -3469,7 +3470,7 @@ Log.Tail.Paste()
 
     if [[ -e $SESS_TAIL_PATHFILE ]]; then
         if Quiz "Press 'Y' to post the most-recent $(FormatAsThous "$LOG_TAIL_LINES") lines in your $(FormatAsTitle) log to a public pastebin, or any other key to abort"; then
-            ShowAsProc "uploading $(FormatAsTitle) log" >&2
+            ShowAsProc "uploading $(FormatAsTitle) log"
             # with thanks to https://github.com/solusipse/fiche
             link=$($CAT_CMD --number "$SESS_TAIL_PATHFILE" | (exec 3<>/dev/tcp/termbin.com/9999; $CAT_CMD >&3; $CAT_CMD <&3; exec 3<&-))
 
@@ -3981,7 +3982,7 @@ QPKGs.States.Build()
     local -i index=0
     local package=''
     local previous=''
-    ShowAsProc 'package states' >&2
+    ShowAsProc 'package states'
 
     for index in "${!QPKG_NAME[@]}"; do
         package="${QPKG_NAME[$index]}"
@@ -4827,7 +4828,7 @@ ClaimLockFile()
     readonly RUNTIME_LOCK_PATHFILE=${1:?null}
 
     if [[ -e $RUNTIME_LOCK_PATHFILE && -d /proc/$(<"$RUNTIME_LOCK_PATHFILE") && $(</proc/"$(<"$RUNTIME_LOCK_PATHFILE")"/cmdline) =~ $MANAGER_FILE ]]; then
-        ShowAsAbort "another instance is running (PID: $(<"$RUNTIME_LOCK_PATHFILE"))" >&2
+        ShowAsAbort "another instance is running (PID: $(<"$RUNTIME_LOCK_PATHFILE"))"
         return 1
     fi
 
@@ -5328,7 +5329,7 @@ _QPKG.Uninstall_()
             DebugAsDone 'removed icon information from App Center'
 
             if [[ $PACKAGE_NAME = Entware ]]; then
-                sleep 2
+#                 sleep 2
                 ModPathToEntware
                 SendParentChangeEnv 'ModPathToEntware'
                 UpdateColourisation
@@ -5813,10 +5814,10 @@ QPKG.StoreServiceStatus()
             ;;
         failed)
             if [[ -e /var/log/$PACKAGE_NAME.log ]]; then
-                ShowAsFail "$(FormatAsPackName "$PACKAGE_NAME") service action failed. Check $(FormatAsFileName "/var/log/$PACKAGE_NAME.log") for more information"
+                DebugAsError "$(FormatAsPackName "$PACKAGE_NAME") service action failed. Check $(FormatAsFileName "/var/log/$PACKAGE_NAME.log") for more information"
                 AddFileToDebug /var/log/$PACKAGE_NAME.log
             else
-                ShowAsFail "$(FormatAsPackName "$PACKAGE_NAME") service action failed"
+                DebugAsError "$(FormatAsPackName "$PACKAGE_NAME") service action failed"
             fi
             ;;
         *)
@@ -6989,9 +6990,9 @@ AddFileToDebug()
 ShowAsProcLong()
     {
 
-    ShowAsProc "${1:-} (might take a while)" "${2:-}" >&2
+    ShowAsProc "${1:-} (might take a while)" "${2:-}"
 
-    }
+    } >&2
 
 ShowAsProc()
     {
@@ -7004,7 +7005,7 @@ ShowAsProc()
     WriteToLog proc "${1:-}${suffix}"
     [[ $(type -t Self.Debug.ToScreen.Init) = function ]] && Self.Debug.ToScreen.IsSet && Display
 
-    }
+    } >&2
 
 ShowAsDebug()
     {
@@ -7022,7 +7023,7 @@ ShowAsInfo()
     WriteToDisplayNew "$(ColourTextBrightYellow note)" "${1:-}"
     WriteToLog note "${1:-}"
 
-    }
+    } >&2
 
 ShowAsQuiz()
     {
@@ -7059,7 +7060,7 @@ ShowAsWarn()
     WriteToDisplayNew "$(ColourTextBrightOrange warn)" "${1:-}"
     WriteToLog warn "$1"
 
-    }
+    } >&2
 
 ShowAsAbort()
     {
@@ -7070,7 +7071,7 @@ ShowAsAbort()
     WriteToLog bort "$1"
     Self.Error.Set
 
-    }
+    } >&2
 
 ShowAsFail()
     {
@@ -7084,7 +7085,7 @@ ShowAsFail()
     WriteToDisplayNew "$(ColourTextBrightRed fail)" "$capitalised"
     WriteToLog fail "$capitalised"
 
-    }
+    } >&2
 
 ShowAsError()
     {
@@ -7100,7 +7101,7 @@ ShowAsError()
     WriteToLog derp "$capitalised"
     Self.Error.Set
 
-    }
+    } >&2
 
 ShowAsActionProgress()
     {
@@ -7159,7 +7160,7 @@ PercFrac()
     declare -i -r SKIP_COUNT=${2:-0}
     declare -i -r FAIL_COUNT=${3:-0}
     declare -i -r TOTAL_COUNT=${4:-0}
-    local -i progress_count="$((OK_COUNT+SKIP_COUNT+FAIL_COUNT+1))"     # never show zero progress (e.g. 0/8)
+    local -i progress_count="$((OK_COUNT+SKIP_COUNT+FAIL_COUNT))"     # never show zero progress (e.g. 0/8)
     local percent=''
 
     [[ $TOTAL_COUNT -gt 0 ]] || return          # no-point calculating a fraction of zero
@@ -7168,14 +7169,14 @@ PercFrac()
         progress_count=$TOTAL_COUNT
         percent='100%'
     else
-        percent="$((200*(progress_count)/(TOTAL_COUNT+1)%2+100*(progress_count)/(TOTAL_COUNT+1)))%"
+        percent="$((200*(progress_count+1)/(TOTAL_COUNT+1)%2+100*(progress_count+1)/(TOTAL_COUNT+1)))%"
     fi
 
     echo "$percent ($(ColourTextBrightWhite "$progress_count")/$(ColourTextBrightWhite "$TOTAL_COUNT"))"
 
     return 0
 
-    }
+    } 2>/dev/null
 
 ShowAsActionResult()
     {
@@ -7319,7 +7320,7 @@ ColourTextBrightGreen()
         echo -n "${1:-}"
     fi
 
-    }
+    } 2>/dev/null
 
 ColourTextBrightYellow()
     {
@@ -7330,7 +7331,7 @@ ColourTextBrightYellow()
         echo -n "${1:-}"
     fi
 
-    }
+    } 2>/dev/null
 
 ColourTextBrightOrange()
     {
@@ -7341,7 +7342,7 @@ ColourTextBrightOrange()
         echo -n "${1:-}"
     fi
 
-    }
+    } 2>/dev/null
 
 ColourTextBrightOrangeBlink()
     {
@@ -7352,7 +7353,7 @@ ColourTextBrightOrangeBlink()
         echo -n "${1:-}"
     fi
 
-    }
+    } 2>/dev/null
 
 ColourTextBrightRed()
     {
@@ -7363,7 +7364,7 @@ ColourTextBrightRed()
         echo -n "${1:-}"
     fi
 
-    }
+    } 2>/dev/null
 
 ColourTextBrightRedBlink()
     {
@@ -7374,7 +7375,7 @@ ColourTextBrightRedBlink()
         echo -n "${1:-}"
     fi
 
-    }
+    } 2>/dev/null
 
 ColourTextUnderlinedCyan()
     {
@@ -7385,7 +7386,7 @@ ColourTextUnderlinedCyan()
         echo -n "${1:-}"
     fi
 
-    }
+    } 2>/dev/null
 
 ColourTextBlackOnCyan()
     {
@@ -7396,7 +7397,7 @@ ColourTextBlackOnCyan()
         echo -n "${1:-}"
     fi
 
-    }
+    } 2>/dev/null
 
 ColourTextBrightWhite()
     {
@@ -7407,14 +7408,14 @@ ColourTextBrightWhite()
         echo -n "${1:-}"
     fi
 
-    }
+    } 2>/dev/null
 
 ColourReset()
     {
 
     echo -en "${1:-}"'\033[0m'
 
-    }
+    } 2>/dev/null
 
 StripANSI()
     {
@@ -7427,7 +7428,7 @@ StripANSI()
         echo "${1:-}"           # can't strip, so pass thru original message unaltered
     fi
 
-    }
+    } 2>/dev/null
 
 UpdateColourisation()
     {
@@ -7469,7 +7470,7 @@ ShowKeystrokes()
 #     [[ -e $GNU_STTY_CMD && -t 0 ]] && $GNU_STTY_CMD 'echo'
     [[ -e $GNU_STTY_CMD ]] && $GNU_STTY_CMD 'echo'
 
-    }
+    } 2>/dev/null
 
 FormatSecsToHoursMinutesSecs()
     {
@@ -7485,7 +7486,7 @@ FormatSecsToHoursMinutesSecs()
 
     printf '%01dh:%02dm:%02ds\n' "$h" "$m" "$s"
 
-    }
+    } 2>/dev/null
 
 FormatLongMinutesSecs()
     {
@@ -7503,7 +7504,7 @@ FormatLongMinutesSecs()
 
     printf '%01dm:%02ds\n' "$((10#$m))" "$((10#$s))"
 
-    }
+    } 2>/dev/null
 
 Objects.Load()
     {
@@ -7514,7 +7515,7 @@ Objects.Load()
 
     if [[ ! -e $PWD/dont.refresh.objects ]]; then
         if [[ ! -e $OBJECTS_PATHFILE ]] || ! IsThisFileRecent "$OBJECTS_PATHFILE"; then
-            ShowAsProc 'updating objects' >&2
+            ShowAsProc 'updating objects'
             if $CURL_CMD${curl_insecure_arg:-} --silent --fail "$OBJECTS_ARCHIVE_URL" > "$OBJECTS_ARCHIVE_PATHFILE"; then
                 /bin/tar --extract --gzip --file="$OBJECTS_ARCHIVE_PATHFILE" --directory="$WORK_PATH"
             fi
@@ -7522,11 +7523,11 @@ Objects.Load()
     fi
 
     if [[ ! -e $OBJECTS_PATHFILE ]]; then
-        ShowAsAbort 'objects missing' >&2
+        ShowAsAbort 'objects missing'
         DebugFuncEx 1; exit
     fi
 
-    ShowAsProc 'loading objects' >&2
+    ShowAsProc 'loading objects'
     . "$OBJECTS_PATHFILE"
 
     readonly OBJECTS_VER
@@ -7545,7 +7546,7 @@ Packages.Load()
 
     if [[ ! -e $PWD/dont.refresh.packages ]]; then
         if [[ ! -e $PACKAGES_PATHFILE ]] || ! IsThisFileRecent "$PACKAGES_PATHFILE" 60; then
-            ShowAsProc 'updating package list' >&2
+            ShowAsProc 'updating package list'
             if $CURL_CMD${curl_insecure_arg:-} --silent --fail "$PACKAGES_ARCHIVE_URL" > "$PACKAGES_ARCHIVE_PATHFILE"; then
                 /bin/tar --extract --gzip --file="$PACKAGES_ARCHIVE_PATHFILE" --directory="$WORK_PATH"
             fi
@@ -7553,11 +7554,11 @@ Packages.Load()
     fi
 
     if [[ ! -e $PACKAGES_PATHFILE ]]; then
-        ShowAsAbort 'package list missing' >&2
+        ShowAsAbort 'package list missing'
         DebugFuncEx 1; exit
     fi
 
-    ShowAsProc 'loading package list' >&2
+    ShowAsProc 'loading package list'
     . "$PACKAGES_PATHFILE"
 
     readonly PACKAGES_VER
@@ -7596,7 +7597,7 @@ CTRL_C_Captured()
     {
 
     EraseThisLine
-    ShowAsAbort 'caught SIGINT' >&2
+    ShowAsAbort 'caught SIGINT'
     KillActiveFork
     CloseActionMessagePipe
     exit
