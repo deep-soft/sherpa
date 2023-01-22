@@ -300,7 +300,7 @@ Self.Init()
         ParseArgs
     fi
 
-    SmartCR >&2
+    EraseThisLine >&2
 
     if Self.Display.Clean.IsNt && Self.Debug.ToScreen.IsNt; then
         Display "$(FormatAsTitle) $MANAGER_SCRIPT_VER • a mini-package-manager for QNAP NAS"
@@ -814,6 +814,7 @@ Tier.Proc()
 
             if [[ $TARGET_ACTION = Uninstall && ${target_packages[*]} =~ $re ]]; then
                 ShowKeystrokes      # must enable this before removing Entware & GNU stty
+                ShowCursor
             fi
 
             _LaunchQPKGActionForks_ "$target_function" "${target_packages[@]}" &
@@ -930,7 +931,7 @@ OpenActionMessagePipe()
     backup_stdin_fd=$(FindNextFD)
     DebugVar backup_stdin_fd
 
-    # save original stdin file descriptor so we can restore it later
+    # backup original stdin file descriptor so it can be restored later
     eval "exec $backup_stdin_fd>&0"
 
     message_pipe_fd=$(FindNextFD)
@@ -1055,7 +1056,7 @@ Self.Results()
     Self.Debug.ToArchive.IsSet && ArchiveActiveSessLog
     ResetActiveSessLog
     ReleaseLockFile
-    SmartCR
+    EraseThisLine
     DisplayLineSpaceIfNoneAlready   # final on-screen linespace
 
     return 0
@@ -2194,7 +2195,7 @@ UpdateEntwarePackageList()
     [[ ${ENTWARE_PACKAGE_LIST_UPTODATE:-false} = true ]] && return 0
 
     local -r CHANGE_THRESHOLD_MINUTES=60
-    local -r LOG_PATHFILE=$LOGS_PATH/entware.$UPDATE_LOG_FILE
+    local -r LOG_PATHFILE=$LOGS_PATH/Entware.$UPDATE_LOG_FILE
     local -i result_code=0
 
     # if Entware package list was recently updated, don't update again.
@@ -2584,6 +2585,8 @@ _LaunchQPKGActionForks_()
     done
 
     # all forks have exited
+
+    EraseThisLine
 
     }
 
@@ -3107,14 +3110,14 @@ DisplayAsHelpTitleHighlighted()
 
     }
 
-SmartCR()
+EraseThisLine()
     {
 
-    # reset cursor to start-of-line, erasing previous characters
+    # reset cursor to start-of-line, erasing entire line
 
     [[ $(type -t Self.Debug.ToScreen.Init) = function ]] && Self.Debug.ToScreen.IsSet && return
 
-    echo -en "\033[1K\r"
+    echo -en "\033[2K\r"
 
     }
 
@@ -3136,7 +3139,7 @@ DisplayWait()
 Help.Basic.Show()
     {
 
-    SmartCR
+    EraseThisLine
     DisplayLineSpaceIfNoneAlready
     Display "Usage: sherpa $(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpOpts)"
 
@@ -3697,17 +3700,11 @@ UpdateForkProgress()
         progress_message+="$(ColourTextBrightRed "$fail_count") failed"
     fi
 
-    if [[ $((ok_count+skip_count+fail_count)) -eq $total_count ]]; then
-        [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
-        $SLEEP_CMD 1            # pause to show 100%, before erasing
-        UpdateInPlace '      '    # a lazy, lazy fix
-    else
-        [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
-    fi
+    [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
 
     return 0
 
-    } 2>/dev/null
+    }
 
 QPKGs.NewVers.Show()
     {
@@ -4106,7 +4103,7 @@ QPKGs.Backups.Show()
     local format=''
 
     DisableDebugToArchiveAndFile
-    SmartCR
+    EraseThisLine
     DisplayLineSpaceIfNoneAlready
     DisplayAsHelpTitle "the location for $(FormatAsTitle) backups is: $BACKUP_PATH"
     Display
@@ -4202,7 +4199,7 @@ QPKGs.Statuses.Show()
     local maxcols=$(CalcMaxStatusColsToDisplay)
 
     QPKGs.States.Build
-    SmartCR
+    EraseThisLine
     DisplayLineSpaceIfNoneAlready
 
     for tier in Standalone Dependent; do
@@ -4306,7 +4303,7 @@ QPKGs.IsInstalled.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    SmartCR
+    EraseThisLine
 
     for package in $(QPKGs.IsInstalled.Array); do
         Display "$package"
@@ -4322,7 +4319,7 @@ QPKGs.ScInstallable.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    SmartCR
+    EraseThisLine
 
     for package in $(QPKGs.ScInstallable.Array); do
         Display "$package"
@@ -4338,7 +4335,7 @@ QPKGs.IsNtInstalled.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    SmartCR
+    EraseThisLine
 
     for package in $(QPKGs.IsNtInstalled.Array); do
         Display "$package"
@@ -4354,7 +4351,7 @@ QPKGs.IsStarted.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    SmartCR
+    EraseThisLine
 
     for package in $(QPKGs.IsStarted.Array); do
         Display "$package"
@@ -4370,7 +4367,7 @@ QPKGs.IsNtStarted.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    SmartCR
+    EraseThisLine
 
     for package in $(QPKGs.IsNtStarted.Array); do
         Display "$package"
@@ -4386,7 +4383,7 @@ QPKGs.ScUpgradable.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    SmartCR
+    EraseThisLine
 
     for package in $(QPKGs.ScUpgradable.Array); do
         Display "$package"
@@ -4402,7 +4399,7 @@ QPKGs.ScStandalone.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    SmartCR
+    EraseThisLine
 
     for package in $(QPKGs.ScStandalone.Array); do
         Display "$package"
@@ -4418,7 +4415,7 @@ QPKGs.ScDependent.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    SmartCR
+    EraseThisLine
 
     for package in $(QPKGs.ScDependent.Array); do
         Display "$package"
@@ -4893,8 +4890,8 @@ _QPKG.Reassign_()
 
     if [[ $result_code -eq 0 ]]; then
         DebugAsDone "reassigned $(FormatAsPackName "$PACKAGE_NAME") to sherpa"
-        MarkThisActionForkAsOk
         SendPackageStateChange IsReassigned
+        MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         MarkThisActionForkAsFailed
@@ -5085,6 +5082,7 @@ _QPKG.Install_()
             DebugAsProc 'installing essential IPKs'
             RunAndLog "$OPKG_CMD install --force-overwrite $ESSENTIAL_IPKS --cache $IPK_CACHE_PATH --tmp-dir $IPK_DL_PATH" "$LOGS_PATH/ipks.essential.$INSTALL_LOG_FILE" log:failure-only
 #             SendParentChangeEnv 'IPKs.AcOkInstall.Add "$ESSENTIAL_IPKS"'
+            SendParentChangeEnv 'HideKeystrokes'
             SendParentChangeEnv 'HideCursor'
             UpdateColourisation
             DebugAsDone 'installed essential IPKs'
@@ -5151,7 +5149,6 @@ _QPKG.Reinstall_()
 
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
-        MarkThisActionForkAsOk
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
             SendPackageStateChange IsEnabled
@@ -5167,6 +5164,7 @@ _QPKG.Reinstall_()
 
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
         DebugAsDone "reinstalled $(FormatAsPackName "$PACKAGE_NAME") $current_ver"
+        MarkThisActionForkAsOk
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
@@ -5243,7 +5241,6 @@ _QPKG.Upgrade_()
 
     if [[ $result_code -eq 0 || $result_code -eq 10 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
-        MarkThisActionForkAsOk
         SendPackageStateChange ScNtUpgradable
 
         if QPKG.IsEnabled "$PACKAGE_NAME"; then
@@ -5266,6 +5263,7 @@ _QPKG.Upgrade_()
             DebugAsDone "upgraded $(FormatAsPackName "$PACKAGE_NAME") from $previous_ver to $current_ver"
         fi
 
+        MarkThisActionForkAsOk
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
@@ -5317,8 +5315,8 @@ _QPKG.Uninstall_()
         Self.Debug.ToScreen.IsSet && debug_cmd='DEBUG_QPKG=true '
 
         if [[ $PACKAGE_NAME = Entware ]]; then
+#             SendParentChangeEnv 'ShowKeystrokes'
             SendParentChangeEnv 'ShowCursor'
-            UpdateColourisation
         fi
 
         RunAndLog "${debug_cmd}${SH_CMD} $QPKG_UNINSTALLER_PATHFILE" "$LOG_PATHFILE" log:failure-only
@@ -5330,18 +5328,21 @@ _QPKG.Uninstall_()
             DebugAsDone 'removed icon information from App Center'
 
             if [[ $PACKAGE_NAME = Entware ]]; then
+                sleep 2
                 ModPathToEntware
                 SendParentChangeEnv 'ModPathToEntware'
+                UpdateColourisation
             fi
 
-            MarkThisActionForkAsOk
             SendPackageStateChange IsNtInstalled
             SendPackageStateChange IsNtStarted
             SendPackageStateChange IsNtEnabled
+            MarkThisActionForkAsOk
         else
-            ShowAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+            DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
 
             if [[ $PACKAGE_NAME = Entware ]]; then
+#                 SendParentChangeEnv 'HideKeystrokes'
                 SendParentChangeEnv 'HideCursor'
             fi
 
@@ -5400,12 +5401,12 @@ _QPKG.Restart_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "restarted $(FormatAsPackName "$PACKAGE_NAME")"
-        MarkThisActionForkAsOk
         SendPackageStateChange IsRestarted
+        MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionForkAsFailed
         SendPackageStateChange IsNtRestarted
+        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
     fi
 
@@ -5470,12 +5471,12 @@ _QPKG.Start_()
             UpdateColourisation
         fi
 
-        MarkThisActionForkAsOk
         SendPackageStateChange IsStarted
+        MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
-        MarkThisActionForkAsFailed
         SendPackageStateChange IsNtStarted
+        MarkThisActionForkAsFailed
         result_code=1    # remap to 1
     fi
 
@@ -5544,8 +5545,8 @@ _QPKG.Stop_()
             UpdateColourisation
         fi
 
-        MarkThisActionForkAsOk
         SendPackageStateChange IsNtStarted
+        MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         MarkThisActionForkAsFailed
@@ -5641,8 +5642,8 @@ _QPKG.Backup_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "backed-up $(FormatAsPackName "$PACKAGE_NAME") configuration"
-        MarkThisActionForkAsOk
         SendPackageStateChange IsBackedUp
+        MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         MarkThisActionForkAsFailed
@@ -5695,8 +5696,8 @@ _QPKG.Restore_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "restored $(FormatAsPackName "$PACKAGE_NAME") configuration"
-        MarkThisActionForkAsOk
         SendPackageStateChange IsRestored
+        MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         MarkThisActionForkAsFailed
@@ -5749,8 +5750,8 @@ _QPKG.Clean_()
     if [[ $result_code -eq 0 ]]; then
         QPKG.StoreServiceStatus "$PACKAGE_NAME"
         DebugAsDone "cleaned $(FormatAsPackName "$PACKAGE_NAME")"
-        MarkThisActionForkAsOk
         SendPackageStateChange IsCleaned
+        MarkThisActionForkAsOk
     else
         DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         MarkThisActionForkAsFailed
@@ -6998,7 +6999,7 @@ ShowAsProc()
     local suffix=''
     [[ -n ${2:-} ]] && suffix=": $2"
 
-    SmartCR
+    EraseThisLine
     WriteToDisplayWait "$(ColourTextBrightOrange proc)" "${1:-}${suffix}"
     WriteToLog proc "${1:-}${suffix}"
     [[ $(type -t Self.Debug.ToScreen.Init) = function ]] && Self.Debug.ToScreen.IsSet && Display
@@ -7017,7 +7018,7 @@ ShowAsInfo()
 
     # note to user
 
-    SmartCR
+    EraseThisLine
     WriteToDisplayNew "$(ColourTextBrightYellow note)" "${1:-}"
     WriteToLog note "${1:-}"
 
@@ -7043,7 +7044,7 @@ ShowAsDone()
 
     # process completed OK
 
-    SmartCR
+    EraseThisLine
     WriteToDisplayNew "$(ColourTextBrightGreen 'done')" "${1:-}"
     WriteToLog 'done' "$1"
 
@@ -7054,7 +7055,7 @@ ShowAsWarn()
 
     # warning only
 
-    SmartCR
+    EraseThisLine
     WriteToDisplayNew "$(ColourTextBrightOrange warn)" "${1:-}"
     WriteToLog warn "$1"
 
@@ -7076,7 +7077,7 @@ ShowAsFail()
 
     # non-fatal error
 
-    SmartCR
+    EraseThisLine
 
     local capitalised="$(Capitalise "${1:-}")"
 
@@ -7090,7 +7091,7 @@ ShowAsError()
 
     # fatal error
 
-    SmartCR
+    EraseThisLine
 
     local capitalised="$(Capitalise "${1:-}")"
 #     [[ ${1: -1} != ':' ]] && capitalised+='.'
@@ -7174,7 +7175,7 @@ PercFrac()
 
     return 0
 
-    } 2>/dev/null
+    }
 
 ShowAsActionResult()
     {
@@ -7594,7 +7595,7 @@ Packages.Load()
 CTRL_C_Captured()
     {
 
-    SmartCR
+    EraseThisLine
     ShowAsAbort 'caught SIGINT' >&2
     KillActiveFork
     CloseActionMessagePipe
