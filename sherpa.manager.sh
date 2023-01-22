@@ -62,8 +62,8 @@ Self.Init()
     trap CTRL_C_Captured INT
     trap CleanupOnExit EXIT
     colourful=true
-    message_pipe_write_fd=null
-    message_pipe_read_fd=null
+    message_pipe_fd=null
+    backup_stdin_fd=null
 
     [[ ! -e /dev/fd ]] && ln -s /proc/self/fd /dev/fd       # KLUDGE: `/dev/fd` isn't always created by QTS during startup
 
@@ -141,7 +141,7 @@ Self.Init()
     readonly PIP_CMD="$PYTHON3_CMD -m pip"
     readonly PERL_CMD=/opt/bin/perl
 
-#     HideKeystrokes
+    HideKeystrokes
     HideCursor
     UpdateColourisation
 
@@ -893,7 +893,7 @@ Tier.Proc()
                     *)
                         DebugAsWarn "unidentified key in message queue: '$message1_key'"
                 esac
-            done <&$message_pipe_read_fd
+            done <&$message_pipe_fd
 
             [[ ${#target_packages[@]} -gt 0 ]] && KillActiveFork        # this should only happen if an action fork hasn't exited properly, and didn't mark its status as `ok`, `skipped`, or `failed`.
             wait 2>/dev/null
@@ -927,32 +927,34 @@ OpenActionMessagePipe()
     [[ -p $ACTION_MESSAGE_PIPE ]] && rm "$ACTION_MESSAGE_PIPE"
     [[ ! -p $ACTION_MESSAGE_PIPE ]] && mknod "$ACTION_MESSAGE_PIPE" p
 
-    # ensure pipe remains open for writing
-    cat "$ACTION_MESSAGE_PIPE" &
+    backup_stdin_fd=$(FindNextFD)
+    DebugVar backup_stdin_fd
 
-    # locate next available file descriptor
-    message_pipe_write_fd=$(FindNextFD)
-    DebugVar message_pipe_write_fd
+    # save original stdin file descriptor so we can restore it later
+    eval "exec $backup_stdin_fd>&0"
 
-    # open a write-only channel to this pipe
-    [[ $message_pipe_write_fd != null ]] && eval "exec $message_pipe_write_fd>$ACTION_MESSAGE_PIPE"
+    message_pipe_fd=$(FindNextFD)
+    DebugVar message_pipe_fd
 
-    # locate next available file descriptor
-    message_pipe_read_fd=$(FindNextFD)
-    DebugVar message_pipe_read_fd
-
-    # open a read-only channel to this pipe
-    [[ $message_pipe_read_fd != null ]] && eval "exec $message_pipe_read_fd<$ACTION_MESSAGE_PIPE"
+    # open a 2-way channel to message pipe
+    [[ $message_pipe_fd != null ]] && eval "exec $message_pipe_fd<>$ACTION_MESSAGE_PIPE"
 
     }
 
 CloseActionMessagePipe()
     {
 
-    # close messages file descriptor and remove message pipe
+    # restore original file descriptors, and remove message pipe
 
-    [[ $message_pipe_write_fd != null ]] && eval "exec $message_pipe_write_fd>&-"
-    [[ $message_pipe_read_fd != null ]] && eval "exec $message_pipe_read_fd<&-"
+    # restore stdin FD
+    [[ $backup_stdin_fd != null ]] && eval "exec 0>&$backup_stdin_fd"
+
+    # delete backup of stdin FD
+    [[ $backup_stdin_fd != null ]] && eval "exec $backup_stdin_fd>&-"
+
+    # delete message pipe FD
+    [[ $message_pipe_fd != null ]] && eval "exec $message_pipe_fd>&-"
+
     [[ -p $ACTION_MESSAGE_PIPE ]] && rm "$ACTION_MESSAGE_PIPE"
 
     }
@@ -4473,7 +4475,7 @@ WriteMessageToActionPipe()
 
     # Send a message into message stream to update parent shell environment
 
-    [[ $message_pipe_write_fd != null && -e /proc/$$/fd/$message_pipe_write_fd ]] && echo "$1#$2#$3#$4" >&$message_pipe_write_fd
+    [[ $message_pipe_fd != null && -e /proc/$$/fd/$message_pipe_fd ]] && echo "$1#$2#$3#$4" >&$message_pipe_fd
 
     }
 
@@ -7603,8 +7605,7 @@ CTRL_C_Captured()
 CleanupOnExit()
     {
 
-#     exec &>/dev/tty
-#     ShowKeystrokes
+    ShowKeystrokes
     ShowCursor
     trap - INT
 
