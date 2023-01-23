@@ -1787,7 +1787,7 @@ Self.ArgSuggests.Show()
             case $arg in
                 all)
                     Display
-                    DisplayAsProjSynExam "please provide a valid $(FormatAsHelpAc) before 'all' like" 'start all'
+                    DisplayAsProjSynExam "please provide a valid $(FormatAsAction) before 'all' like" 'start all'
                     Opts.Help.Basic.UnSet
                     ;;
                 all-backup|backup-all)
@@ -1797,7 +1797,7 @@ Self.ArgSuggests.Show()
                     ;;
                 dependent)
                     Display
-                    DisplayAsProjSynExam "please provide a valid $(FormatAsHelpAc) before 'dependent' like" 'start dependents'
+                    DisplayAsProjSynExam "please provide a valid $(FormatAsAction) before 'dependent' like" 'start dependents'
                     Opts.Help.Basic.UnSet
                     ;;
                 all-restart|restart-all)
@@ -1812,7 +1812,7 @@ Self.ArgSuggests.Show()
                     ;;
                 standalone)
                     Display
-                    DisplayAsProjSynExam "please provide a valid $(FormatAsHelpAc) before 'standalone' like" 'start standalones'
+                    DisplayAsProjSynExam "please provide a valid $(FormatAsAction) before 'standalone' like" 'start standalones'
                     Opts.Help.Basic.UnSet
                     ;;
                 all-start|start-all)
@@ -3065,7 +3065,7 @@ Help.Basic.Show()
 
     EraseThisLine
     DisplayLineSpaceIfNoneAlready
-    Display "Usage: sherpa $(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpOpts)"
+    Display "Usage: sherpa $(FormatAsAction) $(FormatAsPackages) $(FormatAsGroups) $(FormatAsOptions)"
 
     return 0
 
@@ -3074,10 +3074,11 @@ Help.Basic.Show()
 Help.Basic.Example.Show()
     {
 
-    DisplayAsProjSynIndentExam "to list available $(FormatAsHelpAc)s, type" 'list actions'
-    DisplayAsProjSynIndentExam "to list available $(FormatAsHelpPacks), type" 'list packages'
-    DisplayAsProjSynIndentExam "or, for more $(FormatAsHelpOpts), type" 'list options'
-    Display "\nThere's also the wiki: $(FormatAsURL "https://github.com/OneCDOnly/sherpa/wiki")"
+    DisplayAsProjSynIndentExam "to list available $(FormatAsAction)s, type" 'list actions'
+    DisplayAsProjSynIndentExam "to list available $(FormatAsPackages), type" 'list packages'
+    DisplayAsProjSynIndentExam "to list available package $(FormatAsGroups), type" 'list groups'
+    DisplayAsProjSynIndentExam "or, for more $(FormatAsOptions), type" 'list options'
+    Display "\nMore in the wiki: $(FormatAsURL "https://github.com/OneCDOnly/sherpa/wiki")"
 
     return 0
 
@@ -3089,32 +3090,32 @@ Help.Actions.Show()
     DisableDebugToArchiveAndFile
     Help.Basic.Show
     DisplayLineSpaceIfNoneAlready
-    DisplayAsHelpTitle "$(FormatAsHelpAc) usage examples:"
+    DisplayAsHelpTitle "$(FormatAsAction) usage examples:"
     DisplayAsProjSynIndentExam 'show package statuses' 'status'
     DisplayAsProjSynIndentExam '' s
     DisplayAsProjSynIndentExam 'show package repositories' 'repos'
     DisplayAsProjSynIndentExam '' r
     DisplayAsProjSynIndentExam 'ensure all application dependencies are installed' 'check'
-    DisplayAsProjSynIndentExam 'install these packages' "install $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam 'uninstall these packages' "uninstall $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam 'reinstall these packages' "reinstall $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam "rebuild these packages ('install' packages, then 'restore' configuration backups)" "rebuild $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam 'upgrade these packages (and internal applications where supported)' "upgrade $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam 'enable then start these packages' "start $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam 'stop then disable these packages (disabling will prevent them starting on reboot)' "stop $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam 'restart these packages (this will upgrade internal applications where supported)' "restart $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam "reassign these packages to the $(FormatAsTitle) repository" "reassign $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam 'clear local repository files from these packages' "clean $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam 'backup these application configurations to the backup location' "backup $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam 'restore these application configurations from the backup location' "restore $(FormatAsHelpPacks)"
+    DisplayAsProjSynIndentExam 'install these packages' "install $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam 'uninstall these packages' "uninstall $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam 'reinstall these packages' "reinstall $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam "rebuild these packages ('install' packages, then 'restore' configuration backups)" "rebuild $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam 'upgrade these packages (and internal applications where supported)' "upgrade $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam 'enable then start these packages' "start $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam 'stop then disable these packages (disabling will prevent them starting on reboot)' "stop $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam 'restart these packages (this will upgrade internal applications where supported)' "restart $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam "reassign these packages to the $(FormatAsTitle) repository" "reassign $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam 'clear local repository files from these packages' "clean $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam 'backup these application configurations to the backup location' "backup $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam 'restore these application configurations from the backup location' "restore $(FormatAsPackages)"
     DisplayAsProjSynIndentExam 'show application backup files' 'list backups'
     DisplayAsProjSynIndentExam '' b
     DisplayAsProjSynIndentExam "list $(FormatAsTitle) object version numbers" 'list versions'
     DisplayAsProjSynIndentExam '' v
     Display
-    DisplayAsProjSynExam "$(FormatAsHelpAc)s to affect all packages can be seen with" 'all-actions'
+    DisplayAsProjSynExam "$(FormatAsAction)s to affect all packages can be seen with" 'all-actions'
     Display
-    DisplayAsProjSynExam "multiple $(FormatAsHelpAc)s are supported like this" "$(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpAc) $(FormatAsHelpPacks)"
+    DisplayAsProjSynExam "multiple $(FormatAsAction)s are supported like this" "$(FormatAsAction) $(FormatAsPackages) $(FormatAsAction) $(FormatAsPackages)"
     DisplayAsProjSynIndentExam '' 'install sabnzbd sickgear restart transmission uninstall lazy nzbget upgrade nzbtomedia'
 
     return 0
@@ -3127,13 +3128,9 @@ Help.ActionsAll.Show()
     DisableDebugToArchiveAndFile
     Help.Basic.Show
     DisplayLineSpaceIfNoneAlready
-    DisplayAsHelpTitle "these $(FormatAsHelpAc)s apply to all installed packages. If $(FormatAsHelpAc) is 'install all' then all available packages will be installed."
+    DisplayAsHelpTitle "the 'all' group applies to all installed packages. If $(FormatAsAction) is 'install all' then all available packages will be installed."
     Display
-    DisplayAsHelpTitle "$(FormatAsHelpAc) usage examples:"
-    DisplayAsProjSynIndentExam 'show package statuses' 'status'
-    DisplayAsProjSynIndentExam '' s
-    DisplayAsProjSynIndentExam 'show package repositories' 'repos'
-    DisplayAsProjSynIndentExam '' r
+    DisplayAsHelpTitle "$(FormatAsAction) $(FormatAsGroups) usage examples:"
     DisplayAsProjSynIndentExam 'install everything!' 'install all'
     DisplayAsProjSynIndentExam 'uninstall everything!' 'force uninstall all'
     DisplayAsProjSynIndentExam 'reinstall all installed packages' 'reinstall all'
@@ -3164,7 +3161,7 @@ Help.Packages.Show()
     DisableDebugToArchiveAndFile
     Help.Basic.Show
     Display
-    DisplayAsHelpTitle "One-or-more $(FormatAsHelpPacks) may be specified at-once"
+    DisplayAsHelpTitle "One-or-more $(FormatAsPackages) may be specified at-once"
     Display
 
     for tier in Standalone Dependent; do
@@ -3177,7 +3174,7 @@ Help.Packages.Show()
         Display
     done
 
-    DisplayAsProjSynExam "abbreviations may also be used to specify $(FormatAsHelpPacks). To list these" 'list abs'
+    DisplayAsProjSynExam "abbreviations may also be used to specify $(FormatAsPackages). To list these" 'list abs'
     DisplayAsProjSynIndentExam '' a
 
     return 0
@@ -3190,9 +3187,13 @@ Help.Options.Show()
     DisableDebugToArchiveAndFile
     Help.Basic.Show
     DisplayLineSpaceIfNoneAlready
-    DisplayAsHelpTitle "$(FormatAsHelpOpts) usage examples:"
-    DisplayAsProjSynIndentExam 'process one-or-more packages and show live debugging information' "$(FormatAsHelpAc) $(FormatAsHelpPacks) debug"
-    DisplayAsProjSynIndentExam '' "$(FormatAsHelpAc) $(FormatAsHelpPacks) verbose"
+    DisplayAsHelpTitle "$(FormatAsOptions) usage examples:"
+    DisplayAsProjSynIndentExam 'show package statuses' 'status'
+    DisplayAsProjSynIndentExam '' s
+    DisplayAsProjSynIndentExam 'show package repositories' 'repos'
+    DisplayAsProjSynIndentExam '' r
+    DisplayAsProjSynIndentExam 'process one-or-more packages and show live debugging information' "$(FormatAsAction) $(FormatAsPackages) debug"
+    DisplayAsProjSynIndentExam '' "$(FormatAsAction) $(FormatAsPackages) verbose"
 
     return 0
 
@@ -3207,14 +3208,14 @@ Help.Problems.Show()
     DisplayAsHelpTitle 'usage examples for dealing with problems:'
     DisplayAsProjSynIndentExam 'show package statuses' 'status'
     DisplayAsProjSynIndentExam '' s
-    DisplayAsProjSynIndentExam 'process one-or-more packages and show live debugging information' "$(FormatAsHelpAc) $(FormatAsHelpPacks) debug"
-    DisplayAsProjSynIndentExam '' "$(FormatAsHelpAc) $(FormatAsHelpPacks) verbose"
+    DisplayAsProjSynIndentExam 'process one-or-more packages and show live debugging information' "$(FormatAsAction) $(FormatAsPackages) debug"
+    DisplayAsProjSynIndentExam '' "$(FormatAsAction) $(FormatAsPackages) verbose"
     DisplayAsProjSynIndentExam 'ensure all dependencies exist for installed packages' 'check'
-    DisplayAsProjSynIndentExam 'clear local repository files from these packages' "clean $(FormatAsHelpPacks)"
+    DisplayAsProjSynIndentExam 'clear local repository files from these packages' "clean $(FormatAsPackages)"
     DisplayAsProjSynIndentExam "remove all cached $(FormatAsTitle) items and logs" 'reset'
     DisplayAsProjSynIndentExam 'restart all installed packages (upgrades internal applications where supported)' 'restart all'
-    DisplayAsProjSynIndentExam 'enable then start these packages' "start $(FormatAsHelpPacks)"
-    DisplayAsProjSynIndentExam 'stop then disable these packages (disabling will prevent them starting on reboot)' "stop $(FormatAsHelpPacks)"
+    DisplayAsProjSynIndentExam 'enable then start these packages' "start $(FormatAsPackages)"
+    DisplayAsProjSynIndentExam 'stop then disable these packages (disabling will prevent them starting on reboot)' "stop $(FormatAsPackages)"
     DisplayAsProjSynIndentExam "view only the most recent $(FormatAsTitle) session log" 'last'
     DisplayAsProjSynIndentExam '' l
     DisplayAsProjSynIndentExam "view the entire $(FormatAsTitle) session log" 'log'
@@ -3238,7 +3239,7 @@ Help.Groups.Show()
     Display "standalone: all standalone packages will be selected. These are not dependent on other packages."
     Display "dependent: all dependent packages will be selected. These depend on another package being present."
     Display
-    DisplayAsProjSynExam "multiple groups are supported like this" "$(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpAc) $(FormatAsHelpPacks)"
+    DisplayAsProjSynExam "multiple groups are supported like this" "$(FormatAsAction) $(FormatAsPackages) $(FormatAsAction) $(FormatAsPackages)"
     DisplayAsProjSynIndentExam '' 'reinstall dependents stopped'
 
     return 0
@@ -3276,7 +3277,7 @@ Help.Tips.Show()
     DisplayAsProjSynIndentExam "view only the most recent $(FormatAsTitle) session log" 'last'
     DisplayAsProjSynIndentExam '' l
     DisplayAsProjSynIndentExam 'start all stopped packages' 'start stopped'
-    DisplayAsProjSynIndentExam 'upgrade the internal applications only' "restart $(FormatAsHelpPacks)"
+    DisplayAsProjSynIndentExam 'upgrade the internal applications only' "restart $(FormatAsPackages)"
     Help.BackupLocation.Show
 
     return 0
@@ -3293,7 +3294,7 @@ Help.PackageAbbreviations.Show()
     DisableDebugToArchiveAndFile
     Help.Basic.Show
     Display
-    DisplayAsHelpTitle "$(FormatAsTitle) can recognise various abbreviations as $(FormatAsHelpPacks)"
+    DisplayAsHelpTitle "$(FormatAsTitle) can recognise various abbreviations as $(FormatAsPackages)"
     Display
 
     for tier in Standalone Dependent; do
@@ -6430,28 +6431,29 @@ FormatAsTitle()
 
     }
 
-FormatAsHelpAc()
+FormatAsAction()
     {
-
-    # format as help action
 
     ColourTextBrightYellow '[action]'
 
     }
 
-FormatAsHelpPacks()
+FormatAsPackages()
     {
-
-    # format as help packages
 
     ColourTextBrightOrange '[packages...]'
 
     }
 
-FormatAsHelpOpts()
+FormatAsGroups()
     {
 
-    # format as help options
+    ColourTextBrightOrange '[groups...]'
+
+    }
+
+FormatAsOptions()
+    {
 
     ColourTextBrightRed '[options...]'
 
@@ -6469,16 +6471,12 @@ FormatAsPackName()
 FormatAsFileName()
     {
 
-    # format as filename
-
     echo "(${1:?filename null})"
 
     }
 
 FormatAsURL()
     {
-
-    # format as URL
 
     ColourTextUnderlinedCyan "${1:-}"
 
