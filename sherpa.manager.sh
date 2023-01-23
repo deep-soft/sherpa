@@ -3665,6 +3665,7 @@ UpdateForkProgress()
     local msg=': '
 
     RefreshForkCounts
+    Self.Debug.ToScreen.IsSet && return     # don't display progress, it's impossible to view it with so-many other writes to the screen.
 
     msg+="$(PercFrac "$ok_count" "$skip_count" "$fail_count" "$total_count")"
 
