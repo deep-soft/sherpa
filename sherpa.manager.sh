@@ -54,7 +54,7 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230123
+    local -r SCRIPT_VER=230124
 
     IsQNAP || return
     IsSU || return
@@ -63,7 +63,7 @@ Self.Init()
     trap RunOnEXIT EXIT
     trap RunOnSIGINT INT
     colourful=true
-    message_pipe_fd=null
+    msg_pipe_fd=null
     backup_stdin_fd=null
 
     [[ ! -e /dev/fd ]] && ln -s /proc/self/fd /dev/fd       # KLUDGE: `/dev/fd` isn't always created by QTS during startup
@@ -156,7 +156,7 @@ Self.Init()
     readonly IPK_CACHE_PATH=$WORK_PATH/ipks
     readonly PIP_CACHE_PATH=$WORK_PATH/pips
     readonly BACKUP_PATH=$(GetDefVol)/.qpkg_config_backup
-    readonly ACTION_MESSAGE_PIPE=/var/run/qpkg.messages.pipe
+    readonly ACTION_MSG_PIPE=/var/run/qpkg.messages.pipe
 
     local -r MANAGER_ARCHIVE_FILE=${MANAGER_FILE%.*}.tar.gz
     readonly MANAGER_ARCHIVE_PATHFILE=$WORK_PATH/$MANAGER_ARCHIVE_FILE
@@ -177,8 +177,8 @@ Self.Init()
     readonly EXTERNAL_PACKAGES_ARCHIVE_PATHFILE=/opt/var/opkg-lists/entware
     readonly EXTERNAL_PACKAGES_PATHFILE=$WORK_PATH/Packages
 
-    readonly PREVIOUS_IPK_LIST=$WORK_PATH/ipk.prev.list
-    readonly PREVIOUS_PIP_LIST=$WORK_PATH/pip.prev.list
+    readonly PREV_IPK_LIST=$WORK_PATH/ipk.prev.list
+    readonly PREV_PIP_LIST=$WORK_PATH/pip.prev.list
 
     readonly SESS_ARCHIVE_PATHFILE=$LOGS_PATH/session.archive.log
     sess_active_pathfile=$PROJECT_PATH/session.$$.active.log
@@ -287,7 +287,7 @@ Self.Init()
     readonly CPU_CORES=$(GetCPUCores)
     readonly CONCURRENCY=$CPU_CORES     # maximum concurrent package actions to run. Should probably make this account for CPU speed too.
     readonly LOG_TAIL_LINES=5000        # note: a full download and install of everything generates a session log of around 1600 lines, but include a bunch of opkg updates and it can get much longer
-    previous_msg=' '
+    prev_msg=' '
     fork_pid=''
     [[ ${NAS_FIRMWARE_VER//.} -lt 426 ]] && curl_insecure_arg=' --insecure' || curl_insecure_arg=''
     QPKG.IsInstalled Entware && [[ $ENTWARE_VER = none ]] && DebugAsWarn "$(FormatAsPackName Entware) appears to be installed but is not visible"
@@ -773,6 +773,10 @@ Tier.Proc()
     local package=''
     local state=''
     local scope=''
+    local msg1_key=''
+    local msg1_value=''
+    local msg2_key=''
+    local msg2_value=''
     local -i package_index=0
     local -a target_packages=()
     local -r TIER=${2:?null}
@@ -809,7 +813,7 @@ Tier.Proc()
 
             AdjustMaxForks "$TARGET_ACTION"
             InitForkCounts
-            OpenActionMessagePipe
+            OpenActionMsgPipe
 
             local re=\\bEntware\\b        # BASH 3.2 regex with word boundaries: https://stackoverflow.com/a/9793094
 
@@ -823,83 +827,83 @@ Tier.Proc()
 
             # read message pipe and process QPKGs and actions as-per requests contained within
             while [[ ${#target_packages[@]} -gt 0 ]]; do
-                IFS='#' read -r message1_key message1_value message2_key message2_value
+                IFS='#' read -r msg1_key msg1_value msg2_key msg2_value
 
-                case $message1_key in
+                case $msg1_key in
                     env)        # change the state of the sherpa environment
-                        eval "$message1_value"      # run this as executable
+                        eval "$msg1_value"      # run this as executable
                         ;;
                     change)     # change the state of a single QPKG in the parent shell
                         while true; do
                             for scope in "${PACKAGE_SCOPES[@]}"; do
-                                case $message1_value in
+                                case $msg1_value in
                                     "Sc${scope}")
-                                        QPKGs.ScNt${scope}.Remove "$message2_value"
-                                        QPKGs.Sc${scope}.Add "$message2_value"
+                                        QPKGs.ScNt${scope}.Remove "$msg2_value"
+                                        QPKGs.Sc${scope}.Add "$msg2_value"
                                         break 2
                                         ;;
                                     "ScNt${scope}")
-                                        QPKGs.Sc${scope}.Remove "$message2_value"
-                                        QPKGs.ScNt${scope}.Add "$message2_value"
+                                        QPKGs.Sc${scope}.Remove "$msg2_value"
+                                        QPKGs.ScNt${scope}.Add "$msg2_value"
                                         break 2
                                 esac
                             done
 
                             for state in "${PACKAGE_STATES[@]}"; do
-                                case $message1_value in
+                                case $msg1_value in
                                     "Is${state}")
-                                        QPKGs.IsNt${state}.Remove "$message2_value"
-                                        QPKGs.Is${state}.Add "$message2_value"
+                                        QPKGs.IsNt${state}.Remove "$msg2_value"
+                                        QPKGs.Is${state}.Add "$msg2_value"
                                         break 2
                                         ;;
                                     "IsNt${state}")
-                                        QPKGs.Is${state}.Remove "$message2_value"
-                                        QPKGs.IsNt${state}.Add "$message2_value"
+                                        QPKGs.Is${state}.Remove "$msg2_value"
+                                        QPKGs.IsNt${state}.Add "$msg2_value"
                                         break 2
                                 esac
                             done
 
-                            DebugAsWarn "unidentified change in message queue: '$message1_value'"
+                            DebugAsWarn "unidentified change in message queue: '$msg1_value'"
                             break
                         done
                         ;;
                     status)     # update the status of a single action fork in the parent shell
-                        case $message1_value in
+                        case $msg1_value in
                             Ok)     # completed OK
-                                QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
-                                QPKGs.AcOk${TARGET_ACTION}.Add "$message2_value"
+                                QPKGs.AcTo${TARGET_ACTION}.Remove "$msg2_value"
+                                QPKGs.AcOk${TARGET_ACTION}.Add "$msg2_value"
                                 ((ok_count++))
                                 ;;
                             Sk)     # action was skipped
-                                QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
-                                QPKGs.AcSk${TARGET_ACTION}.Add "$message2_value"
+                                QPKGs.AcTo${TARGET_ACTION}.Remove "$msg2_value"
+                                QPKGs.AcSk${TARGET_ACTION}.Add "$msg2_value"
                                 ((skip_count++))
                                 ;;
                             Er)     # action failed
-                                QPKGs.AcTo${TARGET_ACTION}.Remove "$message2_value"
-                                QPKGs.AcEr${TARGET_ACTION}.Add "$message2_value"
+                                QPKGs.AcTo${TARGET_ACTION}.Remove "$msg2_value"
+                                QPKGs.AcEr${TARGET_ACTION}.Add "$msg2_value"
                                 ((fail_count++))
                                 ;;
                             Ex)     # action has exited
                                 for package_index in "${!target_packages[@]}"; do
-                                    if [[ ${target_packages[package_index]} = "$message2_value" ]]; then
+                                    if [[ ${target_packages[package_index]} = "$msg2_value" ]]; then
                                         unset 'target_packages[package_index]'
                                         break
                                     fi
                                 done
                                 ;;
                             *)
-                                DebugAsWarn "unidentified status in message queue: '$message1_value'"
+                                DebugAsWarn "unidentified status in message queue: '$msg1_value'"
                         esac
                         ;;
                     *)
-                        DebugAsWarn "unidentified key in message queue: '$message1_key'"
+                        DebugAsWarn "unidentified key in message queue: '$msg1_key'"
                 esac
-            done <&$message_pipe_fd
+            done <&$msg_pipe_fd
 
             [[ ${#target_packages[@]} -gt 0 ]] && KillActiveFork        # this should only happen if an action fork hasn't exited properly, and didn't mark its status as `ok`, `skipped`, or `failed`.
             wait 2>/dev/null
-            CloseActionMessagePipe
+            CloseActionMsgPipe
             ;;
         IPK|PIP)
             InitForkCounts
@@ -921,13 +925,13 @@ Tier.Proc()
 
     }
 
-OpenActionMessagePipe()
+OpenActionMsgPipe()
     {
 
     # create a message pipe, so action forks can send data back to parent
 
-    [[ -p $ACTION_MESSAGE_PIPE ]] && rm "$ACTION_MESSAGE_PIPE"
-    [[ ! -p $ACTION_MESSAGE_PIPE ]] && mknod "$ACTION_MESSAGE_PIPE" p
+    [[ -p $ACTION_MSG_PIPE ]] && rm "$ACTION_MSG_PIPE"
+    [[ ! -p $ACTION_MSG_PIPE ]] && mknod "$ACTION_MSG_PIPE" p
 
     backup_stdin_fd=$(FindNextFD)
     DebugVar backup_stdin_fd
@@ -935,15 +939,15 @@ OpenActionMessagePipe()
     # backup original stdin file descriptor so it can be restored later
     eval "exec $backup_stdin_fd>&0"
 
-    message_pipe_fd=$(FindNextFD)
-    DebugVar message_pipe_fd
+    msg_pipe_fd=$(FindNextFD)
+    DebugVar msg_pipe_fd
 
     # open a 2-way channel to message pipe
-    [[ $message_pipe_fd != null ]] && eval "exec $message_pipe_fd<>$ACTION_MESSAGE_PIPE"
+    [[ $msg_pipe_fd != null ]] && eval "exec $msg_pipe_fd<>$ACTION_MSG_PIPE"
 
     }
 
-CloseActionMessagePipe()
+CloseActionMsgPipe()
     {
 
     # restore original file descriptors, and remove message pipe
@@ -955,9 +959,9 @@ CloseActionMessagePipe()
     [[ $backup_stdin_fd != null ]] && eval "exec $backup_stdin_fd>&-"
 
     # delete message pipe FD
-    [[ $message_pipe_fd != null ]] && eval "exec $message_pipe_fd>&-"
+    [[ $msg_pipe_fd != null ]] && eval "exec $msg_pipe_fd>&-"
 
-    [[ -p $ACTION_MESSAGE_PIPE ]] && rm "$ACTION_MESSAGE_PIPE"
+    [[ -p $ACTION_MSG_PIPE ]] && rm "$ACTION_MSG_PIPE"
 
     }
 
@@ -1055,7 +1059,7 @@ Self.Results()
 
     DebugInfoMinSepr
     DebugScript finished "$($DATE_CMD)"
-    DebugScript 'elapsed time' "$(FormatSecsToHoursMinutesSecs "$(($($DATE_CMD +%s)-$([[ -n $SCRIPT_STARTSECONDS ]] && echo $SCRIPT_STARTSECONDS || echo 1)))")"
+    DebugScript 'elapsed time' "$(FormatSecsToHoursMinutesSecs "$(($($DATE_CMD +%s)-SCRIPT_STARTSECONDS))")"
     DebugInfoMajSepr
     Self.Debug.ToArchive.IsSet && ArchiveActiveSessLog
     ResetActiveSessLog
@@ -2203,8 +2207,8 @@ IsThisFileRecent()
 SavePackageLists()
     {
 
-    $PIP_CMD freeze > "$PREVIOUS_PIP_LIST" 2>/dev/null && DebugAsDone "saved current $(FormatAsPackName pip3) module list to $(FormatAsFileName "$PREVIOUS_PIP_LIST")"
-    $OPKG_CMD list-installed > "$PREVIOUS_IPK_LIST" 2>/dev/null && DebugAsDone "saved current $(FormatAsPackName Entware) IPK list to $(FormatAsFileName "$PREVIOUS_IPK_LIST")"
+    $PIP_CMD freeze > "$PREV_PIP_LIST" 2>/dev/null && DebugAsDone "saved current $(FormatAsPackName pip3) module list to $(FormatAsFileName "$PREV_PIP_LIST")"
+    $OPKG_CMD list-installed > "$PREV_IPK_LIST" 2>/dev/null && DebugAsDone "saved current $(FormatAsPackName Entware) IPK list to $(FormatAsFileName "$PREV_IPK_LIST")"
 
     }
 
@@ -2567,9 +2571,9 @@ _MonitorDirSize_()
     local -i last_bytes=0
     local -i stall_seconds=0
     local -i stall_seconds_threshold=4
-    local percent=''
-    local progress_message=''
-    local stall_message=''
+    local perc_msg=''
+    local progress_msg=''
+    local stall_msg=''
 
     InitProgress
 
@@ -2584,69 +2588,75 @@ _MonitorDirSize_()
             ((stall_seconds++))
         fi
 
-        percent="$((200*(current_bytes)/(total_bytes)%2+100*(current_bytes)/(total_bytes)))%"
-        [[ $current_bytes -lt $total_bytes && $percent = '100%' ]] && percent='99%'     # ensure we don't hit 100% until the last byte is downloaded
-        progress_message="$percent ($(ColourTextBrightWhite "$(FormatAsISOBytes "$current_bytes")")/$(ColourTextBrightWhite "$(FormatAsISOBytes "$total_bytes")"))"
+        perc_msg="$((200*(current_bytes)/(total_bytes)%2+100*(current_bytes)/(total_bytes)))%"
+        [[ $current_bytes -lt $total_bytes && $perc_msg = '100%' ]] && perc_msg='99%'     # ensure we don't hit 100% until the last byte is downloaded
+        progress_msg="$perc_msg ($(ColourTextBrightWhite "$(FormatAsISOBytes "$current_bytes")")/$(ColourTextBrightWhite "$(FormatAsISOBytes "$total_bytes")"))"
 
         if [[ $stall_seconds -ge $stall_seconds_threshold ]]; then
             # append a message showing stalled time
-            stall_message=' stalled for '
+            stall_msg=' stalled for '
 
             if [[ $stall_seconds -lt 60 ]]; then
-                stall_message+="$stall_seconds seconds"
+                stall_msg+="$stall_seconds seconds"
             else
-                stall_message+="$(FormatSecsToHoursMinutesSecs "$stall_seconds")"
+                stall_msg+="$(FormatSecsToHoursMinutesSecs "$stall_seconds")"
             fi
 
             # add a suggestion to cancel if download has stalled for too long
             if [[ $stall_seconds -ge 90 ]]; then
-                stall_message+=': cancel with CTRL+C and try again later'
+                stall_msg+=': cancel with CTRL+C and try again later'
             fi
 
             # colourise as-required
             if [[ $stall_seconds -ge 90 ]]; then
-                stall_message=$(ColourTextBrightRed "$stall_message")
+                stall_msg=$(ColourTextBrightRed "$stall_msg")
             elif [[ $stall_seconds -ge 45 ]]; then
-                stall_message=$(ColourTextBrightOrange "$stall_message")
+                stall_msg=$(ColourTextBrightOrange "$stall_msg")
             elif [[ $stall_seconds -ge 20 ]]; then
-                stall_message=$(ColourTextBrightYellow "$stall_message")
+                stall_msg=$(ColourTextBrightYellow "$stall_msg")
             fi
 
-            progress_message+=$stall_message
+            progress_msg+=$stall_msg
         fi
 
-        UpdateInPlace "$progress_message"
+        WriteMsgInPlace "$progress_msg"
         $SLEEP_CMD 1
     done
 
-    [[ -n $progress_message ]] && UpdateInPlace 'done!'
+    [[ -n $progress_msg ]] && WriteMsgInPlace 'done!'
 
     }
 
-UpdateInPlace()
+WriteMsgInPlace()
     {
 
     # input:
     #   $1 = message to display
 
-    local -i this_length=0
+    # output:
+    #   stdout = "$1" with all whitespace squeezed.
+    #   $prev_clean_msg = the message provided in $1, but with all whitespace squeezed, and with ANSI codes removed.
+
+    local -i length=0
+    local -i prev_length=0
     local -i blanking_length=0
-    local this_clean_msg=$(StripANSI "${1:-}")
+    local squeezed_msg=$(tr -s ' ' <<< "${1:-}")
+    local clean_msg=$(StripANSI "$squeezed_msg")
 
-    if [[ $this_clean_msg != "$previous_clean_msg" ]]; then
-        this_length=${#this_clean_msg}
+    if [[ $clean_msg != "$prev_clean_msg" ]]; then
+        length=${#clean_msg}
+        prev_length=${#prev_clean_msg}
 
-        if [[ $this_length -lt $previous_length ]]; then
-            blanking_length=$((this_length-previous_length))
+        if [[ $length -lt $prev_length ]]; then
+            blanking_length=$((length-prev_length))
             # backspace to start of previous msg, print new msg, add additional spaces, then backspace to end of new msg
-            printf "%${previous_length}s" | tr ' ' '\b'; echo -en "$1"; printf "%${blanking_length}s"; printf "%${blanking_length}s" | tr ' ' '\b'
+            printf "%${prev_length}s" | tr ' ' '\b'; echo -en "$squeezed_msg"; printf "%${blanking_length}s"; printf "%${blanking_length}s" | tr ' ' '\b'
         else
             # backspace to start of previous msg, print new msg
-            printf "%${previous_length}s" | tr ' ' '\b'; echo -en "$1"
+            printf "%${prev_length}s" | tr ' ' '\b'; echo -en "$squeezed_msg"
         fi
 
-        previous_length=$this_length
-        previous_clean_msg=$this_clean_msg
+        prev_clean_msg=$clean_msg
     fi
 
     }
@@ -3641,8 +3651,7 @@ InitProgress()
     {
 
     progress_index=0
-    previous_length=0
-    previous_clean_msg=''
+    prev_clean_msg=''
 
     RefreshForkCounts
 
@@ -3653,33 +3662,33 @@ UpdateForkProgress()
 
     # all input vars are global
 
-    local progress_message=': '
+    local msg=': '
 
     RefreshForkCounts
 
-    progress_message+="$(PercFrac "$ok_count" "$skip_count" "$fail_count" "$total_count")"
+    msg+="$(PercFrac "$ok_count" "$skip_count" "$fail_count" "$total_count")"
 
     if [[ $fork_count -gt 0 ]]; then
-        [[ -n $progress_message ]] && progress_message+=': '
-        progress_message+="$(ColourTextBrightOrange "$fork_count") in-progress"
+        [[ -n $msg ]] && msg+=': '
+        msg+="$(ColourTextBrightOrange "$fork_count") in-progress"
     fi
 
     if [[ $ok_count -gt 0 ]]; then
-        [[ -n $progress_message ]] && progress_message+=': '
-        progress_message+="$(ColourTextBrightGreen "$ok_count") OK"
+        [[ -n $msg ]] && msg+=': '
+        msg+="$(ColourTextBrightGreen "$ok_count") OK"
     fi
 
     if [[ $skip_count -gt 0 ]]; then
-        [[ -n $progress_message ]] && progress_message+=': '
-        progress_message+="$(ColourTextBrightOrange "$skip_count") skipped"
+        [[ -n $msg ]] && msg+=': '
+        msg+="$(ColourTextBrightOrange "$skip_count") skipped"
     fi
 
     if [[ $fail_count -gt 0 ]]; then
-        [[ -n $progress_message ]] && progress_message+=': '
-        progress_message+="$(ColourTextBrightRed "$fail_count") failed"
+        [[ -n $msg ]] && msg+=': '
+        msg+="$(ColourTextBrightRed "$fail_count") failed"
     fi
 
-    [[ -n $progress_message ]] && UpdateInPlace "$progress_message"
+    [[ -n $msg ]] && WriteMsgInPlace "$msg"
 
     return 0
 
@@ -3959,12 +3968,12 @@ QPKGs.States.Build()
 
     local -i index=0
     local package=''
-    local previous=''
+    local prev=''
     ShowAsProc 'package states'
 
     for index in "${!QPKG_NAME[@]}"; do
         package="${QPKG_NAME[$index]}"
-        [[ $package = "$previous" ]] && continue || previous=$package
+        [[ $package = "$prev" ]] && continue || prev=$package
 
         if QPKG.IsInstalled "$package"; then
             if [[ ! -d $(QPKG.InstallationPath "$package") ]]; then
@@ -4414,7 +4423,7 @@ SendParentChangeEnv()
     # input:
     #   $1 = action request
 
-    WriteMessageToActionPipe env "$1" '' ''
+    WriteMsgToActionPipe env "$1" '' ''
 
     }
 
@@ -4428,7 +4437,7 @@ SendPackageStateChange()
     # input:
     #   $1 = action request
 
-    WriteMessageToActionPipe change "$1" package "$PACKAGE_NAME"
+    WriteMsgToActionPipe change "$1" package "$PACKAGE_NAME"
 
     }
 
@@ -4442,16 +4451,16 @@ SendActionStatus()
     # input:
     #   $1 = status update
 
-    WriteMessageToActionPipe status "$1" package "$PACKAGE_NAME"
+    WriteMsgToActionPipe status "$1" package "$PACKAGE_NAME"
 
     }
 
-WriteMessageToActionPipe()
+WriteMsgToActionPipe()
     {
 
     # Send a message into message stream to update parent shell environment
 
-    [[ $message_pipe_fd != null && -e /proc/$$/fd/$message_pipe_fd ]] && echo "$1#$2#$3#$4" >&$message_pipe_fd
+    [[ $msg_pipe_fd != null && -e /proc/$$/fd/$msg_pipe_fd ]] && echo "$1#$2#$3#$4" >&$msg_pipe_fd
 
     }
 
@@ -4530,10 +4539,10 @@ NoteIPKAcAsEr()
     #   $2 = action
     #   $3 = reason (optional)
 
-    local message="failing request to $2 $(FormatAsPackName "$1")"
+    local msg="failing request to $2 $(FormatAsPackName "$1")"
 
-    [[ -n ${3:-} ]] && message+=" as $3"
-    DebugAsError "$message" >&2
+    [[ -n ${3:-} ]] && msg+=" as $3"
+    DebugAsError "$msg" >&2
     IPKs.AcTo"$(Capitalise "$2")".Remove "$1"
     IPKs.AcEr"$(Capitalise "$2")".Add "$1"
 
@@ -5208,7 +5217,7 @@ _QPKG.Upgrade_()
 
     local -r TARGET_FILE=$($BASENAME_CMD "$local_pathfile")
     local -r LOG_PATHFILE=$LOGS_PATH/$TARGET_FILE.$UPGRADE_LOG_FILE
-    local previous_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
+    local prev_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
     local target_path=''
 
     DebugAsProc "upgrading $(FormatAsPackName "$PACKAGE_NAME")"
@@ -5235,10 +5244,10 @@ _QPKG.Upgrade_()
 
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
 
-        if [[ $current_ver = "$previous_ver" ]]; then
+        if [[ $current_ver = "$prev_ver" ]]; then
             DebugAsDone "upgraded $(FormatAsPackName "$PACKAGE_NAME") and installed version is $current_ver"
         else
-            DebugAsDone "upgraded $(FormatAsPackName "$PACKAGE_NAME") from $previous_ver to $current_ver"
+            DebugAsDone "upgraded $(FormatAsPackName "$PACKAGE_NAME") from $prev_ver to $current_ver"
         fi
 
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
@@ -5847,11 +5856,11 @@ QPKG.Avail.Ver()
 
     local -i index=0
     local package=''
-    local previous=''
+    local prev=''
 
     for index in "${!QPKG_NAME[@]}"; do
         package="${QPKG_NAME[$index]}"
-        [[ $package = "$previous" ]] && continue || previous=$package
+        [[ $package = "$prev" ]] && continue || prev=$package
 
         if [[ $1 = "$package" ]]; then
             echo "${QPKG_VERSION[$index]}"
@@ -7117,14 +7126,14 @@ ShowAsActionProgress()
     declare -i -r TOTAL_COUNT=${6:-0}
     local -r ACTION_PRESENT=${7:?null}
     local -r DURATION=${8:-}
-    local progress_message=''
+    local progress_msg=''
 
-    progress_message="$(PercFrac "$OK_COUNT" "$SKIP_COUNT" "$FAIL_COUNT" "$TOTAL_COUNT")"
+    progress_msg="$(PercFrac "$OK_COUNT" "$SKIP_COUNT" "$FAIL_COUNT" "$TOTAL_COUNT")"
 
     if [[ $DURATION != long ]]; then
-        ShowAsProc "$ACTION_PRESENT ${TOTAL_COUNT}${tier} ${PACKAGE_TYPE}$(Pluralise "$TOTAL_COUNT")" "$progress_message"
+        ShowAsProc "$ACTION_PRESENT ${TOTAL_COUNT}${tier} ${PACKAGE_TYPE}$(Pluralise "$TOTAL_COUNT")" "$progress_msg"
     else
-        ShowAsProcLong "$ACTION_PRESENT ${TOTAL_COUNT}${tier} ${PACKAGE_TYPE}$(Pluralise "$TOTAL_COUNT")" "$progress_message"
+        ShowAsProcLong "$ACTION_PRESENT ${TOTAL_COUNT}${tier} ${PACKAGE_TYPE}$(Pluralise "$TOTAL_COUNT")" "$progress_msg"
     fi
 
     [[ $((OK_COUNT+SKIP_COUNT+FAIL_COUNT)) -ge $TOTAL_COUNT ]] && $SLEEP_CMD 1
@@ -7147,19 +7156,19 @@ PercFrac()
     declare -i -r SKIP_COUNT=${2:-0}
     declare -i -r FAIL_COUNT=${3:-0}
     declare -i -r TOTAL_COUNT=${4:-0}
-    local -i progress_count="$((OK_COUNT+SKIP_COUNT+FAIL_COUNT))"     # never show zero progress (e.g. 0/8)
-    local percent=''
+    local -i progress_count="$((OK_COUNT+SKIP_COUNT+FAIL_COUNT))"
+    local perc_msg=''
 
     [[ $TOTAL_COUNT -gt 0 ]] || return          # no-point calculating a fraction of zero
 
     if [[ $progress_count -gt $TOTAL_COUNT ]]; then
         progress_count=$TOTAL_COUNT
-        percent='100%'
+        perc_msg='100%'
     else
-        percent="$((200*(progress_count+1)/(TOTAL_COUNT+1)%2+100*(progress_count+1)/(TOTAL_COUNT+1)))%"
+        perc_msg="$((200*(progress_count+1)/(TOTAL_COUNT+1)%2+100*(progress_count+1)/(TOTAL_COUNT+1)))%"
     fi
 
-    echo "$percent ($(ColourTextBrightWhite "$progress_count")/$(ColourTextBrightWhite "$TOTAL_COUNT"))"
+    echo "$perc_msg ($(ColourTextBrightWhite "$progress_count")/$(ColourTextBrightWhite "$TOTAL_COUNT"))"
 
     return 0
 
@@ -7187,20 +7196,20 @@ ShowAsActionResult()
     declare -i -r SKIP_COUNT=${4:-0}
     declare -i -r FAIL_COUNT=${5:-0}
     declare -i -r TOTAL_COUNT=${6:-0}
-    local result_message="${7:?null} "
+    local msg="${7:?null} "
 
     if [[ $OK_COUNT -gt 0 ]]; then
-        result_message+="${OK_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$OK_COUNT") OK"
+        msg+="${OK_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$OK_COUNT") OK"
     fi
 
     if [[ $SKIP_COUNT -gt 0 ]]; then
-        [[ $OK_COUNT -gt 0 ]] && result_message+=', '
-        result_message+="${SKIP_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$SKIP_COUNT") skipped"
+        [[ $OK_COUNT -gt 0 ]] && msg+=', '
+        msg+="${SKIP_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$SKIP_COUNT") skipped"
     fi
 
     if [[ $FAIL_COUNT -gt 0 ]]; then
-        [[ $OK_COUNT -gt 0 || $SKIP_COUNT -gt 0 ]] && result_message+=' and '
-        result_message+="${FAIL_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$FAIL_COUNT") failed"
+        [[ $OK_COUNT -gt 0 || $SKIP_COUNT -gt 0 ]] && msg+=' and '
+        msg+="${FAIL_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$FAIL_COUNT") failed"
     fi
 
     case $TOTAL_COUNT in
@@ -7208,10 +7217,10 @@ ShowAsActionResult()
             DebugAsDone "no${TIER} ${PACKAGE_TYPE}s processed"
             ;;
         "$FAIL_COUNT")
-            ShowAsWarn "$result_message"
+            ShowAsWarn "$msg"
             ;;
         *)
-            ShowAsDone "$result_message"
+            ShowAsDone "$msg"
     esac
 
     return 0
@@ -7228,15 +7237,15 @@ WriteToDisplayWait()
     #   $2 = message
 
     # output:
-    #   $previous_msg = global and will be used again later
+    #   $prev_msg = global and will be used again later
 
     if [[ $colourful = true ]]; then
-        previous_msg=$(printf '%-10s: %s' "${1:-}" "${2:-}")    # allow extra length for ANSI codes
+        prev_msg=$(printf '%-10s: %s' "${1:-}" "${2:-}")    # allow extra length for ANSI codes
     else
-        previous_msg=$(printf '%-4s: %s' "${1:-}" "${2:-}")
+        prev_msg=$(printf '%-4s: %s' "${1:-}" "${2:-}")
     fi
 
-    DisplayWait "$previous_msg"
+    DisplayWait "$prev_msg"
 
     return 0
 
@@ -7253,29 +7262,29 @@ WriteToDisplayNew()
 
     # output:
     #   stdout = overwrites previous message with updated message
-    #   $previous_length
+    #   $prev_length
 
-    local this_message=''
-    local strbuffer=''
-    local -i this_length=0
+    local -i length=0
     local -i blanking_length=0
+    local msg=''
+    local strbuffer=''
 
     if [[ $colourful = true ]]; then
-        this_message=$(printf '%-10s: %s' "${1:-}" "${2:-}")    # allow extra length for ANSI codes
+        msg=$(printf '%-10s: %s' "${1:-}" "${2:-}")    # allow extra length for ANSI codes
     else
-        this_message=$(printf '%-4s: %s' "${1:-}" "${2:-}")
+        msg=$(printf '%-4s: %s' "${1:-}" "${2:-}")
     fi
 
-    if [[ $this_message != "${previous_msg:=''}" ]]; then
-        previous_length=$((${#previous_msg}+1))
-        this_length=$((${#this_message}+1))
+    if [[ $msg != "${prev_msg:=''}" ]]; then
+        prev_length=$((${#prev_msg}+1))
+        length=$((${#msg}+1))
 
         # jump to start of line, print new msg
-        strbuffer=$(echo -en "\r$this_message ")
+        strbuffer=$(echo -en "\r$msg ")
 
         # if new msg is shorter then add spaces to end to cover previous msg
-        if [[ $this_length -lt $previous_length ]]; then
-            blanking_length=$((this_length-previous_length))
+        if [[ $length -lt $prev_length ]]; then
+            blanking_length=$((length-prev_length))
             strbuffer+=$(printf "%${blanking_length}s")
         fi
 
@@ -7585,7 +7594,7 @@ RunOnSIGINT()
     EraseThisLine
     ShowAsAbort 'caught SIGINT'
     KillActiveFork
-    CloseActionMessagePipe
+    CloseActionMsgPipe
     exit
 
     }
