@@ -189,7 +189,7 @@ Self.Init()
     PACKAGE_TIERS=(Standalone Addon Dependent)  # ordered
 
     # these words may be specified by the user when requesting actions, so each word can only be used once across all 4 of the following arrays
-    PACKAGE_SCOPES=(All CanBackup CanRestartToUpdate Dependent HasDependents Installable Standalone Upgradable)     # sorted: 'Sc' & 'ScNt'
+    PACKAGE_GROUPS=(All CanBackup CanRestartToUpdate Dependent HasDependents Installable Standalone Upgradable)     # sorted: 'Sc' & 'ScNt'
     PACKAGE_STATES=(BackedUp Cleaned Downloaded Enabled Installed Missing Reassigned Reinstalled Restarted Started Upgraded)  # sorted: 'Is' & 'IsNt'
     PACKAGE_STATES_TRANSIENT=(Starting Stopping Restarting)                                                         # unsorted: 'Is' & 'IsNt'
     PACKAGE_ACTIONS=(Download Rebuild Reassign Backup Stop Disable Uninstall Upgrade Reinstall Install Restore Clean Enable Start Restart)  # ordered
@@ -200,7 +200,7 @@ Self.Init()
 #     readonly MANAGEMENT_ACTIONS
     readonly PACKAGE_TIERS
 
-    readonly PACKAGE_SCOPES
+    readonly PACKAGE_GROUPS
     readonly PACKAGE_STATES
     readonly PACKAGE_STATES_TRANSIENT
     readonly PACKAGE_ACTIONS
@@ -424,7 +424,7 @@ Self.IsAnythingToDo()
     QPKGs.SkProc.IsSet && return
 
     local action=''
-    local scope=''
+    local group=''
     local state=''
     local something_to_do=false
 
@@ -439,8 +439,8 @@ Self.IsAnythingToDo()
                 break
             fi
 
-            for scope in "${PACKAGE_SCOPES[@]}"; do
-                if QPKGs.Ac${action}.Sc${scope}.IsSet || QPKGs.Ac${action}.ScNt${scope}.IsSet; then
+            for group in "${PACKAGE_GROUPS[@]}"; do
+                if QPKGs.Ac${action}.Sc${group}.IsSet || QPKGs.Ac${action}.ScNt${group}.IsSet; then
                     something_to_do=true
                     break 2
                 fi
@@ -772,7 +772,7 @@ Tier.Proc()
     total_count=0
     local package=''
     local state=''
-    local scope=''
+    local group=''
     local msg1_key=''
     local msg1_value=''
     local msg2_key=''
@@ -835,16 +835,16 @@ Tier.Proc()
                         ;;
                     change)     # change the state of a single QPKG in the parent shell
                         while true; do
-                            for scope in "${PACKAGE_SCOPES[@]}"; do
+                            for group in "${PACKAGE_GROUPS[@]}"; do
                                 case $msg1_value in
-                                    "Sc${scope}")
-                                        QPKGs.ScNt${scope}.Remove "$msg2_value"
-                                        QPKGs.Sc${scope}.Add "$msg2_value"
+                                    "Sc${group}")
+                                        QPKGs.ScNt${group}.Remove "$msg2_value"
+                                        QPKGs.Sc${group}.Add "$msg2_value"
                                         break 2
                                         ;;
-                                    "ScNt${scope}")
-                                        QPKGs.Sc${scope}.Remove "$msg2_value"
-                                        QPKGs.ScNt${scope}.Add "$msg2_value"
+                                    "ScNt${group}")
+                                        QPKGs.Sc${group}.Remove "$msg2_value"
+                                        QPKGs.ScNt${group}.Add "$msg2_value"
                                         break 2
                                 esac
                             done
@@ -1007,8 +1007,8 @@ Self.Results()
             Help.Tips.Show
         elif Opts.Help.Abbreviations.IsSet; then
             Help.PackageAbbreviations.Show
-        elif Opts.Help.Scopes.IsSet; then
-            Help.Scopes.Show
+        elif Opts.Help.Groups.IsSet; then
+            Help.Groups.Show
         elif Opts.Vers.View.IsSet; then
             Self.Vers.Show
         elif Opts.Log.Last.View.IsSet; then
@@ -1074,7 +1074,7 @@ ParseArgs()
     {
 
     # basic argument syntax:
-    #   scriptname [action] [scopes] [options]
+    #   scriptname [action] [groups] [options]
 
     DebugScriptFuncEn
     DebugVar USER_ARGS_RAW
@@ -1085,29 +1085,29 @@ ParseArgs()
     local arg_identified=false
     local action=''
     local action_force=false
-    local scope=''
-    local scope_identified=false
+    local group=''
+    local group_identified=false
     local package=''
 
     for arg in "${user_args[@]}"; do
         arg_identified=false
 
-        # identify action: every time action changes, must clear scope too
+        # identify action: every time action changes, must clear group too
         case $arg in
         # these cases use only a single word to specify a single action
             backup|clean|reassign|rebuild|reinstall|restart|restore|start|stop)
                 action=${arg}_
                 arg_identified=true
-                scope=''
-                scope_identified=false
+                group=''
+                group_identified=false
                 Self.Display.Clean.UnSet
                 QPKGs.SkProc.UnSet
                 ;;
             paste)
                 action=paste_
                 arg_identified=true
-                scope=''
-                scope_identified=false
+                group=''
+                group_identified=false
                 Self.Display.Clean.UnSet
                 QPKGs.SkProc.Set
                 ;;
@@ -1115,62 +1115,62 @@ ParseArgs()
             add|install)
                 action=install_
                 arg_identified=true
-                scope=''
-                scope_identified=false
+                group=''
+                group_identified=false
                 Self.Display.Clean.UnSet
                 QPKGs.SkProc.UnSet
                 ;;
             c|check)
                 action=check_
                 arg_identified=true
-                scope=''
-                scope_identified=false
+                group=''
+                group_identified=false
                 Self.Display.Clean.UnSet
                 QPKGs.SkProc.UnSet
                 ;;
             display|help|list|show|view)
                 action=help_
                 arg_identified=true
-                scope=''
-                scope_identified=false
+                group=''
+                group_identified=false
                 Self.Display.Clean.UnSet
                 QPKGs.SkProc.Set
                 ;;
             rm|remove|uninstall)
                 action=uninstall_
                 arg_identified=true
-                scope=''
-                scope_identified=false
+                group=''
+                group_identified=false
                 Self.Display.Clean.UnSet
                 QPKGs.SkProc.UnSet
                 ;;
             s|status|statuses)
                 action=status_
                 arg_identified=true
-                scope=''
-                scope_identified=false
+                group=''
+                group_identified=false
                 Self.Display.Clean.UnSet
                 QPKGs.SkProc.Set
                 ;;
             update|upgrade)
                 action=upgrade_
                 arg_identified=true
-                scope=''
-                scope_identified=false
+                group=''
+                group_identified=false
                 Self.Display.Clean.UnSet
                 QPKGs.SkProc.UnSet
         esac
 
-        # identify scope in two stages: stage 1 for when user didn't supply an action before scope, stage 2 is after an action has been defined.
+        # identify group in two stages: stage 1 for when user didn't supply an action before group, stage 2 is after an action has been defined.
 
         # stage 1
         if [[ -z $action ]]; then
             case $arg in
-                a|abs|action|actions|actions-all|all-actions|b|backups|dependent|dependents|installable|installed|l|last|log|missing|not-installed|option|options|p|package|packages|problems|r|repo|repos|scopes|standalone|standalones|started|stopped|tail|tips|updatable|updateable|upgradable|v|version|versions|whole)
+                a|abs|action|actions|actions-all|all-actions|b|backups|dependent|dependents|groups|installable|installed|l|last|log|missing|not-installed|option|options|p|package|packages|problems|r|repo|repos|standalone|standalones|started|stopped|tail|tips|updatable|updateable|upgradable|v|version|versions|whole)
                     action=help_
                     arg_identified=true
-                    scope=''
-                    scope_identified=false
+                    group=''
+                    group_identified=false
                     QPKGs.SkProc.Set
             esac
 
@@ -1180,56 +1180,56 @@ ParseArgs()
         # stage 2
         if [[ -n $action ]]; then
             case $arg in
-            # these cases use only a single word or char to specify a single scope
-                installable|installed|missing|not-installed|problems|scopes|started|stopped|tail|tips)
-                    scope=${arg}_
+            # these cases use only a single word or char to specify a single group
+                groups|installable|installed|missing|not-installed|problems|started|stopped|tail|tips)
+                    group=${arg}_
                     ;;
-            # all cases below can use multiple words or chars to specify a single scope
+            # all cases below can use multiple words or chars to specify a single group
                 a|abs)
-                    scope=abs_
+                    group=abs_
                     ;;
                 actions-all|all-actions)
-                    scope=all-actions_
+                    group=all-actions_
                     ;;
                 action|actions)
-                    scope=actions_
+                    group=actions_
                     ;;
                 all|entire|everything)
-                    scope=all_
+                    group=all_
                     ;;
                 b|backups)
-                    scope=backups_
+                    group=backups_
                     ;;
                 dependent|dependents)
-                    scope=dependent_
+                    group=dependent_
                     ;;
                 l|last)
-                    scope=last_
+                    group=last_
                     ;;
                 log|whole)
-                    scope=log_
+                    group=log_
                     ;;
                 option|options)
-                    scope=options_
+                    group=options_
                     ;;
                 p|package|packages)
-                    scope=packages_
+                    group=packages_
                     ;;
                 r|repo|repos)
-                    scope=repos_
+                    group=repos_
                     ;;
                 standalone|standalones)
-                    scope=standalone_
+                    group=standalone_
                     ;;
                 updatable|updateable|upgradable)
-                    scope=upgradable_
+                    group=upgradable_
                     ;;
                 v|version|versions)
-                    scope=versions_
+                    group=versions_
             esac
 
-            if [[ -n $scope ]]; then
-                scope_identified=true
+            if [[ -n $group ]]; then
+                group_identified=true
                 arg_identified=true
             fi
         fi
@@ -1239,7 +1239,7 @@ ParseArgs()
             debug|verbose)
                 Self.Debug.ToScreen.Set
                 arg_identified=true
-                scope_identified=true
+                group_identified=true
                 ;;
             force)
                 action_force=true
@@ -1250,37 +1250,37 @@ ParseArgs()
         package=$(QPKG.MatchAbbrv "$arg")
 
         if [[ -n $package ]]; then
-            scope_identified=true
+            group_identified=true
             arg_identified=true
         fi
 
         [[ $arg_identified = false ]] && Args.Unknown.Add "$arg"
         case $action in
             backup_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcBackup.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcBackup.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcBackup.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcBackup.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     started_)
                         QPKGs.AcBackup.IsStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     stopped_)
                         QPKGs.AcBackup.IsNtStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToBackup.Add "$package"
@@ -1290,37 +1290,37 @@ ParseArgs()
                 Opts.Deps.Check.Set
                 ;;
             clean_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcClean.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcClean.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcClean.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcClean.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     started_)
                         QPKGs.AcClean.IsStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     stopped_)
                         QPKGs.AcClean.IsNtStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToClean.Add "$package"
                 esac
                 ;;
             help_)
-                case $scope in
+                case $group in
                     abs_)
                         Opts.Help.Abbreviations.Set
                         ;;
@@ -1336,6 +1336,9 @@ ParseArgs()
                     dependent_)
                         QPKGs.List.ScDependent.Set
                         Self.Display.Clean.Set
+                        ;;
+                    groups_)
+                        Opts.Help.Groups.Set
                         ;;
                     installable_)
                         QPKGs.List.ScInstallable.Set
@@ -1369,9 +1372,6 @@ ParseArgs()
                     repos_)
                         Opts.Help.Repos.Set
                         ;;
-                    scopes_)
-                        Opts.Help.Scopes.Set
-                        ;;
                     standalone_)
                         QPKGs.List.ScStandalone.Set
                         Self.Display.Clean.Set
@@ -1402,45 +1402,45 @@ ParseArgs()
                 QPKGs.SkProc.Set
                 ;;
             install_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcInstall.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcInstall.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installable_)
                         QPKGs.AcInstall.ScInstallable.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcInstall.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     missing_)
                         QPKGs.AcInstall.IsMissing.Set
-                        scope=''
+                        group=''
                         ;;
                     not-installed_)
                         QPKGs.AcInstall.IsNtInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcInstall.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     started_)
                         QPKGs.AcInstall.IsStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToInstall.Add "$package"
                 esac
                 ;;
             paste_)
-                case $scope in
+                case $group in
                     all_|log_|tail_)
                         Opts.Log.Tail.Paste.Set
                         action=''
@@ -1453,188 +1453,188 @@ ParseArgs()
                 QPKGs.SkProc.Set
                 ;;
             reassign_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcReassign.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcReassign.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcReassign.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcReassign.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     started_)
                         QPKGs.AcReassign.IsStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     stopped_)
                         QPKGs.AcReassign.IsNtStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     upgradable_)
                         QPKGs.AcReassign.IsUpgradable.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToReassign.Add "$package"
                 esac
                 ;;
             rebuild_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcRebuild.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcRebuild.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcRebuild.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcRebuild.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToRebuild.Add "$package"
                 esac
                 ;;
             reinstall_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcReinstall.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcReinstall.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcReinstall.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcReinstall.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     started_)
                         QPKGs.AcReinstall.IsStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     stopped_)
                         QPKGs.AcReinstall.IsNtStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     upgradable_)
                         QPKGs.AcReinstall.IsUpgradable.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToReinstall.Add "$package"
                 esac
                 ;;
             restart_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcRestart.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcRestart.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcRestart.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcRestart.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     started_)
                         QPKGs.AcRestart.IsStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     stopped_)
                         QPKGs.AcRestart.IsNtStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     upgradable_)
                         QPKGs.AcRestart.IsUpgradable.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToRestart.Add "$package"
                 esac
                 ;;
             restore_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcRestore.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcRestore.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcRestore.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcRestore.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     started_)
                         QPKGs.AcRestore.IsStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     stopped_)
                         QPKGs.AcRestore.IsNtStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     upgradable_)
                         QPKGs.AcRestore.IsUpgradable.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToRestore.Add "$package"
                 esac
                 ;;
             start_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcStart.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcStart.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcStart.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcStart.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     stopped_)
                         QPKGs.AcStart.IsNtStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     upgradable_)
                         QPKGs.AcStart.IsUpgradable.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToStart.Add "$package"
@@ -1645,74 +1645,74 @@ ParseArgs()
                 QPKGs.SkProc.Set
                 ;;
             stop_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcStop.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcStop.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcStop.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcStop.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     started_)
                         QPKGs.AcStop.IsStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     upgradable_)
                         QPKGs.AcStop.IsUpgradable.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToStop.Add "$package"
                 esac
                 ;;
             uninstall_)
-                case $scope in
-                    all_)   # this scope is dangerous, so make `force` a requirement
+                case $group in
+                    all_)   # this group is dangerous, so make `force` a requirement
                         if [[ $action_force = true ]]; then
                             QPKGs.AcUninstall.ScAll.Set
-                            scope=''
+                            group=''
                             action_force=false
                         fi
                         ;;
                     dependent_)
                         QPKGs.AcUninstall.ScDependent.Set
-                        scope=''
+                        group=''
                         action_force=false
                         ;;
-                    installed_)   # this scope is dangerous, so make `force` a requirement
+                    installed_)   # this group is dangerous, so make `force` a requirement
                         if [[ $action_force = true ]]; then
                             QPKGs.AcUninstall.IsInstalled.Set
-                            scope=''
+                            group=''
                             action_force=false
                         fi
                         ;;
                     standalone_)
                         QPKGs.AcUninstall.ScStandalone.Set
-                        scope=''
+                        group=''
                         action_force=false
                         ;;
                     started_)
                         QPKGs.AcUninstall.IsStarted.Set
-                        scope=''
+                        group=''
                         action_force=false
                         ;;
                     stopped_)
                         QPKGs.AcUninstall.IsNtStarted.Set
-                        scope=''
+                        group=''
                         action_force=false
                         ;;
                     upgradable_)
                         QPKGs.AcUninstall.IsUpgradable.Set
-                        scope=''
+                        group=''
                         action_force=false
                         ;;
                     *)
@@ -1720,34 +1720,34 @@ ParseArgs()
                 esac
                 ;;
             upgrade_)
-                case $scope in
+                case $group in
                     all_)
                         QPKGs.AcUpgrade.ScAll.Set
-                        scope=''
+                        group=''
                         ;;
                     dependent_)
                         QPKGs.AcUpgrade.ScDependent.Set
-                        scope=''
+                        group=''
                         ;;
                     installed_)
                         QPKGs.AcUpgrade.IsInstalled.Set
-                        scope=''
+                        group=''
                         ;;
                     standalone_)
                         QPKGs.AcUpgrade.ScStandalone.Set
-                        scope=''
+                        group=''
                         ;;
                     started_)
                         QPKGs.AcUpgrade.IsStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     stopped_)
                         QPKGs.AcUpgrade.IsNtStarted.Set
-                        scope=''
+                        group=''
                         ;;
                     upgradable_)
                         QPKGs.AcUpgrade.IsUpgradable.Set
-                        scope=''
+                        group=''
                         ;;
                     *)
                         QPKGs.AcToUpgrade.Add "$package"
@@ -1755,8 +1755,8 @@ ParseArgs()
         esac
     done
 
-    # when an action has been determined, but no scope has been found, then show default information. This will usually be the help screen.
-    if [[ -n $action && $scope_identified = false ]]; then
+    # when an action has been determined, but no group has been found, then show default information. This will usually be the help screen.
+    if [[ -n $action && $group_identified = false ]]; then
         case $action in
             help_|paste_)
                 Opts.Help.Basic.Set
@@ -1848,101 +1848,101 @@ AllocGroupPacksToAcs()
     DebugScriptFuncEn
 
     local action=''
-    local scope=''
+    local group=''
     local state=''
     local prospect=''
-    local found=false       # scope or state has been found
+    local found=false       # group or state has been found
 
     for action in "${PACKAGE_ACTIONS[@]}"; do
         [[ $action = Enable || $action = Disable ]] && continue     # no objects for these as `start` and `stop` do the same jobs
 
-        # process scope-based user-options
-        for scope in "${PACKAGE_SCOPES[@]}"; do
+        # process group-based user-options
+        for group in "${PACKAGE_GROUPS[@]}"; do
             found=false
 
-            if QPKGs.Ac${action}.Sc${scope}.IsSet; then
+            if QPKGs.Ac${action}.Sc${group}.IsSet; then
                 case $action in
                     Clean)
-                        case $scope in
+                        case $group in
                             All|Dependent|Standalone)
                                 found=true
 
-                                for prospect in $(QPKGs.Sc${scope}.Array); do
+                                for prospect in $(QPKGs.Sc${group}.Array); do
                                     QPKGs.ScCanRestartToUpdate.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
                                 ;;
                             *)
-                                DebugAsWarn "specified scope $scope has no handler for specifed action $action"
+                                DebugAsWarn "specified group $group has no handler for specifed action $action"
                         esac
                         ;;
                     Install|Restart|Start|Stop|Uninstall)
-                        case $scope in
+                        case $group in
                             All|Dependent|Standalone)
                                 found=true
 
-                                QPKGs.AcTo${action}.Add "$(QPKGs.Sc${scope}.Array)"
+                                QPKGs.AcTo${action}.Add "$(QPKGs.Sc${group}.Array)"
                                 ;;
                             *)
-                                DebugAsWarn "specified scope $scope has no handler for specifed action $action"
+                                DebugAsWarn "specified group $group has no handler for specifed action $action"
                         esac
                         ;;
                     Rebuild)
-                        case $scope in
+                        case $group in
                             All|Dependent|Standalone)
                                 found=true
 
-                                for prospect in $(QPKGs.Sc${scope}.Array); do
+                                for prospect in $(QPKGs.Sc${group}.Array); do
                                     QPKGs.ScCanBackup.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
                                 ;;
                             *)
-                                DebugAsWarn "specified scope $scope has no handler for specifed action $action"
+                                DebugAsWarn "specified group $group has no handler for specifed action $action"
                         esac
                         ;;
                     Upgrade)
-                        case $scope in
+                        case $group in
                             All|Dependent|Standalone)
                                 found=true
 
-                                for prospect in $(QPKGs.Sc${scope}.Array); do
+                                for prospect in $(QPKGs.Sc${group}.Array); do
                                     QPKGs.ScCanRestartToUpdate.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
 
                                 QPKGs.AcToRestart.Remove "$(QPKGs.AcToUpgrade.Array)"
                                 ;;
                             *)
-                                DebugAsWarn "specified scope $scope has no handler for specifed action $action"
+                                DebugAsWarn "specified group $group has no handler for specifed action $action"
                         esac
                 esac
 
                 if [[ $found = false ]]; then
-                    QPKGs.AcTo${action}.Add "$(QPKGs.Sc${scope}.Array)"
+                    QPKGs.AcTo${action}.Add "$(QPKGs.Sc${group}.Array)"
                 fi
 
                 if QPKGs.AcTo${action}.IsAny; then
-                    DebugAsDone "action: '$action', scope: '$scope': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
+                    DebugAsDone "action: '$action', group: '$group': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
                 else
                     ShowAsWarn "unable to find any packages to $(Lowercase "$action")"
                 fi
-            elif QPKGs.Ac${action}.ScNt${scope}.IsSet; then
+            elif QPKGs.Ac${action}.ScNt${group}.IsSet; then
 #                 case $action in
 #                     Install)
-#                         case $scope in
+#                         case $group in
 #                             Dependent|Standalone)
 #                                 found=true
-#                                 DebugAsProc "action: '$action', scope: '$scope': adding 'IsNtInstalled' packages"
+#                                 DebugAsProc "action: '$action', group: '$group': adding 'IsNtInstalled' packages"
 #                                 for prospect in $(QPKGs.IsNtInstalled.Array); do
-#                                     QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
+#                                     QPKGs.Sc${group}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
 #                                 done
 #                         esac
 #               esac
 
                 if [[ $found = false ]]; then
-                    QPKGs.AcTo${action}.Add "$(QPKGs.ScNt${scope}.Array)"
+                    QPKGs.AcTo${action}.Add "$(QPKGs.ScNt${group}.Array)"
                 fi
 
                 if QPKGs.AcTo${action}.IsAny; then
-                    DebugAsDone "action: '$action', scope: 'Nt${scope}': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
+                    DebugAsDone "action: '$action', group: 'Nt${group}': found $(QPKGs.AcTo${action}.Count) package$(Pluralise "$(QPKGs.AcTo${action}.Count)") to process"
                 else
                     ShowAsWarn "unable to find any packages to $(Lowercase "$action")"
                 fi
@@ -3227,18 +3227,18 @@ Help.Problems.Show()
 
     }
 
-Help.Scopes.Show()
+Help.Groups.Show()
     {
 
     DisableDebugToArchiveAndFile
     Help.Basic.Show
     DisplayLineSpaceIfNoneAlready
-    DisplayAsHelpTitle "scopes explained:"
+    DisplayAsHelpTitle "groups explained:"
     Display "all: all packages will be selected"
     Display "standalone: all standalone packages will be selected. These are not dependent on other packages."
     Display "dependent: all dependent packages will be selected. These depend on another package being present."
     Display
-    DisplayAsProjSynExam "multiple scopes are supported like this" "$(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpAc) $(FormatAsHelpPacks)"
+    DisplayAsProjSynExam "multiple groups are supported like this" "$(FormatAsHelpAc) $(FormatAsHelpPacks) $(FormatAsHelpAc) $(FormatAsHelpPacks)"
     DisplayAsProjSynIndentExam '' 'reinstall dependents stopped'
 
     return 0
@@ -3624,7 +3624,7 @@ UpdateForkProgress()
 
     if [[ $fork_count -gt 0 ]]; then
         [[ -n $msg ]] && msg+=': '
-        msg+="$(ColourTextBrightOrange "$fork_count") in-progress"
+        msg+="$(ColourTextBrightYellow "$fork_count") in-progress"
     fi
 
     if [[ $ok_count -gt 0 ]]; then
@@ -7153,17 +7153,17 @@ ShowAsActionResult()
     local msg="${7:?null} "
 
     if [[ $OK_COUNT -gt 0 ]]; then
-        msg+="${OK_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$OK_COUNT") OK"
+        msg+="${OK_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$OK_COUNT"): OK"
     fi
 
     if [[ $SKIP_COUNT -gt 0 ]]; then
         [[ $OK_COUNT -gt 0 ]] && msg+=', '
-        msg+="${SKIP_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$SKIP_COUNT") skipped"
+        msg+="${SKIP_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$SKIP_COUNT"): skipped"
     fi
 
     if [[ $FAIL_COUNT -gt 0 ]]; then
         [[ $OK_COUNT -gt 0 || $SKIP_COUNT -gt 0 ]] && msg+=' and '
-        msg+="${FAIL_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$FAIL_COUNT") failed"
+        msg+="${FAIL_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$FAIL_COUNT"): failed"
     fi
 
     case $TOTAL_COUNT in
