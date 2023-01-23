@@ -514,28 +514,18 @@ Self.Validate()
 
     # Meta-action pre-processing
     if QPKGs.AcToRebuild.IsAny; then
-        if QPKGs.IsBackedUp.IsNone; then
-            ShowAsWarn 'there are no package backups to rebuild from'
-        else
-            for package in $(QPKGs.AcToRebuild.Array); do
-                if ! QPKGs.IsBackedUp.Exist "$package"; then
-                    DebugAsWarn "$package does not have a backup to rebuild from"
-                else
-                    (QPKGs.IsNtInstalled.Exist "$package" || QPKGs.AcToUninstall.Exist "$package") && QPKGs.AcToInstall.Add "$package"
-                    QPKGs.AcToRestore.Add "$package"
-                    QPKGs.AcToRebuild.Remove "$package"
-                fi
-            done
-        fi
+        for package in $(QPKGs.AcToRebuild.Array); do
+            QPKGs.AcToInstall.Add "$package"
+            QPKGs.AcToRestore.Add "$package"
+            QPKGs.AcToRebuild.Remove "$package"
+        done
     fi
 
     # Ensure standalone packages are also installed when processing these specific actions
     for action in Upgrade Reinstall Install Start Restart; do
         for package in $(QPKGs.AcTo${action}.Array); do
             for prospect in $(QPKG.GetStandalones "$package"); do
-                if QPKGs.IsNtInstalled.Exist "$prospect" || (QPKGs.IsInstalled.Exist "$prospect" && QPKGs.AcToUninstall.Exist "$prospect"); then
-                    QPKGs.AcToInstall.Add "$prospect"
-                fi
+                QPKGs.AcToInstall.Add "$prospect"
             done
         done
     done
@@ -1925,18 +1915,6 @@ AllocGroupPacksToAcs()
                     ShowAsWarn "unable to find any packages to $(Lowercase "$action")"
                 fi
             elif QPKGs.Ac${action}.ScNt${group}.IsSet; then
-#                 case $action in
-#                     Install)
-#                         case $group in
-#                             Dependent|Standalone)
-#                                 found=true
-#                                 DebugAsProc "action: '$action', group: '$group': adding 'IsNtInstalled' packages"
-#                                 for prospect in $(QPKGs.IsNtInstalled.Array); do
-#                                     QPKGs.Sc${group}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
-#                                 done
-#                         esac
-#               esac
-
                 if [[ $found = false ]]; then
                     QPKGs.AcTo${action}.Add "$(QPKGs.ScNt${group}.Array)"
                 fi
