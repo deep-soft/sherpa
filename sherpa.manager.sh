@@ -1381,7 +1381,7 @@ ParseArgs()
                         Opts.Help.Tips.Set
                         ;;
                     upgradable_)
-                        QPKGs.List.IsUpgradable.Set
+                        QPKGs.List.ScUpgradable.Set
                         Self.Display.Clean.Set
                         ;;
                     versions_)
@@ -3055,6 +3055,7 @@ Help.Basic.Example.Show()
 
     DisplayAsProjSynIndentExam "to list available $(FormatAsAction)s, type" 'list actions'
     DisplayAsProjSynIndentExam "to list available $(FormatAsPackages), type" 'list packages'
+    DisplayAsProjSynIndentExam '' p
     DisplayAsProjSynIndentExam "to list available package $(FormatAsGroups), type" 'list groups'
     DisplayAsProjSynIndentExam "or, for more $(FormatAsOptions), type" 'list options'
     DisplayAsHelpTitle "More in the wiki: $(FormatAsURL "https://github.com/OneCDOnly/sherpa/wiki")"
@@ -3074,6 +3075,7 @@ Help.Actions.Show()
     DisplayAsProjSynIndentExam 'show package repositories' 'repos'
     DisplayAsProjSynIndentExam '' r
     DisplayAsProjSynIndentExam 'ensure all application dependencies are installed' 'check'
+    DisplayAsProjSynIndentExam '' c
     DisplayAsProjSynIndentExam 'install these packages' "install $(FormatAsPackages)"
     DisplayAsProjSynIndentExam 'uninstall these packages' "uninstall $(FormatAsPackages)"
     DisplayAsProjSynIndentExam 'reinstall these packages' "reinstall $(FormatAsPackages)"
@@ -3116,9 +3118,13 @@ Help.ActionsAll.Show()
     DisplayAsProjSynIndentExam 'clear local repository files from all packages' 'clean all'
     DisplayAsProjSynIndentExam 'list all available packages' 'list all'
     DisplayAsProjSynIndentExam 'list only installed packages' 'list installed'
+    DisplayAsProjSynIndentExam '' 'installed'
     DisplayAsProjSynIndentExam 'list only packages that can be installed' 'list installable'
+    DisplayAsProjSynIndentExam '' 'installable'
     DisplayAsProjSynIndentExam 'list only packages that are not installed' 'list not-installed'
+    DisplayAsProjSynIndentExam '' 'not-installed'
     DisplayAsProjSynIndentExam 'list only upgradable packages' 'list upgradable'
+    DisplayAsProjSynIndentExam '' 'upgradable'
     DisplayAsProjSynIndentExam 'backup all application configurations to the backup location' 'backup all'
     DisplayAsProjSynIndentExam 'restore all application configurations from the backup location' 'restore all'
 
@@ -3179,6 +3185,7 @@ Help.Problems.Show()
     DisplayAsProjSynIndentExam 'process one-or-more packages and show live debugging information' "$(FormatAsAction) $(FormatAsPackages) debug"
     DisplayAsProjSynIndentExam '' "$(FormatAsAction) $(FormatAsPackages) verbose"
     DisplayAsProjSynIndentExam 'ensure all dependencies exist for installed packages' 'check'
+    DisplayAsProjSynIndentExam '' c
     DisplayAsProjSynIndentExam 'clear local repository files from these packages' "clean $(FormatAsPackages)"
     DisplayAsProjSynIndentExam "remove all cached $(FormatAsTitle) items and logs" 'reset'
     DisplayAsProjSynIndentExam 'restart all installed packages (upgrades internal applications where supported)' 'restart all'
@@ -3233,6 +3240,7 @@ Help.Tips.Show()
     DisplayAsHelpTitle 'helpful tips and shortcuts:'
     DisplayAsProjSynIndentExam "install all available $(FormatAsTitle) packages" 'install all'
     DisplayAsProjSynIndentExam 'package abbreviations also work. To see these' 'list abs'
+    DisplayAsProjSynIndentExam '' a
     DisplayAsProjSynIndentExam 'restart all installed packages (upgrades internal applications where supported)' 'restart all'
     DisplayAsProjSynIndentExam 'list only packages that can be installed' 'list installable'
     DisplayAsProjSynIndentExam "view only the most recent $(FormatAsTitle) session log" 'last'
