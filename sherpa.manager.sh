@@ -1857,7 +1857,6 @@ AllocGroupPacksToAcs()
         [[ $action = Enable || $action = Disable ]] && continue     # no objects for these as `start` and `stop` do the same jobs
 
         # process scope-based user-options
-        # use sensible scope exceptions for convenience, rather than follow requested scope literally
         for scope in "${PACKAGE_SCOPES[@]}"; do
             found=false
 
@@ -1865,99 +1864,54 @@ AllocGroupPacksToAcs()
                 case $action in
                     Clean)
                         case $scope in
-                            All)
+                            All|Dependent|Standalone)
                                 found=true
-                                for prospect in $(QPKGs.IsInstalled.Array); do
+
+                                for prospect in $(QPKGs.Sc${scope}.Array); do
                                     QPKGs.ScCanRestartToUpdate.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
                                 ;;
-                            Dependent|Standalone)
-                                found=true
-                                for prospect in $(QPKGs.IsInstalled.Array); do
-                                    QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
-                                done
+                            *)
+                                DebugAsWarn "specified scope $scope has no handler for specifed action $action"
                         esac
                         ;;
-                    Install)
+                    Install|Restart|Start|Stop|Uninstall)
                         case $scope in
-                            All)
+                            All|Dependent|Standalone)
                                 found=true
-                                QPKGs.AcTo${action}.Add "$(QPKGs.IsNtInstalled.Array)"
+
+                                QPKGs.AcTo${action}.Add "$(QPKGs.Sc${scope}.Array)"
                                 ;;
-                            Dependent|Standalone)
-                                found=true
-                                for prospect in $(QPKGs.IsNtInstalled.Array); do
-                                    QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
-                                done
+                            *)
+                                DebugAsWarn "specified scope $scope has no handler for specifed action $action"
                         esac
                         ;;
                     Rebuild)
                         case $scope in
-                            All)
+                            All|Dependent|Standalone)
                                 found=true
-                                QPKGs.AcTo${action}.Add "$(QPKGs.ScCanBackup.Array)"
-                                ;;
-                            Dependent|Standalone)
-                                found=true
-                                for prospect in $(QPKGs.ScCanBackup.Array); do
-                                    QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
+
+                                for prospect in $(QPKGs.Sc${scope}.Array); do
+                                    QPKGs.ScCanBackup.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
-                        esac
-                        ;;
-                    Restart|Stop)
-                        case $scope in
-                            All)
-                                found=true
-                                QPKGs.AcTo${action}.Add "$(QPKGs.IsStarted.Array)"
                                 ;;
-                            Dependent|Standalone)
-                                found=true
-                                for prospect in $(QPKGs.IsStarted.Array); do
-                                    QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
-                                done
-                        esac
-                        ;;
-                    Start)
-                        case $scope in
-                            All)
-                                found=true
-                                QPKGs.AcTo${action}.Add "$(QPKGs.IsNtStarted.Array)"
-                                ;;
-                            Dependent|Standalone)
-                                found=true
-                                for prospect in $(QPKGs.IsNtStarted.Array); do
-                                    QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
-                                done
-                        esac
-                        ;;
-                    Uninstall)
-                        case $scope in
-                            All)
-                                found=true
-                                QPKGs.AcTo${action}.Add "$(QPKGs.IsInstalled.Array)"
-                                ;;
-                            Dependent|Standalone)
-                                found=true
-                                for prospect in $(QPKGs.IsInstalled.Array); do
-                                    QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
-                                done
+                            *)
+                                DebugAsWarn "specified scope $scope has no handler for specifed action $action"
                         esac
                         ;;
                     Upgrade)
                         case $scope in
-                            All)
+                            All|Dependent|Standalone)
                                 found=true
-                                QPKGs.AcTo${action}.Add "$(QPKGs.ScUpgradable.Array)"
-                                QPKGs.AcToRestart.Add "$(QPKGs.ScCanRestartToUpdate.Array)"
-                                QPKGs.AcToRestart.Remove "$(QPKGs.IsNtInstalled.Array)"
-                                QPKGs.AcToRestart.Remove "$(QPKGs.AcToUpgrade.Array)"
-                                QPKGs.AcToRestart.Remove "$(QPKGs.ScStandalone.Array)"
-                                ;;
-                            Dependent|Standalone)
-                                found=true
-                                for prospect in $(QPKGs.IsInstalled.Array); do
-                                    QPKGs.Sc${scope}.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
+
+                                for prospect in $(QPKGs.Sc${scope}.Array); do
+                                    QPKGs.ScCanRestartToUpdate.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
+
+                                QPKGs.AcToRestart.Remove "$(QPKGs.AcToUpgrade.Array)"
+                                ;;
+                            *)
+                                DebugAsWarn "specified scope $scope has no handler for specifed action $action"
                         esac
                 esac
 
@@ -1996,7 +1950,6 @@ AllocGroupPacksToAcs()
         done
 
         # process state-based user-options
-        # use sensible state exceptions for convenience, rather than follow requested state literally
         for state in "${PACKAGE_STATES[@]}"; do
             found=false
 
