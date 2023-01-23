@@ -1776,52 +1776,42 @@ Self.ArgSuggests.Show()
         for arg in $(Args.Unknown.Array); do
             case $arg in
                 all)
-                    Display
                     DisplayAsProjSynExam "please provide a valid $(FormatAsAction) before 'all' like" 'start all'
                     Opts.Help.Basic.UnSet
                     ;;
                 all-backup|backup-all)
-                    Display
                     DisplayAsProjSynExam 'to backup all installed package configurations, use' 'backup all'
                     Opts.Help.Basic.UnSet
                     ;;
                 dependent)
-                    Display
                     DisplayAsProjSynExam "please provide a valid $(FormatAsAction) before 'dependent' like" 'start dependents'
                     Opts.Help.Basic.UnSet
                     ;;
                 all-restart|restart-all)
-                    Display
                     DisplayAsProjSynExam 'to restart all packages, use' 'restart all'
                     Opts.Help.Basic.UnSet
                     ;;
                 all-restore|restore-all)
-                    Display
                     DisplayAsProjSynExam 'to restore all installed package configurations, use' 'restore all'
                     Opts.Help.Basic.UnSet
                     ;;
                 standalone)
-                    Display
                     DisplayAsProjSynExam "please provide a valid $(FormatAsAction) before 'standalone' like" 'start standalones'
                     Opts.Help.Basic.UnSet
                     ;;
                 all-start|start-all)
-                    Display
                     DisplayAsProjSynExam 'to start all packages, use' 'start all'
                     Opts.Help.Basic.UnSet
                     ;;
                 all-stop|stop-all)
-                    Display
                     DisplayAsProjSynExam 'to stop all packages, use' 'stop all'
                     Opts.Help.Basic.UnSet
                     ;;
                 all-uninstall|all-remove|uninstall-all|remove-all)
-                    Display
                     DisplayAsProjSynExam 'to uninstall all packages, use' 'force uninstall all'
                     Opts.Help.Basic.UnSet
                     ;;
                 all-upgrade|upgrade-all)
-                    Display
                     DisplayAsProjSynExam 'to upgrade all packages, use' 'upgrade all'
                     Opts.Help.Basic.UnSet
             esac
@@ -2078,7 +2068,6 @@ UpdateEntwarePackageList()
     {
 
     if IsNtSysFileExist $OPKG_CMD; then
-        Display
         DisplayAsProjSynExam 'try restarting Entware' 'restart ew'
         return 1
     fi
@@ -2775,6 +2764,8 @@ DisplayAsProjSynExam()
     # $1 = description
     # $2 = example syntax
 
+    Display
+
     if [[ ${1: -1} = '!' ]]; then
         printf "${HELP_COL_MAIN_PREF}%s\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREF}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
     else
@@ -2831,6 +2822,7 @@ DisplayAsHelpTitlePackageNamePlusSomething()
     # $1 = package name title
     # $2 = second column title
 
+    Display
     printf "${HELP_COL_MAIN_PREF}%-${HELP_PACKAGE_NAME_WIDTH}s${HELP_COL_SPACER}${HELP_COL_MAIN_PREF}%s\n" "$(Capitalise "${1:-}"):" "$(Capitalise "${2:-}"):"
 
     }
@@ -2892,6 +2884,7 @@ DisplayAsHelpTitlePackageNameVerStatus()
     # $4 = package installation location (only if installed)
 
     local maxcols=$(CalcMaxStatusColsToDisplay)
+    DisplayLineSpaceIfNoneAlready
 
     if [[ -n ${1:-} && $maxcols -ge 1 ]]; then
         printf "${HELP_COL_MAIN_PREF}%-${HELP_PACKAGE_NAME_WIDTH}s" "$(Capitalise "$1"):"
@@ -2950,6 +2943,7 @@ DisplayAsHelpTitlePackageNameRepo()
     # $2 = assigned repository title
 
     local maxcols=$(CalcMaxStatusColsToDisplay)
+    DisplayLineSpaceIfNoneAlready
 
     if [[ -n ${1:-} && $maxcols -ge 1 ]]; then
         printf "${HELP_COL_MAIN_PREF}%-${HELP_PACKAGE_NAME_WIDTH}s" "$(Capitalise "$1"):"
@@ -2960,6 +2954,7 @@ DisplayAsHelpTitlePackageNameRepo()
     fi
 
     printf '\n'
+    Self.LineSpace.UnSet
 
     }
 
@@ -2989,7 +2984,9 @@ DisplayAsHelpTitleFileNamePlusSomething()
     # $1 = file name title
     # $2 = second column title
 
+    DisplayLineSpaceIfNoneAlready
     printf "${HELP_COL_MAIN_PREF}%-${HELP_FILE_NAME_WIDTH}s ${HELP_COL_MAIN_PREF}%s\n" "$(Capitalise "${1:-}"):" "$(Capitalise "${2:-}"):"
+    Self.LineSpace.UnSet
 
     }
 
@@ -2998,7 +2995,9 @@ DisplayAsHelpTitle()
 
     # $1 = text
 
+    DisplayLineSpaceIfNoneAlready
     printf "${HELP_COL_MAIN_PREF}%s\n" "$(Capitalise "${1:-}")"
+    Self.LineSpace.UnSet
 
     }
 
@@ -3007,8 +3006,10 @@ DisplayAsHelpTitleHighlighted()
 
     # $1 = text
 
+    DisplayLineSpaceIfNoneAlready
     # shellcheck disable=2059
     printf "$(ColourTextBrightOrange "${HELP_COL_MAIN_PREF}%s\n")" "$(Capitalise "${1:-}")"
+    Self.LineSpace.UnSet
 
     }
 
@@ -3056,7 +3057,7 @@ Help.Basic.Example.Show()
     DisplayAsProjSynIndentExam "to list available $(FormatAsPackages), type" 'list packages'
     DisplayAsProjSynIndentExam "to list available package $(FormatAsGroups), type" 'list groups'
     DisplayAsProjSynIndentExam "or, for more $(FormatAsOptions), type" 'list options'
-    Display "\nMore in the wiki: $(FormatAsURL "https://github.com/OneCDOnly/sherpa/wiki")"
+    DisplayAsHelpTitle "More in the wiki: $(FormatAsURL "https://github.com/OneCDOnly/sherpa/wiki")"
 
     return 0
 
@@ -3067,7 +3068,6 @@ Help.Actions.Show()
 
     DisableDebugToArchiveAndFile
     Help.Basic.Show
-    DisplayLineSpaceIfNoneAlready
     DisplayAsHelpTitle "$(FormatAsAction) usage examples:"
     DisplayAsProjSynIndentExam 'show package statuses' 'status'
     DisplayAsProjSynIndentExam '' s
@@ -3090,9 +3090,7 @@ Help.Actions.Show()
     DisplayAsProjSynIndentExam '' b
     DisplayAsProjSynIndentExam "list $(FormatAsTitle) object version numbers" 'list versions'
     DisplayAsProjSynIndentExam '' v
-    Display
     DisplayAsProjSynExam "$(FormatAsAction)s to affect all packages can be seen with" 'all-actions'
-    Display
     DisplayAsProjSynExam "multiple $(FormatAsAction)s are supported like this" "$(FormatAsAction) $(FormatAsPackages) $(FormatAsAction) $(FormatAsPackages)"
     DisplayAsProjSynIndentExam '' 'install sabnzbd sickgear restart transmission uninstall lazy nzbget upgrade nzbtomedia'
 
@@ -3105,9 +3103,7 @@ Help.ActionsAll.Show()
 
     DisableDebugToArchiveAndFile
     Help.Basic.Show
-    DisplayLineSpaceIfNoneAlready
     DisplayAsHelpTitle "the 'all' group applies to all installed packages. If $(FormatAsAction) is 'install all' then all available packages will be installed."
-    Display
     DisplayAsHelpTitle "$(FormatAsAction) $(FormatAsGroups) usage examples:"
     DisplayAsProjSynIndentExam 'install everything!' 'install all'
     DisplayAsProjSynIndentExam 'uninstall everything!' 'force uninstall all'
@@ -3138,9 +3134,7 @@ Help.Packages.Show()
 
     DisableDebugToArchiveAndFile
     Help.Basic.Show
-    Display
     DisplayAsHelpTitle "One-or-more $(FormatAsPackages) may be specified at-once"
-    Display
 
     for tier in Standalone Dependent; do
         DisplayAsHelpTitlePackageNamePlusSomething "$tier QPKGs" 'package description'
@@ -3148,8 +3142,6 @@ Help.Packages.Show()
         for package in $(QPKGs.Sc${tier}.Array); do
             DisplayAsHelpPackageNamePlusSomething "$package" "$(QPKG.Desc "$package")"
         done
-
-        Display
     done
 
     DisplayAsProjSynExam "abbreviations may also be used to specify $(FormatAsPackages). To list these" 'list abs'
@@ -3164,7 +3156,6 @@ Help.Options.Show()
 
     DisableDebugToArchiveAndFile
     Help.Basic.Show
-    DisplayLineSpaceIfNoneAlready
     DisplayAsHelpTitle "$(FormatAsOptions) usage examples:"
     DisplayAsProjSynIndentExam 'show package statuses' 'status'
     DisplayAsProjSynIndentExam '' s
@@ -3182,7 +3173,6 @@ Help.Problems.Show()
 
     DisableDebugToArchiveAndFile
     Help.Basic.Show
-    DisplayLineSpaceIfNoneAlready
     DisplayAsHelpTitle 'usage examples for dealing with problems:'
     DisplayAsProjSynIndentExam 'show package statuses' 'status'
     DisplayAsProjSynIndentExam '' s
@@ -3199,7 +3189,6 @@ Help.Problems.Show()
     DisplayAsProjSynIndentExam "view the entire $(FormatAsTitle) session log" 'log'
     DisplayAsProjSynIndentExam "upload the most-recent session in your $(FormatAsTitle) log to the $(FormatAsURL 'https://termbin.com') public pastebin. A URL will be generated afterward" 'paste last'
     DisplayAsProjSynIndentExam "upload the most-recent $(FormatAsThous "$LOG_TAIL_LINES") lines in your $(FormatAsTitle) log to the $(FormatAsURL 'https://termbin.com') public pastebin. A URL will be generated afterward" 'paste log'
-    Display
     DisplayAsHelpTitleHighlighted "If you need help, please include a copy of your $(FormatAsTitle) $(ColourTextBrightOrange "log for analysis!")"
 
     return 0
@@ -3211,12 +3200,10 @@ Help.Groups.Show()
 
     DisableDebugToArchiveAndFile
     Help.Basic.Show
-    DisplayLineSpaceIfNoneAlready
     DisplayAsHelpTitle "groups explained:"
     Display "all: all packages will be selected"
     Display "standalone: all standalone packages will be selected. These are not dependent on other packages."
     Display "dependent: all dependent packages will be selected. These depend on another package being present."
-    Display
     DisplayAsProjSynExam "multiple groups are supported like this" "$(FormatAsAction) $(FormatAsPackages) $(FormatAsAction) $(FormatAsPackages)"
     DisplayAsProjSynIndentExam '' 'reinstall dependents stopped'
 
@@ -3227,14 +3214,11 @@ Help.Groups.Show()
 Help.Issue.Show()
     {
 
-    DisplayLineSpaceIfNoneAlready
     DisplayAsHelpTitle "please consider creating a new issue for this on GitHub:\n\thttps://github.com/OneCDOnly/sherpa/issues"
-    Display
     DisplayAsHelpTitle "alternatively, post on the QNAP NAS Community Forum:\n\thttps://forum.qnap.com/viewtopic.php?f=320&t=132373"
     DisplayAsProjSynIndentExam "view only the most recent $(FormatAsTitle) session log" 'last'
     DisplayAsProjSynIndentExam "view the entire $(FormatAsTitle) session log" 'log'
     DisplayAsProjSynIndentExam "upload the most-recent $(FormatAsThous "$LOG_TAIL_LINES") lines in your $(FormatAsTitle) log to the $(FormatAsURL 'https://termbin.com') public pastebin. A URL will be generated afterward" 'paste log'
-    Display
     DisplayAsHelpTitleHighlighted "If you need help, please include a copy of your $(FormatAsTitle) $(ColourTextBrightOrange "log for analysis!")"
 
     return 0
@@ -3246,7 +3230,6 @@ Help.Tips.Show()
 
     DisableDebugToArchiveAndFile
     Help.Basic.Show
-    DisplayLineSpaceIfNoneAlready
     DisplayAsHelpTitle 'helpful tips and shortcuts:'
     DisplayAsProjSynIndentExam "install all available $(FormatAsTitle) packages" 'install all'
     DisplayAsProjSynIndentExam 'package abbreviations also work. To see these' 'list abs'
@@ -3271,9 +3254,7 @@ Help.PackageAbbreviations.Show()
 
     DisableDebugToArchiveAndFile
     Help.Basic.Show
-    Display
     DisplayAsHelpTitle "$(FormatAsTitle) can recognise various abbreviations as $(FormatAsPackages)"
-    Display
 
     for tier in Standalone Dependent; do
         DisplayAsHelpTitlePackageNamePlusSomething "$tier QPKGs" 'acceptable package name abreviations'
@@ -3282,8 +3263,6 @@ Help.PackageAbbreviations.Show()
             abs=$(QPKG.Abbrvs "$package")
             [[ -n $abs ]] && DisplayAsHelpPackageNamePlusSomething "$package" "${abs// /, }"
         done
-
-        Display
     done
 
     DisplayAsProjSynExam "example: to install $(FormatAsPackName SABnzbd), $(FormatAsPackName Mylar3) and $(FormatAsPackName nzbToMedia) all-at-once" 'install sab my nzb2'
@@ -3665,6 +3644,8 @@ QPKGs.NewVers.Show()
         msg='new QPKGs are'
     fi
 
+    EraseThisLine
+    DisplayLineSpaceIfNoneAlready
     ShowAsInfo "$msg available for $names_formatted"
     return 1
 
@@ -3968,6 +3949,7 @@ QPKGs.States.Build()
     done
 
     QPKGs.States.Built.Set
+    [[ ${FUNCNAME[1]} != Self.LogEnv ]] && EraseThisLine        # prevent empty line appearing briefly when starting-up
     DebugScriptFuncEx
 
     }
@@ -4024,14 +4006,10 @@ QPKGs.Backups.Show()
     local format=''
 
     DisableDebugToArchiveAndFile
-    EraseThisLine
-    DisplayLineSpaceIfNoneAlready
     DisplayAsHelpTitle "the location for $(FormatAsTitle) backups is: $BACKUP_PATH"
-    Display
 
     if [[ -e $GNU_FIND_CMD ]]; then
         DisplayAsHelpTitle "backups are listed oldest-first, and those $(ColourTextBrightRed 'in red') were last updated more than $highlight_older_than"
-        Display
         DisplayAsHelpTitleFileNamePlusSomething 'backup file' 'last backup date'
 
         while read -r epochtime filename; do
@@ -4069,7 +4047,6 @@ QPKGs.Repos.Show()
     local maxcols=$(CalcMaxRepoColsToDisplay)
 
     QPKGs.States.Build
-    DisplayLineSpaceIfNoneAlready
 
     for tier in Standalone Dependent; do
         DisplayAsHelpTitlePackageNameRepo "$tier packages" 'repository'
@@ -4120,8 +4097,6 @@ QPKGs.Statuses.Show()
     local maxcols=$(CalcMaxStatusColsToDisplay)
 
     QPKGs.States.Build
-    EraseThisLine
-    DisplayLineSpaceIfNoneAlready
 
     for tier in Standalone Dependent; do
         DisplayAsHelpTitlePackageNameVerStatus "$tier packages" 'package statuses (last result)' 'QPKG version' 'installation path'
@@ -4224,7 +4199,6 @@ QPKGs.IsInstalled.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    EraseThisLine
 
     for package in $(QPKGs.IsInstalled.Array); do
         Display "$package"
@@ -4240,7 +4214,6 @@ QPKGs.ScInstallable.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    EraseThisLine
 
     for package in $(QPKGs.ScInstallable.Array); do
         Display "$package"
@@ -4256,7 +4229,6 @@ QPKGs.IsNtInstalled.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    EraseThisLine
 
     for package in $(QPKGs.IsNtInstalled.Array); do
         Display "$package"
@@ -4272,7 +4244,6 @@ QPKGs.IsStarted.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    EraseThisLine
 
     for package in $(QPKGs.IsStarted.Array); do
         Display "$package"
@@ -4288,7 +4259,6 @@ QPKGs.IsNtStarted.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    EraseThisLine
 
     for package in $(QPKGs.IsNtStarted.Array); do
         Display "$package"
@@ -4304,7 +4274,6 @@ QPKGs.ScUpgradable.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    EraseThisLine
 
     for package in $(QPKGs.ScUpgradable.Array); do
         Display "$package"
@@ -4320,7 +4289,6 @@ QPKGs.ScStandalone.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    EraseThisLine
 
     for package in $(QPKGs.ScStandalone.Array); do
         Display "$package"
@@ -4336,7 +4304,6 @@ QPKGs.ScDependent.Show()
     local package=''
     QPKGs.States.Build
     DisableDebugToArchiveAndFile
-    EraseThisLine
 
     for package in $(QPKGs.ScDependent.Array); do
         Display "$package"
