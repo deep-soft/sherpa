@@ -258,6 +258,7 @@ Self.Init()
             Self.Debug.ToScreen.Set
             Self.Debug.ToArchive.Set
             Self.Debug.ToFile.Set
+            ShowCursor
             break
         fi
     done
