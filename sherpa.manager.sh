@@ -54,7 +54,7 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230124
+    local -r SCRIPT_VER=230125
 
     IsQNAP || return
     IsSU || return
@@ -2624,7 +2624,7 @@ KillActiveFork()
 
     if [[ -n ${fork_pid:-} && ${fork_pid:-0} -gt 0 && -d /proc/$fork_pid ]]; then
         $SLEEP_CMD 1
-        kill -9 "$fork_pid"
+        kill -9 "$fork_pid" 2>/dev/null
         wait 2>/dev/null
     fi
 
