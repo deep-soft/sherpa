@@ -256,8 +256,8 @@ Self.Init()
         if [[ $USER_ARGS_RAW =~ $re ]]; then
             Display >&2
             Self.Debug.ToScreen.Set
-            Self.Debug.ToArchive.Set
             Self.Debug.ToFile.Set
+            Self.Debug.ToArchive.Set
             ShowCursor
             break
         fi
