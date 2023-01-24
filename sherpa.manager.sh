@@ -1904,7 +1904,14 @@ AllocGroupPacksToAcs()
                 else
                     ShowAsWarn "unable to find any packages to $(Lowercase "$action")"
                 fi
-            elif QPKGs.Ac${action}.ScNt${group}.IsSet; then
+            fi
+
+            case $group in
+                All|CanBackup|CanRestartToUpdate|Dependent|HasDependents|Standalone|Missing|Reassigned)
+                    continue
+            esac
+
+            if QPKGs.Ac${action}.ScNt${group}.IsSet; then
                 if [[ $found = false ]]; then
                     QPKGs.AcTo${action}.Add "$(QPKGs.ScNt${group}.Array)"
                 fi
@@ -1950,7 +1957,14 @@ AllocGroupPacksToAcs()
                 else
                     ShowAsWarn "unable to find any packages to $(Lowercase "$action")"
                 fi
-            elif QPKGs.Ac${action}.IsNt${state}.IsSet; then
+            fi
+
+            case $state in
+                Missing|Reassigned)
+                    continue
+            esac
+
+            if QPKGs.Ac${action}.IsNt${state}.IsSet; then
                 case $action in
                     Backup|Clean|Install|Start|Uninstall)
                         case $state in
@@ -3704,22 +3718,13 @@ IPKs.Actions.List()
     DebugInfoMinSepr
 
     for action in "${PACKAGE_ACTIONS[@]}"; do
-        [[ $action = Enable || $action = Disable ]] && continue     # no objects for these as `start` and `stop` do the same jobs
+        case $action in
+            Backup|Clean|Disable|Enable|Reassign|Rebuild|Restart|Restore|Start|Stop)
+                continue
+        esac
 
-        for prefix in Ok Er Sk; do
-            if IPKs.Ac${prefix}${action}.IsAny; then
-                case $prefix in
-                    Ok)
-                        DebugIPKInfo "Ac${prefix}${action}" "($(IPKs.Ac${prefix}${action}.Count)) $(IPKs.Ac${prefix}${action}.ListCSV) "
-                        ;;
-                    Sk)
-                        DebugIPKWarning "Ac${prefix}${action}" "($(IPKs.Ac${prefix}${action}.Count)) $(IPKs.Ac${prefix}${action}.ListCSV) "
-                        ;;
-                    Er)
-                        DebugIPKError "Ac${prefix}${action}" "($(IPKs.Ac${prefix}${action}.Count)) $(IPKs.Ac${prefix}${action}.ListCSV) "
-                esac
-            fi
-        done
+        IPKs.AcOk${action}.IsAny && DebugIPKInfo "AcOk${action}" "($(IPKs.AcOk${action}.Count)) $(IPKs.AcOk${action}.ListCSV) "
+        IPKs.AcEr${action}.IsAny && DebugIPKError "AcEr${action}" "($(IPKs.AcEr${action}.Count)) $(IPKs.AcEr${action}.ListCSV) "
     done
 
     DebugInfoMinSepr
