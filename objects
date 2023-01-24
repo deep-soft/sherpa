@@ -10274,40 +10274,6 @@ QPKGs.AcToDownload.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actodownload_sz_=$2; else echo -n "$_ob_qpkgs_actodownload_sz_"
 fi ;}
 QPKGs.AcToDownload.Init
-IPKs.AcToDownload.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToDownload.Exist "$it" && _ob_ipks_actodownload_ar_+=("$it")
-done ;}
-IPKs.AcToDownload.Array()
-{ echo -n "${_ob_ipks_actodownload_ar_[@]:-}" ;}
-IPKs.AcToDownload.Count()
-{ echo "${#_ob_ipks_actodownload_ar_[@]}" ;}
-IPKs.AcToDownload.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actodownload_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToDownload.Init()
-{ _ob_ipks_actodownload_sz_=0 _ob_ipks_actodownload_ar_=() _ob_ipks_actodownload_arin_=1 ;}
-IPKs.AcToDownload.IsAny()
-{ [[ ${#_ob_ipks_actodownload_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToDownload.IsNone()
-{ [[ ${#_ob_ipks_actodownload_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToDownload.List()
-{ echo -n "${_ob_ipks_actodownload_ar_[*]:-}" ;}
-IPKs.AcToDownload.ListCSV()
-{ echo -n "${_ob_ipks_actodownload_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToDownload.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actodownload_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actodownload_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actodownload_ar_[*]+"${_ob_ipks_actodownload_ar_[@]}"} ]] && _ob_ipks_actodownload_ar_=() ;}
-IPKs.AcToDownload.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actodownload_sz_=$2; else echo -n "$_ob_ipks_actodownload_sz_"
-fi ;}
-IPKs.AcToDownload.Init
 QPKGs.AcOkDownload.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -10342,40 +10308,6 @@ QPKGs.AcOkDownload.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokdownload_sz_=$2; else echo -n "$_ob_qpkgs_acokdownload_sz_"
 fi ;}
 QPKGs.AcOkDownload.Init
-IPKs.AcOkDownload.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkDownload.Exist "$it" && _ob_ipks_acokdownload_ar_+=("$it")
-done ;}
-IPKs.AcOkDownload.Array()
-{ echo -n "${_ob_ipks_acokdownload_ar_[@]:-}" ;}
-IPKs.AcOkDownload.Count()
-{ echo "${#_ob_ipks_acokdownload_ar_[@]}" ;}
-IPKs.AcOkDownload.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokdownload_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkDownload.Init()
-{ _ob_ipks_acokdownload_sz_=0 _ob_ipks_acokdownload_ar_=() _ob_ipks_acokdownload_arin_=1 ;}
-IPKs.AcOkDownload.IsAny()
-{ [[ ${#_ob_ipks_acokdownload_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkDownload.IsNone()
-{ [[ ${#_ob_ipks_acokdownload_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkDownload.List()
-{ echo -n "${_ob_ipks_acokdownload_ar_[*]:-}" ;}
-IPKs.AcOkDownload.ListCSV()
-{ echo -n "${_ob_ipks_acokdownload_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkDownload.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokdownload_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokdownload_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokdownload_ar_[*]+"${_ob_ipks_acokdownload_ar_[@]}"} ]] && _ob_ipks_acokdownload_ar_=() ;}
-IPKs.AcOkDownload.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokdownload_sz_=$2; else echo -n "$_ob_ipks_acokdownload_sz_"
-fi ;}
-IPKs.AcOkDownload.Init
 QPKGs.AcErDownload.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -10410,40 +10342,6 @@ QPKGs.AcErDownload.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerdownload_sz_=$2; else echo -n "$_ob_qpkgs_acerdownload_sz_"
 fi ;}
 QPKGs.AcErDownload.Init
-IPKs.AcErDownload.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErDownload.Exist "$it" && _ob_ipks_acerdownload_ar_+=("$it")
-done ;}
-IPKs.AcErDownload.Array()
-{ echo -n "${_ob_ipks_acerdownload_ar_[@]:-}" ;}
-IPKs.AcErDownload.Count()
-{ echo "${#_ob_ipks_acerdownload_ar_[@]}" ;}
-IPKs.AcErDownload.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerdownload_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErDownload.Init()
-{ _ob_ipks_acerdownload_sz_=0 _ob_ipks_acerdownload_ar_=() _ob_ipks_acerdownload_arin_=1 ;}
-IPKs.AcErDownload.IsAny()
-{ [[ ${#_ob_ipks_acerdownload_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErDownload.IsNone()
-{ [[ ${#_ob_ipks_acerdownload_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErDownload.List()
-{ echo -n "${_ob_ipks_acerdownload_ar_[*]:-}" ;}
-IPKs.AcErDownload.ListCSV()
-{ echo -n "${_ob_ipks_acerdownload_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErDownload.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerdownload_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerdownload_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerdownload_ar_[*]+"${_ob_ipks_acerdownload_ar_[@]}"} ]] && _ob_ipks_acerdownload_ar_=() ;}
-IPKs.AcErDownload.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerdownload_sz_=$2; else echo -n "$_ob_ipks_acerdownload_sz_"
-fi ;}
-IPKs.AcErDownload.Init
 QPKGs.AcSkDownload.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -10478,40 +10376,6 @@ QPKGs.AcSkDownload.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskdownload_sz_=$2; else echo -n "$_ob_qpkgs_acskdownload_sz_"
 fi ;}
 QPKGs.AcSkDownload.Init
-IPKs.AcSkDownload.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkDownload.Exist "$it" && _ob_ipks_acskdownload_ar_+=("$it")
-done ;}
-IPKs.AcSkDownload.Array()
-{ echo -n "${_ob_ipks_acskdownload_ar_[@]:-}" ;}
-IPKs.AcSkDownload.Count()
-{ echo "${#_ob_ipks_acskdownload_ar_[@]}" ;}
-IPKs.AcSkDownload.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskdownload_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkDownload.Init()
-{ _ob_ipks_acskdownload_sz_=0 _ob_ipks_acskdownload_ar_=() _ob_ipks_acskdownload_arin_=1 ;}
-IPKs.AcSkDownload.IsAny()
-{ [[ ${#_ob_ipks_acskdownload_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkDownload.IsNone()
-{ [[ ${#_ob_ipks_acskdownload_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkDownload.List()
-{ echo -n "${_ob_ipks_acskdownload_ar_[*]:-}" ;}
-IPKs.AcSkDownload.ListCSV()
-{ echo -n "${_ob_ipks_acskdownload_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkDownload.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskdownload_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskdownload_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskdownload_ar_[*]+"${_ob_ipks_acskdownload_ar_[@]}"} ]] && _ob_ipks_acskdownload_ar_=() ;}
-IPKs.AcSkDownload.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskdownload_sz_=$2; else echo -n "$_ob_ipks_acskdownload_sz_"
-fi ;}
-IPKs.AcSkDownload.Init
 QPKGs.AcToRebuild.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -10546,40 +10410,6 @@ QPKGs.AcToRebuild.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actorebuild_sz_=$2; else echo -n "$_ob_qpkgs_actorebuild_sz_"
 fi ;}
 QPKGs.AcToRebuild.Init
-IPKs.AcToRebuild.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToRebuild.Exist "$it" && _ob_ipks_actorebuild_ar_+=("$it")
-done ;}
-IPKs.AcToRebuild.Array()
-{ echo -n "${_ob_ipks_actorebuild_ar_[@]:-}" ;}
-IPKs.AcToRebuild.Count()
-{ echo "${#_ob_ipks_actorebuild_ar_[@]}" ;}
-IPKs.AcToRebuild.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actorebuild_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToRebuild.Init()
-{ _ob_ipks_actorebuild_sz_=0 _ob_ipks_actorebuild_ar_=() _ob_ipks_actorebuild_arin_=1 ;}
-IPKs.AcToRebuild.IsAny()
-{ [[ ${#_ob_ipks_actorebuild_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToRebuild.IsNone()
-{ [[ ${#_ob_ipks_actorebuild_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToRebuild.List()
-{ echo -n "${_ob_ipks_actorebuild_ar_[*]:-}" ;}
-IPKs.AcToRebuild.ListCSV()
-{ echo -n "${_ob_ipks_actorebuild_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToRebuild.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actorebuild_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actorebuild_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actorebuild_ar_[*]+"${_ob_ipks_actorebuild_ar_[@]}"} ]] && _ob_ipks_actorebuild_ar_=() ;}
-IPKs.AcToRebuild.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actorebuild_sz_=$2; else echo -n "$_ob_ipks_actorebuild_sz_"
-fi ;}
-IPKs.AcToRebuild.Init
 QPKGs.AcOkRebuild.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -10614,40 +10444,6 @@ QPKGs.AcOkRebuild.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokrebuild_sz_=$2; else echo -n "$_ob_qpkgs_acokrebuild_sz_"
 fi ;}
 QPKGs.AcOkRebuild.Init
-IPKs.AcOkRebuild.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkRebuild.Exist "$it" && _ob_ipks_acokrebuild_ar_+=("$it")
-done ;}
-IPKs.AcOkRebuild.Array()
-{ echo -n "${_ob_ipks_acokrebuild_ar_[@]:-}" ;}
-IPKs.AcOkRebuild.Count()
-{ echo "${#_ob_ipks_acokrebuild_ar_[@]}" ;}
-IPKs.AcOkRebuild.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokrebuild_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkRebuild.Init()
-{ _ob_ipks_acokrebuild_sz_=0 _ob_ipks_acokrebuild_ar_=() _ob_ipks_acokrebuild_arin_=1 ;}
-IPKs.AcOkRebuild.IsAny()
-{ [[ ${#_ob_ipks_acokrebuild_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkRebuild.IsNone()
-{ [[ ${#_ob_ipks_acokrebuild_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkRebuild.List()
-{ echo -n "${_ob_ipks_acokrebuild_ar_[*]:-}" ;}
-IPKs.AcOkRebuild.ListCSV()
-{ echo -n "${_ob_ipks_acokrebuild_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkRebuild.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokrebuild_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokrebuild_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokrebuild_ar_[*]+"${_ob_ipks_acokrebuild_ar_[@]}"} ]] && _ob_ipks_acokrebuild_ar_=() ;}
-IPKs.AcOkRebuild.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokrebuild_sz_=$2; else echo -n "$_ob_ipks_acokrebuild_sz_"
-fi ;}
-IPKs.AcOkRebuild.Init
 QPKGs.AcErRebuild.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -10682,40 +10478,6 @@ QPKGs.AcErRebuild.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerrebuild_sz_=$2; else echo -n "$_ob_qpkgs_acerrebuild_sz_"
 fi ;}
 QPKGs.AcErRebuild.Init
-IPKs.AcErRebuild.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErRebuild.Exist "$it" && _ob_ipks_acerrebuild_ar_+=("$it")
-done ;}
-IPKs.AcErRebuild.Array()
-{ echo -n "${_ob_ipks_acerrebuild_ar_[@]:-}" ;}
-IPKs.AcErRebuild.Count()
-{ echo "${#_ob_ipks_acerrebuild_ar_[@]}" ;}
-IPKs.AcErRebuild.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerrebuild_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErRebuild.Init()
-{ _ob_ipks_acerrebuild_sz_=0 _ob_ipks_acerrebuild_ar_=() _ob_ipks_acerrebuild_arin_=1 ;}
-IPKs.AcErRebuild.IsAny()
-{ [[ ${#_ob_ipks_acerrebuild_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErRebuild.IsNone()
-{ [[ ${#_ob_ipks_acerrebuild_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErRebuild.List()
-{ echo -n "${_ob_ipks_acerrebuild_ar_[*]:-}" ;}
-IPKs.AcErRebuild.ListCSV()
-{ echo -n "${_ob_ipks_acerrebuild_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErRebuild.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerrebuild_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerrebuild_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerrebuild_ar_[*]+"${_ob_ipks_acerrebuild_ar_[@]}"} ]] && _ob_ipks_acerrebuild_ar_=() ;}
-IPKs.AcErRebuild.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerrebuild_sz_=$2; else echo -n "$_ob_ipks_acerrebuild_sz_"
-fi ;}
-IPKs.AcErRebuild.Init
 QPKGs.AcSkRebuild.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -10750,40 +10512,6 @@ QPKGs.AcSkRebuild.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskrebuild_sz_=$2; else echo -n "$_ob_qpkgs_acskrebuild_sz_"
 fi ;}
 QPKGs.AcSkRebuild.Init
-IPKs.AcSkRebuild.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkRebuild.Exist "$it" && _ob_ipks_acskrebuild_ar_+=("$it")
-done ;}
-IPKs.AcSkRebuild.Array()
-{ echo -n "${_ob_ipks_acskrebuild_ar_[@]:-}" ;}
-IPKs.AcSkRebuild.Count()
-{ echo "${#_ob_ipks_acskrebuild_ar_[@]}" ;}
-IPKs.AcSkRebuild.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskrebuild_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkRebuild.Init()
-{ _ob_ipks_acskrebuild_sz_=0 _ob_ipks_acskrebuild_ar_=() _ob_ipks_acskrebuild_arin_=1 ;}
-IPKs.AcSkRebuild.IsAny()
-{ [[ ${#_ob_ipks_acskrebuild_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkRebuild.IsNone()
-{ [[ ${#_ob_ipks_acskrebuild_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkRebuild.List()
-{ echo -n "${_ob_ipks_acskrebuild_ar_[*]:-}" ;}
-IPKs.AcSkRebuild.ListCSV()
-{ echo -n "${_ob_ipks_acskrebuild_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkRebuild.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskrebuild_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskrebuild_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskrebuild_ar_[*]+"${_ob_ipks_acskrebuild_ar_[@]}"} ]] && _ob_ipks_acskrebuild_ar_=() ;}
-IPKs.AcSkRebuild.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskrebuild_sz_=$2; else echo -n "$_ob_ipks_acskrebuild_sz_"
-fi ;}
-IPKs.AcSkRebuild.Init
 QPKGs.AcToReassign.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -10818,40 +10546,6 @@ QPKGs.AcToReassign.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actoreassign_sz_=$2; else echo -n "$_ob_qpkgs_actoreassign_sz_"
 fi ;}
 QPKGs.AcToReassign.Init
-IPKs.AcToReassign.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToReassign.Exist "$it" && _ob_ipks_actoreassign_ar_+=("$it")
-done ;}
-IPKs.AcToReassign.Array()
-{ echo -n "${_ob_ipks_actoreassign_ar_[@]:-}" ;}
-IPKs.AcToReassign.Count()
-{ echo "${#_ob_ipks_actoreassign_ar_[@]}" ;}
-IPKs.AcToReassign.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actoreassign_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToReassign.Init()
-{ _ob_ipks_actoreassign_sz_=0 _ob_ipks_actoreassign_ar_=() _ob_ipks_actoreassign_arin_=1 ;}
-IPKs.AcToReassign.IsAny()
-{ [[ ${#_ob_ipks_actoreassign_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToReassign.IsNone()
-{ [[ ${#_ob_ipks_actoreassign_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToReassign.List()
-{ echo -n "${_ob_ipks_actoreassign_ar_[*]:-}" ;}
-IPKs.AcToReassign.ListCSV()
-{ echo -n "${_ob_ipks_actoreassign_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToReassign.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actoreassign_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actoreassign_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actoreassign_ar_[*]+"${_ob_ipks_actoreassign_ar_[@]}"} ]] && _ob_ipks_actoreassign_ar_=() ;}
-IPKs.AcToReassign.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actoreassign_sz_=$2; else echo -n "$_ob_ipks_actoreassign_sz_"
-fi ;}
-IPKs.AcToReassign.Init
 QPKGs.AcOkReassign.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -10886,40 +10580,6 @@ QPKGs.AcOkReassign.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokreassign_sz_=$2; else echo -n "$_ob_qpkgs_acokreassign_sz_"
 fi ;}
 QPKGs.AcOkReassign.Init
-IPKs.AcOkReassign.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkReassign.Exist "$it" && _ob_ipks_acokreassign_ar_+=("$it")
-done ;}
-IPKs.AcOkReassign.Array()
-{ echo -n "${_ob_ipks_acokreassign_ar_[@]:-}" ;}
-IPKs.AcOkReassign.Count()
-{ echo "${#_ob_ipks_acokreassign_ar_[@]}" ;}
-IPKs.AcOkReassign.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokreassign_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkReassign.Init()
-{ _ob_ipks_acokreassign_sz_=0 _ob_ipks_acokreassign_ar_=() _ob_ipks_acokreassign_arin_=1 ;}
-IPKs.AcOkReassign.IsAny()
-{ [[ ${#_ob_ipks_acokreassign_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkReassign.IsNone()
-{ [[ ${#_ob_ipks_acokreassign_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkReassign.List()
-{ echo -n "${_ob_ipks_acokreassign_ar_[*]:-}" ;}
-IPKs.AcOkReassign.ListCSV()
-{ echo -n "${_ob_ipks_acokreassign_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkReassign.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokreassign_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokreassign_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokreassign_ar_[*]+"${_ob_ipks_acokreassign_ar_[@]}"} ]] && _ob_ipks_acokreassign_ar_=() ;}
-IPKs.AcOkReassign.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokreassign_sz_=$2; else echo -n "$_ob_ipks_acokreassign_sz_"
-fi ;}
-IPKs.AcOkReassign.Init
 QPKGs.AcErReassign.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -10954,40 +10614,6 @@ QPKGs.AcErReassign.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerreassign_sz_=$2; else echo -n "$_ob_qpkgs_acerreassign_sz_"
 fi ;}
 QPKGs.AcErReassign.Init
-IPKs.AcErReassign.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErReassign.Exist "$it" && _ob_ipks_acerreassign_ar_+=("$it")
-done ;}
-IPKs.AcErReassign.Array()
-{ echo -n "${_ob_ipks_acerreassign_ar_[@]:-}" ;}
-IPKs.AcErReassign.Count()
-{ echo "${#_ob_ipks_acerreassign_ar_[@]}" ;}
-IPKs.AcErReassign.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerreassign_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErReassign.Init()
-{ _ob_ipks_acerreassign_sz_=0 _ob_ipks_acerreassign_ar_=() _ob_ipks_acerreassign_arin_=1 ;}
-IPKs.AcErReassign.IsAny()
-{ [[ ${#_ob_ipks_acerreassign_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErReassign.IsNone()
-{ [[ ${#_ob_ipks_acerreassign_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErReassign.List()
-{ echo -n "${_ob_ipks_acerreassign_ar_[*]:-}" ;}
-IPKs.AcErReassign.ListCSV()
-{ echo -n "${_ob_ipks_acerreassign_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErReassign.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerreassign_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerreassign_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerreassign_ar_[*]+"${_ob_ipks_acerreassign_ar_[@]}"} ]] && _ob_ipks_acerreassign_ar_=() ;}
-IPKs.AcErReassign.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerreassign_sz_=$2; else echo -n "$_ob_ipks_acerreassign_sz_"
-fi ;}
-IPKs.AcErReassign.Init
 QPKGs.AcSkReassign.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11022,40 +10648,6 @@ QPKGs.AcSkReassign.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskreassign_sz_=$2; else echo -n "$_ob_qpkgs_acskreassign_sz_"
 fi ;}
 QPKGs.AcSkReassign.Init
-IPKs.AcSkReassign.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkReassign.Exist "$it" && _ob_ipks_acskreassign_ar_+=("$it")
-done ;}
-IPKs.AcSkReassign.Array()
-{ echo -n "${_ob_ipks_acskreassign_ar_[@]:-}" ;}
-IPKs.AcSkReassign.Count()
-{ echo "${#_ob_ipks_acskreassign_ar_[@]}" ;}
-IPKs.AcSkReassign.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskreassign_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkReassign.Init()
-{ _ob_ipks_acskreassign_sz_=0 _ob_ipks_acskreassign_ar_=() _ob_ipks_acskreassign_arin_=1 ;}
-IPKs.AcSkReassign.IsAny()
-{ [[ ${#_ob_ipks_acskreassign_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkReassign.IsNone()
-{ [[ ${#_ob_ipks_acskreassign_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkReassign.List()
-{ echo -n "${_ob_ipks_acskreassign_ar_[*]:-}" ;}
-IPKs.AcSkReassign.ListCSV()
-{ echo -n "${_ob_ipks_acskreassign_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkReassign.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskreassign_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskreassign_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskreassign_ar_[*]+"${_ob_ipks_acskreassign_ar_[@]}"} ]] && _ob_ipks_acskreassign_ar_=() ;}
-IPKs.AcSkReassign.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskreassign_sz_=$2; else echo -n "$_ob_ipks_acskreassign_sz_"
-fi ;}
-IPKs.AcSkReassign.Init
 QPKGs.AcToBackup.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11090,40 +10682,6 @@ QPKGs.AcToBackup.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actobackup_sz_=$2; else echo -n "$_ob_qpkgs_actobackup_sz_"
 fi ;}
 QPKGs.AcToBackup.Init
-IPKs.AcToBackup.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToBackup.Exist "$it" && _ob_ipks_actobackup_ar_+=("$it")
-done ;}
-IPKs.AcToBackup.Array()
-{ echo -n "${_ob_ipks_actobackup_ar_[@]:-}" ;}
-IPKs.AcToBackup.Count()
-{ echo "${#_ob_ipks_actobackup_ar_[@]}" ;}
-IPKs.AcToBackup.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actobackup_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToBackup.Init()
-{ _ob_ipks_actobackup_sz_=0 _ob_ipks_actobackup_ar_=() _ob_ipks_actobackup_arin_=1 ;}
-IPKs.AcToBackup.IsAny()
-{ [[ ${#_ob_ipks_actobackup_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToBackup.IsNone()
-{ [[ ${#_ob_ipks_actobackup_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToBackup.List()
-{ echo -n "${_ob_ipks_actobackup_ar_[*]:-}" ;}
-IPKs.AcToBackup.ListCSV()
-{ echo -n "${_ob_ipks_actobackup_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToBackup.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actobackup_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actobackup_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actobackup_ar_[*]+"${_ob_ipks_actobackup_ar_[@]}"} ]] && _ob_ipks_actobackup_ar_=() ;}
-IPKs.AcToBackup.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actobackup_sz_=$2; else echo -n "$_ob_ipks_actobackup_sz_"
-fi ;}
-IPKs.AcToBackup.Init
 QPKGs.AcOkBackup.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11158,40 +10716,6 @@ QPKGs.AcOkBackup.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokbackup_sz_=$2; else echo -n "$_ob_qpkgs_acokbackup_sz_"
 fi ;}
 QPKGs.AcOkBackup.Init
-IPKs.AcOkBackup.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkBackup.Exist "$it" && _ob_ipks_acokbackup_ar_+=("$it")
-done ;}
-IPKs.AcOkBackup.Array()
-{ echo -n "${_ob_ipks_acokbackup_ar_[@]:-}" ;}
-IPKs.AcOkBackup.Count()
-{ echo "${#_ob_ipks_acokbackup_ar_[@]}" ;}
-IPKs.AcOkBackup.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokbackup_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkBackup.Init()
-{ _ob_ipks_acokbackup_sz_=0 _ob_ipks_acokbackup_ar_=() _ob_ipks_acokbackup_arin_=1 ;}
-IPKs.AcOkBackup.IsAny()
-{ [[ ${#_ob_ipks_acokbackup_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkBackup.IsNone()
-{ [[ ${#_ob_ipks_acokbackup_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkBackup.List()
-{ echo -n "${_ob_ipks_acokbackup_ar_[*]:-}" ;}
-IPKs.AcOkBackup.ListCSV()
-{ echo -n "${_ob_ipks_acokbackup_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkBackup.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokbackup_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokbackup_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokbackup_ar_[*]+"${_ob_ipks_acokbackup_ar_[@]}"} ]] && _ob_ipks_acokbackup_ar_=() ;}
-IPKs.AcOkBackup.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokbackup_sz_=$2; else echo -n "$_ob_ipks_acokbackup_sz_"
-fi ;}
-IPKs.AcOkBackup.Init
 QPKGs.AcErBackup.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11226,40 +10750,6 @@ QPKGs.AcErBackup.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerbackup_sz_=$2; else echo -n "$_ob_qpkgs_acerbackup_sz_"
 fi ;}
 QPKGs.AcErBackup.Init
-IPKs.AcErBackup.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErBackup.Exist "$it" && _ob_ipks_acerbackup_ar_+=("$it")
-done ;}
-IPKs.AcErBackup.Array()
-{ echo -n "${_ob_ipks_acerbackup_ar_[@]:-}" ;}
-IPKs.AcErBackup.Count()
-{ echo "${#_ob_ipks_acerbackup_ar_[@]}" ;}
-IPKs.AcErBackup.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerbackup_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErBackup.Init()
-{ _ob_ipks_acerbackup_sz_=0 _ob_ipks_acerbackup_ar_=() _ob_ipks_acerbackup_arin_=1 ;}
-IPKs.AcErBackup.IsAny()
-{ [[ ${#_ob_ipks_acerbackup_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErBackup.IsNone()
-{ [[ ${#_ob_ipks_acerbackup_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErBackup.List()
-{ echo -n "${_ob_ipks_acerbackup_ar_[*]:-}" ;}
-IPKs.AcErBackup.ListCSV()
-{ echo -n "${_ob_ipks_acerbackup_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErBackup.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerbackup_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerbackup_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerbackup_ar_[*]+"${_ob_ipks_acerbackup_ar_[@]}"} ]] && _ob_ipks_acerbackup_ar_=() ;}
-IPKs.AcErBackup.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerbackup_sz_=$2; else echo -n "$_ob_ipks_acerbackup_sz_"
-fi ;}
-IPKs.AcErBackup.Init
 QPKGs.AcSkBackup.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11294,40 +10784,6 @@ QPKGs.AcSkBackup.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskbackup_sz_=$2; else echo -n "$_ob_qpkgs_acskbackup_sz_"
 fi ;}
 QPKGs.AcSkBackup.Init
-IPKs.AcSkBackup.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkBackup.Exist "$it" && _ob_ipks_acskbackup_ar_+=("$it")
-done ;}
-IPKs.AcSkBackup.Array()
-{ echo -n "${_ob_ipks_acskbackup_ar_[@]:-}" ;}
-IPKs.AcSkBackup.Count()
-{ echo "${#_ob_ipks_acskbackup_ar_[@]}" ;}
-IPKs.AcSkBackup.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskbackup_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkBackup.Init()
-{ _ob_ipks_acskbackup_sz_=0 _ob_ipks_acskbackup_ar_=() _ob_ipks_acskbackup_arin_=1 ;}
-IPKs.AcSkBackup.IsAny()
-{ [[ ${#_ob_ipks_acskbackup_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkBackup.IsNone()
-{ [[ ${#_ob_ipks_acskbackup_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkBackup.List()
-{ echo -n "${_ob_ipks_acskbackup_ar_[*]:-}" ;}
-IPKs.AcSkBackup.ListCSV()
-{ echo -n "${_ob_ipks_acskbackup_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkBackup.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskbackup_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskbackup_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskbackup_ar_[*]+"${_ob_ipks_acskbackup_ar_[@]}"} ]] && _ob_ipks_acskbackup_ar_=() ;}
-IPKs.AcSkBackup.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskbackup_sz_=$2; else echo -n "$_ob_ipks_acskbackup_sz_"
-fi ;}
-IPKs.AcSkBackup.Init
 QPKGs.AcToStop.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11362,40 +10818,6 @@ QPKGs.AcToStop.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actostop_sz_=$2; else echo -n "$_ob_qpkgs_actostop_sz_"
 fi ;}
 QPKGs.AcToStop.Init
-IPKs.AcToStop.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToStop.Exist "$it" && _ob_ipks_actostop_ar_+=("$it")
-done ;}
-IPKs.AcToStop.Array()
-{ echo -n "${_ob_ipks_actostop_ar_[@]:-}" ;}
-IPKs.AcToStop.Count()
-{ echo "${#_ob_ipks_actostop_ar_[@]}" ;}
-IPKs.AcToStop.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actostop_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToStop.Init()
-{ _ob_ipks_actostop_sz_=0 _ob_ipks_actostop_ar_=() _ob_ipks_actostop_arin_=1 ;}
-IPKs.AcToStop.IsAny()
-{ [[ ${#_ob_ipks_actostop_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToStop.IsNone()
-{ [[ ${#_ob_ipks_actostop_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToStop.List()
-{ echo -n "${_ob_ipks_actostop_ar_[*]:-}" ;}
-IPKs.AcToStop.ListCSV()
-{ echo -n "${_ob_ipks_actostop_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToStop.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actostop_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actostop_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actostop_ar_[*]+"${_ob_ipks_actostop_ar_[@]}"} ]] && _ob_ipks_actostop_ar_=() ;}
-IPKs.AcToStop.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actostop_sz_=$2; else echo -n "$_ob_ipks_actostop_sz_"
-fi ;}
-IPKs.AcToStop.Init
 QPKGs.AcOkStop.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11430,40 +10852,6 @@ QPKGs.AcOkStop.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokstop_sz_=$2; else echo -n "$_ob_qpkgs_acokstop_sz_"
 fi ;}
 QPKGs.AcOkStop.Init
-IPKs.AcOkStop.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkStop.Exist "$it" && _ob_ipks_acokstop_ar_+=("$it")
-done ;}
-IPKs.AcOkStop.Array()
-{ echo -n "${_ob_ipks_acokstop_ar_[@]:-}" ;}
-IPKs.AcOkStop.Count()
-{ echo "${#_ob_ipks_acokstop_ar_[@]}" ;}
-IPKs.AcOkStop.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokstop_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkStop.Init()
-{ _ob_ipks_acokstop_sz_=0 _ob_ipks_acokstop_ar_=() _ob_ipks_acokstop_arin_=1 ;}
-IPKs.AcOkStop.IsAny()
-{ [[ ${#_ob_ipks_acokstop_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkStop.IsNone()
-{ [[ ${#_ob_ipks_acokstop_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkStop.List()
-{ echo -n "${_ob_ipks_acokstop_ar_[*]:-}" ;}
-IPKs.AcOkStop.ListCSV()
-{ echo -n "${_ob_ipks_acokstop_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkStop.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokstop_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokstop_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokstop_ar_[*]+"${_ob_ipks_acokstop_ar_[@]}"} ]] && _ob_ipks_acokstop_ar_=() ;}
-IPKs.AcOkStop.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokstop_sz_=$2; else echo -n "$_ob_ipks_acokstop_sz_"
-fi ;}
-IPKs.AcOkStop.Init
 QPKGs.AcErStop.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11498,40 +10886,6 @@ QPKGs.AcErStop.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerstop_sz_=$2; else echo -n "$_ob_qpkgs_acerstop_sz_"
 fi ;}
 QPKGs.AcErStop.Init
-IPKs.AcErStop.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErStop.Exist "$it" && _ob_ipks_acerstop_ar_+=("$it")
-done ;}
-IPKs.AcErStop.Array()
-{ echo -n "${_ob_ipks_acerstop_ar_[@]:-}" ;}
-IPKs.AcErStop.Count()
-{ echo "${#_ob_ipks_acerstop_ar_[@]}" ;}
-IPKs.AcErStop.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerstop_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErStop.Init()
-{ _ob_ipks_acerstop_sz_=0 _ob_ipks_acerstop_ar_=() _ob_ipks_acerstop_arin_=1 ;}
-IPKs.AcErStop.IsAny()
-{ [[ ${#_ob_ipks_acerstop_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErStop.IsNone()
-{ [[ ${#_ob_ipks_acerstop_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErStop.List()
-{ echo -n "${_ob_ipks_acerstop_ar_[*]:-}" ;}
-IPKs.AcErStop.ListCSV()
-{ echo -n "${_ob_ipks_acerstop_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErStop.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerstop_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerstop_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerstop_ar_[*]+"${_ob_ipks_acerstop_ar_[@]}"} ]] && _ob_ipks_acerstop_ar_=() ;}
-IPKs.AcErStop.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerstop_sz_=$2; else echo -n "$_ob_ipks_acerstop_sz_"
-fi ;}
-IPKs.AcErStop.Init
 QPKGs.AcSkStop.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11566,40 +10920,6 @@ QPKGs.AcSkStop.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskstop_sz_=$2; else echo -n "$_ob_qpkgs_acskstop_sz_"
 fi ;}
 QPKGs.AcSkStop.Init
-IPKs.AcSkStop.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkStop.Exist "$it" && _ob_ipks_acskstop_ar_+=("$it")
-done ;}
-IPKs.AcSkStop.Array()
-{ echo -n "${_ob_ipks_acskstop_ar_[@]:-}" ;}
-IPKs.AcSkStop.Count()
-{ echo "${#_ob_ipks_acskstop_ar_[@]}" ;}
-IPKs.AcSkStop.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskstop_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkStop.Init()
-{ _ob_ipks_acskstop_sz_=0 _ob_ipks_acskstop_ar_=() _ob_ipks_acskstop_arin_=1 ;}
-IPKs.AcSkStop.IsAny()
-{ [[ ${#_ob_ipks_acskstop_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkStop.IsNone()
-{ [[ ${#_ob_ipks_acskstop_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkStop.List()
-{ echo -n "${_ob_ipks_acskstop_ar_[*]:-}" ;}
-IPKs.AcSkStop.ListCSV()
-{ echo -n "${_ob_ipks_acskstop_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkStop.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskstop_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskstop_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskstop_ar_[*]+"${_ob_ipks_acskstop_ar_[@]}"} ]] && _ob_ipks_acskstop_ar_=() ;}
-IPKs.AcSkStop.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskstop_sz_=$2; else echo -n "$_ob_ipks_acskstop_sz_"
-fi ;}
-IPKs.AcSkStop.Init
 QPKGs.AcToUninstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11634,40 +10954,6 @@ QPKGs.AcToUninstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actouninstall_sz_=$2; else echo -n "$_ob_qpkgs_actouninstall_sz_"
 fi ;}
 QPKGs.AcToUninstall.Init
-IPKs.AcToUninstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToUninstall.Exist "$it" && _ob_ipks_actouninstall_ar_+=("$it")
-done ;}
-IPKs.AcToUninstall.Array()
-{ echo -n "${_ob_ipks_actouninstall_ar_[@]:-}" ;}
-IPKs.AcToUninstall.Count()
-{ echo "${#_ob_ipks_actouninstall_ar_[@]}" ;}
-IPKs.AcToUninstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actouninstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToUninstall.Init()
-{ _ob_ipks_actouninstall_sz_=0 _ob_ipks_actouninstall_ar_=() _ob_ipks_actouninstall_arin_=1 ;}
-IPKs.AcToUninstall.IsAny()
-{ [[ ${#_ob_ipks_actouninstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToUninstall.IsNone()
-{ [[ ${#_ob_ipks_actouninstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToUninstall.List()
-{ echo -n "${_ob_ipks_actouninstall_ar_[*]:-}" ;}
-IPKs.AcToUninstall.ListCSV()
-{ echo -n "${_ob_ipks_actouninstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToUninstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actouninstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actouninstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actouninstall_ar_[*]+"${_ob_ipks_actouninstall_ar_[@]}"} ]] && _ob_ipks_actouninstall_ar_=() ;}
-IPKs.AcToUninstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actouninstall_sz_=$2; else echo -n "$_ob_ipks_actouninstall_sz_"
-fi ;}
-IPKs.AcToUninstall.Init
 QPKGs.AcOkUninstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11702,40 +10988,6 @@ QPKGs.AcOkUninstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokuninstall_sz_=$2; else echo -n "$_ob_qpkgs_acokuninstall_sz_"
 fi ;}
 QPKGs.AcOkUninstall.Init
-IPKs.AcOkUninstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkUninstall.Exist "$it" && _ob_ipks_acokuninstall_ar_+=("$it")
-done ;}
-IPKs.AcOkUninstall.Array()
-{ echo -n "${_ob_ipks_acokuninstall_ar_[@]:-}" ;}
-IPKs.AcOkUninstall.Count()
-{ echo "${#_ob_ipks_acokuninstall_ar_[@]}" ;}
-IPKs.AcOkUninstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokuninstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkUninstall.Init()
-{ _ob_ipks_acokuninstall_sz_=0 _ob_ipks_acokuninstall_ar_=() _ob_ipks_acokuninstall_arin_=1 ;}
-IPKs.AcOkUninstall.IsAny()
-{ [[ ${#_ob_ipks_acokuninstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkUninstall.IsNone()
-{ [[ ${#_ob_ipks_acokuninstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkUninstall.List()
-{ echo -n "${_ob_ipks_acokuninstall_ar_[*]:-}" ;}
-IPKs.AcOkUninstall.ListCSV()
-{ echo -n "${_ob_ipks_acokuninstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkUninstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokuninstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokuninstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokuninstall_ar_[*]+"${_ob_ipks_acokuninstall_ar_[@]}"} ]] && _ob_ipks_acokuninstall_ar_=() ;}
-IPKs.AcOkUninstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokuninstall_sz_=$2; else echo -n "$_ob_ipks_acokuninstall_sz_"
-fi ;}
-IPKs.AcOkUninstall.Init
 QPKGs.AcErUninstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11770,40 +11022,6 @@ QPKGs.AcErUninstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_aceruninstall_sz_=$2; else echo -n "$_ob_qpkgs_aceruninstall_sz_"
 fi ;}
 QPKGs.AcErUninstall.Init
-IPKs.AcErUninstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErUninstall.Exist "$it" && _ob_ipks_aceruninstall_ar_+=("$it")
-done ;}
-IPKs.AcErUninstall.Array()
-{ echo -n "${_ob_ipks_aceruninstall_ar_[@]:-}" ;}
-IPKs.AcErUninstall.Count()
-{ echo "${#_ob_ipks_aceruninstall_ar_[@]}" ;}
-IPKs.AcErUninstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_aceruninstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErUninstall.Init()
-{ _ob_ipks_aceruninstall_sz_=0 _ob_ipks_aceruninstall_ar_=() _ob_ipks_aceruninstall_arin_=1 ;}
-IPKs.AcErUninstall.IsAny()
-{ [[ ${#_ob_ipks_aceruninstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErUninstall.IsNone()
-{ [[ ${#_ob_ipks_aceruninstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErUninstall.List()
-{ echo -n "${_ob_ipks_aceruninstall_ar_[*]:-}" ;}
-IPKs.AcErUninstall.ListCSV()
-{ echo -n "${_ob_ipks_aceruninstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErUninstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_aceruninstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_aceruninstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_aceruninstall_ar_[*]+"${_ob_ipks_aceruninstall_ar_[@]}"} ]] && _ob_ipks_aceruninstall_ar_=() ;}
-IPKs.AcErUninstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_aceruninstall_sz_=$2; else echo -n "$_ob_ipks_aceruninstall_sz_"
-fi ;}
-IPKs.AcErUninstall.Init
 QPKGs.AcSkUninstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11838,40 +11056,6 @@ QPKGs.AcSkUninstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskuninstall_sz_=$2; else echo -n "$_ob_qpkgs_acskuninstall_sz_"
 fi ;}
 QPKGs.AcSkUninstall.Init
-IPKs.AcSkUninstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkUninstall.Exist "$it" && _ob_ipks_acskuninstall_ar_+=("$it")
-done ;}
-IPKs.AcSkUninstall.Array()
-{ echo -n "${_ob_ipks_acskuninstall_ar_[@]:-}" ;}
-IPKs.AcSkUninstall.Count()
-{ echo "${#_ob_ipks_acskuninstall_ar_[@]}" ;}
-IPKs.AcSkUninstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskuninstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkUninstall.Init()
-{ _ob_ipks_acskuninstall_sz_=0 _ob_ipks_acskuninstall_ar_=() _ob_ipks_acskuninstall_arin_=1 ;}
-IPKs.AcSkUninstall.IsAny()
-{ [[ ${#_ob_ipks_acskuninstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkUninstall.IsNone()
-{ [[ ${#_ob_ipks_acskuninstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkUninstall.List()
-{ echo -n "${_ob_ipks_acskuninstall_ar_[*]:-}" ;}
-IPKs.AcSkUninstall.ListCSV()
-{ echo -n "${_ob_ipks_acskuninstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkUninstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskuninstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskuninstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskuninstall_ar_[*]+"${_ob_ipks_acskuninstall_ar_[@]}"} ]] && _ob_ipks_acskuninstall_ar_=() ;}
-IPKs.AcSkUninstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskuninstall_sz_=$2; else echo -n "$_ob_ipks_acskuninstall_sz_"
-fi ;}
-IPKs.AcSkUninstall.Init
 QPKGs.AcToUpgrade.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11906,40 +11090,6 @@ QPKGs.AcToUpgrade.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actoupgrade_sz_=$2; else echo -n "$_ob_qpkgs_actoupgrade_sz_"
 fi ;}
 QPKGs.AcToUpgrade.Init
-IPKs.AcToUpgrade.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToUpgrade.Exist "$it" && _ob_ipks_actoupgrade_ar_+=("$it")
-done ;}
-IPKs.AcToUpgrade.Array()
-{ echo -n "${_ob_ipks_actoupgrade_ar_[@]:-}" ;}
-IPKs.AcToUpgrade.Count()
-{ echo "${#_ob_ipks_actoupgrade_ar_[@]}" ;}
-IPKs.AcToUpgrade.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actoupgrade_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToUpgrade.Init()
-{ _ob_ipks_actoupgrade_sz_=0 _ob_ipks_actoupgrade_ar_=() _ob_ipks_actoupgrade_arin_=1 ;}
-IPKs.AcToUpgrade.IsAny()
-{ [[ ${#_ob_ipks_actoupgrade_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToUpgrade.IsNone()
-{ [[ ${#_ob_ipks_actoupgrade_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToUpgrade.List()
-{ echo -n "${_ob_ipks_actoupgrade_ar_[*]:-}" ;}
-IPKs.AcToUpgrade.ListCSV()
-{ echo -n "${_ob_ipks_actoupgrade_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToUpgrade.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actoupgrade_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actoupgrade_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actoupgrade_ar_[*]+"${_ob_ipks_actoupgrade_ar_[@]}"} ]] && _ob_ipks_actoupgrade_ar_=() ;}
-IPKs.AcToUpgrade.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actoupgrade_sz_=$2; else echo -n "$_ob_ipks_actoupgrade_sz_"
-fi ;}
-IPKs.AcToUpgrade.Init
 QPKGs.AcOkUpgrade.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -11974,40 +11124,6 @@ QPKGs.AcOkUpgrade.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokupgrade_sz_=$2; else echo -n "$_ob_qpkgs_acokupgrade_sz_"
 fi ;}
 QPKGs.AcOkUpgrade.Init
-IPKs.AcOkUpgrade.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkUpgrade.Exist "$it" && _ob_ipks_acokupgrade_ar_+=("$it")
-done ;}
-IPKs.AcOkUpgrade.Array()
-{ echo -n "${_ob_ipks_acokupgrade_ar_[@]:-}" ;}
-IPKs.AcOkUpgrade.Count()
-{ echo "${#_ob_ipks_acokupgrade_ar_[@]}" ;}
-IPKs.AcOkUpgrade.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokupgrade_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkUpgrade.Init()
-{ _ob_ipks_acokupgrade_sz_=0 _ob_ipks_acokupgrade_ar_=() _ob_ipks_acokupgrade_arin_=1 ;}
-IPKs.AcOkUpgrade.IsAny()
-{ [[ ${#_ob_ipks_acokupgrade_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkUpgrade.IsNone()
-{ [[ ${#_ob_ipks_acokupgrade_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkUpgrade.List()
-{ echo -n "${_ob_ipks_acokupgrade_ar_[*]:-}" ;}
-IPKs.AcOkUpgrade.ListCSV()
-{ echo -n "${_ob_ipks_acokupgrade_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkUpgrade.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokupgrade_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokupgrade_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokupgrade_ar_[*]+"${_ob_ipks_acokupgrade_ar_[@]}"} ]] && _ob_ipks_acokupgrade_ar_=() ;}
-IPKs.AcOkUpgrade.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokupgrade_sz_=$2; else echo -n "$_ob_ipks_acokupgrade_sz_"
-fi ;}
-IPKs.AcOkUpgrade.Init
 QPKGs.AcErUpgrade.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12042,40 +11158,6 @@ QPKGs.AcErUpgrade.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerupgrade_sz_=$2; else echo -n "$_ob_qpkgs_acerupgrade_sz_"
 fi ;}
 QPKGs.AcErUpgrade.Init
-IPKs.AcErUpgrade.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErUpgrade.Exist "$it" && _ob_ipks_acerupgrade_ar_+=("$it")
-done ;}
-IPKs.AcErUpgrade.Array()
-{ echo -n "${_ob_ipks_acerupgrade_ar_[@]:-}" ;}
-IPKs.AcErUpgrade.Count()
-{ echo "${#_ob_ipks_acerupgrade_ar_[@]}" ;}
-IPKs.AcErUpgrade.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerupgrade_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErUpgrade.Init()
-{ _ob_ipks_acerupgrade_sz_=0 _ob_ipks_acerupgrade_ar_=() _ob_ipks_acerupgrade_arin_=1 ;}
-IPKs.AcErUpgrade.IsAny()
-{ [[ ${#_ob_ipks_acerupgrade_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErUpgrade.IsNone()
-{ [[ ${#_ob_ipks_acerupgrade_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErUpgrade.List()
-{ echo -n "${_ob_ipks_acerupgrade_ar_[*]:-}" ;}
-IPKs.AcErUpgrade.ListCSV()
-{ echo -n "${_ob_ipks_acerupgrade_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErUpgrade.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerupgrade_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerupgrade_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerupgrade_ar_[*]+"${_ob_ipks_acerupgrade_ar_[@]}"} ]] && _ob_ipks_acerupgrade_ar_=() ;}
-IPKs.AcErUpgrade.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerupgrade_sz_=$2; else echo -n "$_ob_ipks_acerupgrade_sz_"
-fi ;}
-IPKs.AcErUpgrade.Init
 QPKGs.AcSkUpgrade.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12110,40 +11192,6 @@ QPKGs.AcSkUpgrade.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskupgrade_sz_=$2; else echo -n "$_ob_qpkgs_acskupgrade_sz_"
 fi ;}
 QPKGs.AcSkUpgrade.Init
-IPKs.AcSkUpgrade.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkUpgrade.Exist "$it" && _ob_ipks_acskupgrade_ar_+=("$it")
-done ;}
-IPKs.AcSkUpgrade.Array()
-{ echo -n "${_ob_ipks_acskupgrade_ar_[@]:-}" ;}
-IPKs.AcSkUpgrade.Count()
-{ echo "${#_ob_ipks_acskupgrade_ar_[@]}" ;}
-IPKs.AcSkUpgrade.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskupgrade_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkUpgrade.Init()
-{ _ob_ipks_acskupgrade_sz_=0 _ob_ipks_acskupgrade_ar_=() _ob_ipks_acskupgrade_arin_=1 ;}
-IPKs.AcSkUpgrade.IsAny()
-{ [[ ${#_ob_ipks_acskupgrade_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkUpgrade.IsNone()
-{ [[ ${#_ob_ipks_acskupgrade_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkUpgrade.List()
-{ echo -n "${_ob_ipks_acskupgrade_ar_[*]:-}" ;}
-IPKs.AcSkUpgrade.ListCSV()
-{ echo -n "${_ob_ipks_acskupgrade_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkUpgrade.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskupgrade_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskupgrade_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskupgrade_ar_[*]+"${_ob_ipks_acskupgrade_ar_[@]}"} ]] && _ob_ipks_acskupgrade_ar_=() ;}
-IPKs.AcSkUpgrade.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskupgrade_sz_=$2; else echo -n "$_ob_ipks_acskupgrade_sz_"
-fi ;}
-IPKs.AcSkUpgrade.Init
 QPKGs.AcToReinstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12178,40 +11226,6 @@ QPKGs.AcToReinstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actoreinstall_sz_=$2; else echo -n "$_ob_qpkgs_actoreinstall_sz_"
 fi ;}
 QPKGs.AcToReinstall.Init
-IPKs.AcToReinstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToReinstall.Exist "$it" && _ob_ipks_actoreinstall_ar_+=("$it")
-done ;}
-IPKs.AcToReinstall.Array()
-{ echo -n "${_ob_ipks_actoreinstall_ar_[@]:-}" ;}
-IPKs.AcToReinstall.Count()
-{ echo "${#_ob_ipks_actoreinstall_ar_[@]}" ;}
-IPKs.AcToReinstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actoreinstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToReinstall.Init()
-{ _ob_ipks_actoreinstall_sz_=0 _ob_ipks_actoreinstall_ar_=() _ob_ipks_actoreinstall_arin_=1 ;}
-IPKs.AcToReinstall.IsAny()
-{ [[ ${#_ob_ipks_actoreinstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToReinstall.IsNone()
-{ [[ ${#_ob_ipks_actoreinstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToReinstall.List()
-{ echo -n "${_ob_ipks_actoreinstall_ar_[*]:-}" ;}
-IPKs.AcToReinstall.ListCSV()
-{ echo -n "${_ob_ipks_actoreinstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToReinstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actoreinstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actoreinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actoreinstall_ar_[*]+"${_ob_ipks_actoreinstall_ar_[@]}"} ]] && _ob_ipks_actoreinstall_ar_=() ;}
-IPKs.AcToReinstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actoreinstall_sz_=$2; else echo -n "$_ob_ipks_actoreinstall_sz_"
-fi ;}
-IPKs.AcToReinstall.Init
 QPKGs.AcOkReinstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12246,40 +11260,6 @@ QPKGs.AcOkReinstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokreinstall_sz_=$2; else echo -n "$_ob_qpkgs_acokreinstall_sz_"
 fi ;}
 QPKGs.AcOkReinstall.Init
-IPKs.AcOkReinstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkReinstall.Exist "$it" && _ob_ipks_acokreinstall_ar_+=("$it")
-done ;}
-IPKs.AcOkReinstall.Array()
-{ echo -n "${_ob_ipks_acokreinstall_ar_[@]:-}" ;}
-IPKs.AcOkReinstall.Count()
-{ echo "${#_ob_ipks_acokreinstall_ar_[@]}" ;}
-IPKs.AcOkReinstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokreinstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkReinstall.Init()
-{ _ob_ipks_acokreinstall_sz_=0 _ob_ipks_acokreinstall_ar_=() _ob_ipks_acokreinstall_arin_=1 ;}
-IPKs.AcOkReinstall.IsAny()
-{ [[ ${#_ob_ipks_acokreinstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkReinstall.IsNone()
-{ [[ ${#_ob_ipks_acokreinstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkReinstall.List()
-{ echo -n "${_ob_ipks_acokreinstall_ar_[*]:-}" ;}
-IPKs.AcOkReinstall.ListCSV()
-{ echo -n "${_ob_ipks_acokreinstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkReinstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokreinstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokreinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokreinstall_ar_[*]+"${_ob_ipks_acokreinstall_ar_[@]}"} ]] && _ob_ipks_acokreinstall_ar_=() ;}
-IPKs.AcOkReinstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokreinstall_sz_=$2; else echo -n "$_ob_ipks_acokreinstall_sz_"
-fi ;}
-IPKs.AcOkReinstall.Init
 QPKGs.AcErReinstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12314,40 +11294,6 @@ QPKGs.AcErReinstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerreinstall_sz_=$2; else echo -n "$_ob_qpkgs_acerreinstall_sz_"
 fi ;}
 QPKGs.AcErReinstall.Init
-IPKs.AcErReinstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErReinstall.Exist "$it" && _ob_ipks_acerreinstall_ar_+=("$it")
-done ;}
-IPKs.AcErReinstall.Array()
-{ echo -n "${_ob_ipks_acerreinstall_ar_[@]:-}" ;}
-IPKs.AcErReinstall.Count()
-{ echo "${#_ob_ipks_acerreinstall_ar_[@]}" ;}
-IPKs.AcErReinstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerreinstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErReinstall.Init()
-{ _ob_ipks_acerreinstall_sz_=0 _ob_ipks_acerreinstall_ar_=() _ob_ipks_acerreinstall_arin_=1 ;}
-IPKs.AcErReinstall.IsAny()
-{ [[ ${#_ob_ipks_acerreinstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErReinstall.IsNone()
-{ [[ ${#_ob_ipks_acerreinstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErReinstall.List()
-{ echo -n "${_ob_ipks_acerreinstall_ar_[*]:-}" ;}
-IPKs.AcErReinstall.ListCSV()
-{ echo -n "${_ob_ipks_acerreinstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErReinstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerreinstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerreinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerreinstall_ar_[*]+"${_ob_ipks_acerreinstall_ar_[@]}"} ]] && _ob_ipks_acerreinstall_ar_=() ;}
-IPKs.AcErReinstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerreinstall_sz_=$2; else echo -n "$_ob_ipks_acerreinstall_sz_"
-fi ;}
-IPKs.AcErReinstall.Init
 QPKGs.AcSkReinstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12382,40 +11328,6 @@ QPKGs.AcSkReinstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskreinstall_sz_=$2; else echo -n "$_ob_qpkgs_acskreinstall_sz_"
 fi ;}
 QPKGs.AcSkReinstall.Init
-IPKs.AcSkReinstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkReinstall.Exist "$it" && _ob_ipks_acskreinstall_ar_+=("$it")
-done ;}
-IPKs.AcSkReinstall.Array()
-{ echo -n "${_ob_ipks_acskreinstall_ar_[@]:-}" ;}
-IPKs.AcSkReinstall.Count()
-{ echo "${#_ob_ipks_acskreinstall_ar_[@]}" ;}
-IPKs.AcSkReinstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskreinstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkReinstall.Init()
-{ _ob_ipks_acskreinstall_sz_=0 _ob_ipks_acskreinstall_ar_=() _ob_ipks_acskreinstall_arin_=1 ;}
-IPKs.AcSkReinstall.IsAny()
-{ [[ ${#_ob_ipks_acskreinstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkReinstall.IsNone()
-{ [[ ${#_ob_ipks_acskreinstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkReinstall.List()
-{ echo -n "${_ob_ipks_acskreinstall_ar_[*]:-}" ;}
-IPKs.AcSkReinstall.ListCSV()
-{ echo -n "${_ob_ipks_acskreinstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkReinstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskreinstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskreinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskreinstall_ar_[*]+"${_ob_ipks_acskreinstall_ar_[@]}"} ]] && _ob_ipks_acskreinstall_ar_=() ;}
-IPKs.AcSkReinstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskreinstall_sz_=$2; else echo -n "$_ob_ipks_acskreinstall_sz_"
-fi ;}
-IPKs.AcSkReinstall.Init
 QPKGs.AcToInstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12450,40 +11362,6 @@ QPKGs.AcToInstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actoinstall_sz_=$2; else echo -n "$_ob_qpkgs_actoinstall_sz_"
 fi ;}
 QPKGs.AcToInstall.Init
-IPKs.AcToInstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToInstall.Exist "$it" && _ob_ipks_actoinstall_ar_+=("$it")
-done ;}
-IPKs.AcToInstall.Array()
-{ echo -n "${_ob_ipks_actoinstall_ar_[@]:-}" ;}
-IPKs.AcToInstall.Count()
-{ echo "${#_ob_ipks_actoinstall_ar_[@]}" ;}
-IPKs.AcToInstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actoinstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToInstall.Init()
-{ _ob_ipks_actoinstall_sz_=0 _ob_ipks_actoinstall_ar_=() _ob_ipks_actoinstall_arin_=1 ;}
-IPKs.AcToInstall.IsAny()
-{ [[ ${#_ob_ipks_actoinstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToInstall.IsNone()
-{ [[ ${#_ob_ipks_actoinstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToInstall.List()
-{ echo -n "${_ob_ipks_actoinstall_ar_[*]:-}" ;}
-IPKs.AcToInstall.ListCSV()
-{ echo -n "${_ob_ipks_actoinstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToInstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actoinstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actoinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actoinstall_ar_[*]+"${_ob_ipks_actoinstall_ar_[@]}"} ]] && _ob_ipks_actoinstall_ar_=() ;}
-IPKs.AcToInstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actoinstall_sz_=$2; else echo -n "$_ob_ipks_actoinstall_sz_"
-fi ;}
-IPKs.AcToInstall.Init
 QPKGs.AcOkInstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12518,40 +11396,6 @@ QPKGs.AcOkInstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokinstall_sz_=$2; else echo -n "$_ob_qpkgs_acokinstall_sz_"
 fi ;}
 QPKGs.AcOkInstall.Init
-IPKs.AcOkInstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkInstall.Exist "$it" && _ob_ipks_acokinstall_ar_+=("$it")
-done ;}
-IPKs.AcOkInstall.Array()
-{ echo -n "${_ob_ipks_acokinstall_ar_[@]:-}" ;}
-IPKs.AcOkInstall.Count()
-{ echo "${#_ob_ipks_acokinstall_ar_[@]}" ;}
-IPKs.AcOkInstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokinstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkInstall.Init()
-{ _ob_ipks_acokinstall_sz_=0 _ob_ipks_acokinstall_ar_=() _ob_ipks_acokinstall_arin_=1 ;}
-IPKs.AcOkInstall.IsAny()
-{ [[ ${#_ob_ipks_acokinstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkInstall.IsNone()
-{ [[ ${#_ob_ipks_acokinstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkInstall.List()
-{ echo -n "${_ob_ipks_acokinstall_ar_[*]:-}" ;}
-IPKs.AcOkInstall.ListCSV()
-{ echo -n "${_ob_ipks_acokinstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkInstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokinstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokinstall_ar_[*]+"${_ob_ipks_acokinstall_ar_[@]}"} ]] && _ob_ipks_acokinstall_ar_=() ;}
-IPKs.AcOkInstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokinstall_sz_=$2; else echo -n "$_ob_ipks_acokinstall_sz_"
-fi ;}
-IPKs.AcOkInstall.Init
 QPKGs.AcErInstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12586,40 +11430,6 @@ QPKGs.AcErInstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerinstall_sz_=$2; else echo -n "$_ob_qpkgs_acerinstall_sz_"
 fi ;}
 QPKGs.AcErInstall.Init
-IPKs.AcErInstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErInstall.Exist "$it" && _ob_ipks_acerinstall_ar_+=("$it")
-done ;}
-IPKs.AcErInstall.Array()
-{ echo -n "${_ob_ipks_acerinstall_ar_[@]:-}" ;}
-IPKs.AcErInstall.Count()
-{ echo "${#_ob_ipks_acerinstall_ar_[@]}" ;}
-IPKs.AcErInstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerinstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErInstall.Init()
-{ _ob_ipks_acerinstall_sz_=0 _ob_ipks_acerinstall_ar_=() _ob_ipks_acerinstall_arin_=1 ;}
-IPKs.AcErInstall.IsAny()
-{ [[ ${#_ob_ipks_acerinstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErInstall.IsNone()
-{ [[ ${#_ob_ipks_acerinstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErInstall.List()
-{ echo -n "${_ob_ipks_acerinstall_ar_[*]:-}" ;}
-IPKs.AcErInstall.ListCSV()
-{ echo -n "${_ob_ipks_acerinstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErInstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerinstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerinstall_ar_[*]+"${_ob_ipks_acerinstall_ar_[@]}"} ]] && _ob_ipks_acerinstall_ar_=() ;}
-IPKs.AcErInstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerinstall_sz_=$2; else echo -n "$_ob_ipks_acerinstall_sz_"
-fi ;}
-IPKs.AcErInstall.Init
 QPKGs.AcSkInstall.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12654,40 +11464,6 @@ QPKGs.AcSkInstall.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskinstall_sz_=$2; else echo -n "$_ob_qpkgs_acskinstall_sz_"
 fi ;}
 QPKGs.AcSkInstall.Init
-IPKs.AcSkInstall.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkInstall.Exist "$it" && _ob_ipks_acskinstall_ar_+=("$it")
-done ;}
-IPKs.AcSkInstall.Array()
-{ echo -n "${_ob_ipks_acskinstall_ar_[@]:-}" ;}
-IPKs.AcSkInstall.Count()
-{ echo "${#_ob_ipks_acskinstall_ar_[@]}" ;}
-IPKs.AcSkInstall.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskinstall_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkInstall.Init()
-{ _ob_ipks_acskinstall_sz_=0 _ob_ipks_acskinstall_ar_=() _ob_ipks_acskinstall_arin_=1 ;}
-IPKs.AcSkInstall.IsAny()
-{ [[ ${#_ob_ipks_acskinstall_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkInstall.IsNone()
-{ [[ ${#_ob_ipks_acskinstall_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkInstall.List()
-{ echo -n "${_ob_ipks_acskinstall_ar_[*]:-}" ;}
-IPKs.AcSkInstall.ListCSV()
-{ echo -n "${_ob_ipks_acskinstall_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkInstall.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskinstall_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskinstall_ar_[*]+"${_ob_ipks_acskinstall_ar_[@]}"} ]] && _ob_ipks_acskinstall_ar_=() ;}
-IPKs.AcSkInstall.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskinstall_sz_=$2; else echo -n "$_ob_ipks_acskinstall_sz_"
-fi ;}
-IPKs.AcSkInstall.Init
 QPKGs.AcToRestore.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12722,40 +11498,6 @@ QPKGs.AcToRestore.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actorestore_sz_=$2; else echo -n "$_ob_qpkgs_actorestore_sz_"
 fi ;}
 QPKGs.AcToRestore.Init
-IPKs.AcToRestore.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToRestore.Exist "$it" && _ob_ipks_actorestore_ar_+=("$it")
-done ;}
-IPKs.AcToRestore.Array()
-{ echo -n "${_ob_ipks_actorestore_ar_[@]:-}" ;}
-IPKs.AcToRestore.Count()
-{ echo "${#_ob_ipks_actorestore_ar_[@]}" ;}
-IPKs.AcToRestore.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actorestore_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToRestore.Init()
-{ _ob_ipks_actorestore_sz_=0 _ob_ipks_actorestore_ar_=() _ob_ipks_actorestore_arin_=1 ;}
-IPKs.AcToRestore.IsAny()
-{ [[ ${#_ob_ipks_actorestore_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToRestore.IsNone()
-{ [[ ${#_ob_ipks_actorestore_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToRestore.List()
-{ echo -n "${_ob_ipks_actorestore_ar_[*]:-}" ;}
-IPKs.AcToRestore.ListCSV()
-{ echo -n "${_ob_ipks_actorestore_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToRestore.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actorestore_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actorestore_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actorestore_ar_[*]+"${_ob_ipks_actorestore_ar_[@]}"} ]] && _ob_ipks_actorestore_ar_=() ;}
-IPKs.AcToRestore.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actorestore_sz_=$2; else echo -n "$_ob_ipks_actorestore_sz_"
-fi ;}
-IPKs.AcToRestore.Init
 QPKGs.AcOkRestore.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12790,40 +11532,6 @@ QPKGs.AcOkRestore.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokrestore_sz_=$2; else echo -n "$_ob_qpkgs_acokrestore_sz_"
 fi ;}
 QPKGs.AcOkRestore.Init
-IPKs.AcOkRestore.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkRestore.Exist "$it" && _ob_ipks_acokrestore_ar_+=("$it")
-done ;}
-IPKs.AcOkRestore.Array()
-{ echo -n "${_ob_ipks_acokrestore_ar_[@]:-}" ;}
-IPKs.AcOkRestore.Count()
-{ echo "${#_ob_ipks_acokrestore_ar_[@]}" ;}
-IPKs.AcOkRestore.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokrestore_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkRestore.Init()
-{ _ob_ipks_acokrestore_sz_=0 _ob_ipks_acokrestore_ar_=() _ob_ipks_acokrestore_arin_=1 ;}
-IPKs.AcOkRestore.IsAny()
-{ [[ ${#_ob_ipks_acokrestore_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkRestore.IsNone()
-{ [[ ${#_ob_ipks_acokrestore_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkRestore.List()
-{ echo -n "${_ob_ipks_acokrestore_ar_[*]:-}" ;}
-IPKs.AcOkRestore.ListCSV()
-{ echo -n "${_ob_ipks_acokrestore_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkRestore.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokrestore_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokrestore_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokrestore_ar_[*]+"${_ob_ipks_acokrestore_ar_[@]}"} ]] && _ob_ipks_acokrestore_ar_=() ;}
-IPKs.AcOkRestore.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokrestore_sz_=$2; else echo -n "$_ob_ipks_acokrestore_sz_"
-fi ;}
-IPKs.AcOkRestore.Init
 QPKGs.AcErRestore.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12858,40 +11566,6 @@ QPKGs.AcErRestore.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerrestore_sz_=$2; else echo -n "$_ob_qpkgs_acerrestore_sz_"
 fi ;}
 QPKGs.AcErRestore.Init
-IPKs.AcErRestore.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErRestore.Exist "$it" && _ob_ipks_acerrestore_ar_+=("$it")
-done ;}
-IPKs.AcErRestore.Array()
-{ echo -n "${_ob_ipks_acerrestore_ar_[@]:-}" ;}
-IPKs.AcErRestore.Count()
-{ echo "${#_ob_ipks_acerrestore_ar_[@]}" ;}
-IPKs.AcErRestore.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerrestore_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErRestore.Init()
-{ _ob_ipks_acerrestore_sz_=0 _ob_ipks_acerrestore_ar_=() _ob_ipks_acerrestore_arin_=1 ;}
-IPKs.AcErRestore.IsAny()
-{ [[ ${#_ob_ipks_acerrestore_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErRestore.IsNone()
-{ [[ ${#_ob_ipks_acerrestore_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErRestore.List()
-{ echo -n "${_ob_ipks_acerrestore_ar_[*]:-}" ;}
-IPKs.AcErRestore.ListCSV()
-{ echo -n "${_ob_ipks_acerrestore_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErRestore.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerrestore_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerrestore_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerrestore_ar_[*]+"${_ob_ipks_acerrestore_ar_[@]}"} ]] && _ob_ipks_acerrestore_ar_=() ;}
-IPKs.AcErRestore.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerrestore_sz_=$2; else echo -n "$_ob_ipks_acerrestore_sz_"
-fi ;}
-IPKs.AcErRestore.Init
 QPKGs.AcSkRestore.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12926,40 +11600,6 @@ QPKGs.AcSkRestore.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskrestore_sz_=$2; else echo -n "$_ob_qpkgs_acskrestore_sz_"
 fi ;}
 QPKGs.AcSkRestore.Init
-IPKs.AcSkRestore.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkRestore.Exist "$it" && _ob_ipks_acskrestore_ar_+=("$it")
-done ;}
-IPKs.AcSkRestore.Array()
-{ echo -n "${_ob_ipks_acskrestore_ar_[@]:-}" ;}
-IPKs.AcSkRestore.Count()
-{ echo "${#_ob_ipks_acskrestore_ar_[@]}" ;}
-IPKs.AcSkRestore.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskrestore_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkRestore.Init()
-{ _ob_ipks_acskrestore_sz_=0 _ob_ipks_acskrestore_ar_=() _ob_ipks_acskrestore_arin_=1 ;}
-IPKs.AcSkRestore.IsAny()
-{ [[ ${#_ob_ipks_acskrestore_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkRestore.IsNone()
-{ [[ ${#_ob_ipks_acskrestore_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkRestore.List()
-{ echo -n "${_ob_ipks_acskrestore_ar_[*]:-}" ;}
-IPKs.AcSkRestore.ListCSV()
-{ echo -n "${_ob_ipks_acskrestore_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkRestore.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskrestore_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskrestore_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskrestore_ar_[*]+"${_ob_ipks_acskrestore_ar_[@]}"} ]] && _ob_ipks_acskrestore_ar_=() ;}
-IPKs.AcSkRestore.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskrestore_sz_=$2; else echo -n "$_ob_ipks_acskrestore_sz_"
-fi ;}
-IPKs.AcSkRestore.Init
 QPKGs.AcToClean.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -12994,40 +11634,6 @@ QPKGs.AcToClean.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actoclean_sz_=$2; else echo -n "$_ob_qpkgs_actoclean_sz_"
 fi ;}
 QPKGs.AcToClean.Init
-IPKs.AcToClean.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToClean.Exist "$it" && _ob_ipks_actoclean_ar_+=("$it")
-done ;}
-IPKs.AcToClean.Array()
-{ echo -n "${_ob_ipks_actoclean_ar_[@]:-}" ;}
-IPKs.AcToClean.Count()
-{ echo "${#_ob_ipks_actoclean_ar_[@]}" ;}
-IPKs.AcToClean.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actoclean_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToClean.Init()
-{ _ob_ipks_actoclean_sz_=0 _ob_ipks_actoclean_ar_=() _ob_ipks_actoclean_arin_=1 ;}
-IPKs.AcToClean.IsAny()
-{ [[ ${#_ob_ipks_actoclean_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToClean.IsNone()
-{ [[ ${#_ob_ipks_actoclean_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToClean.List()
-{ echo -n "${_ob_ipks_actoclean_ar_[*]:-}" ;}
-IPKs.AcToClean.ListCSV()
-{ echo -n "${_ob_ipks_actoclean_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToClean.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actoclean_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actoclean_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actoclean_ar_[*]+"${_ob_ipks_actoclean_ar_[@]}"} ]] && _ob_ipks_actoclean_ar_=() ;}
-IPKs.AcToClean.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actoclean_sz_=$2; else echo -n "$_ob_ipks_actoclean_sz_"
-fi ;}
-IPKs.AcToClean.Init
 QPKGs.AcOkClean.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13062,40 +11668,6 @@ QPKGs.AcOkClean.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokclean_sz_=$2; else echo -n "$_ob_qpkgs_acokclean_sz_"
 fi ;}
 QPKGs.AcOkClean.Init
-IPKs.AcOkClean.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkClean.Exist "$it" && _ob_ipks_acokclean_ar_+=("$it")
-done ;}
-IPKs.AcOkClean.Array()
-{ echo -n "${_ob_ipks_acokclean_ar_[@]:-}" ;}
-IPKs.AcOkClean.Count()
-{ echo "${#_ob_ipks_acokclean_ar_[@]}" ;}
-IPKs.AcOkClean.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokclean_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkClean.Init()
-{ _ob_ipks_acokclean_sz_=0 _ob_ipks_acokclean_ar_=() _ob_ipks_acokclean_arin_=1 ;}
-IPKs.AcOkClean.IsAny()
-{ [[ ${#_ob_ipks_acokclean_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkClean.IsNone()
-{ [[ ${#_ob_ipks_acokclean_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkClean.List()
-{ echo -n "${_ob_ipks_acokclean_ar_[*]:-}" ;}
-IPKs.AcOkClean.ListCSV()
-{ echo -n "${_ob_ipks_acokclean_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkClean.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokclean_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokclean_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokclean_ar_[*]+"${_ob_ipks_acokclean_ar_[@]}"} ]] && _ob_ipks_acokclean_ar_=() ;}
-IPKs.AcOkClean.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokclean_sz_=$2; else echo -n "$_ob_ipks_acokclean_sz_"
-fi ;}
-IPKs.AcOkClean.Init
 QPKGs.AcErClean.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13130,40 +11702,6 @@ QPKGs.AcErClean.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerclean_sz_=$2; else echo -n "$_ob_qpkgs_acerclean_sz_"
 fi ;}
 QPKGs.AcErClean.Init
-IPKs.AcErClean.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErClean.Exist "$it" && _ob_ipks_acerclean_ar_+=("$it")
-done ;}
-IPKs.AcErClean.Array()
-{ echo -n "${_ob_ipks_acerclean_ar_[@]:-}" ;}
-IPKs.AcErClean.Count()
-{ echo "${#_ob_ipks_acerclean_ar_[@]}" ;}
-IPKs.AcErClean.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerclean_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErClean.Init()
-{ _ob_ipks_acerclean_sz_=0 _ob_ipks_acerclean_ar_=() _ob_ipks_acerclean_arin_=1 ;}
-IPKs.AcErClean.IsAny()
-{ [[ ${#_ob_ipks_acerclean_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErClean.IsNone()
-{ [[ ${#_ob_ipks_acerclean_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErClean.List()
-{ echo -n "${_ob_ipks_acerclean_ar_[*]:-}" ;}
-IPKs.AcErClean.ListCSV()
-{ echo -n "${_ob_ipks_acerclean_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErClean.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerclean_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerclean_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerclean_ar_[*]+"${_ob_ipks_acerclean_ar_[@]}"} ]] && _ob_ipks_acerclean_ar_=() ;}
-IPKs.AcErClean.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerclean_sz_=$2; else echo -n "$_ob_ipks_acerclean_sz_"
-fi ;}
-IPKs.AcErClean.Init
 QPKGs.AcSkClean.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13198,40 +11736,6 @@ QPKGs.AcSkClean.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskclean_sz_=$2; else echo -n "$_ob_qpkgs_acskclean_sz_"
 fi ;}
 QPKGs.AcSkClean.Init
-IPKs.AcSkClean.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkClean.Exist "$it" && _ob_ipks_acskclean_ar_+=("$it")
-done ;}
-IPKs.AcSkClean.Array()
-{ echo -n "${_ob_ipks_acskclean_ar_[@]:-}" ;}
-IPKs.AcSkClean.Count()
-{ echo "${#_ob_ipks_acskclean_ar_[@]}" ;}
-IPKs.AcSkClean.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskclean_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkClean.Init()
-{ _ob_ipks_acskclean_sz_=0 _ob_ipks_acskclean_ar_=() _ob_ipks_acskclean_arin_=1 ;}
-IPKs.AcSkClean.IsAny()
-{ [[ ${#_ob_ipks_acskclean_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkClean.IsNone()
-{ [[ ${#_ob_ipks_acskclean_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkClean.List()
-{ echo -n "${_ob_ipks_acskclean_ar_[*]:-}" ;}
-IPKs.AcSkClean.ListCSV()
-{ echo -n "${_ob_ipks_acskclean_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkClean.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskclean_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskclean_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskclean_ar_[*]+"${_ob_ipks_acskclean_ar_[@]}"} ]] && _ob_ipks_acskclean_ar_=() ;}
-IPKs.AcSkClean.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskclean_sz_=$2; else echo -n "$_ob_ipks_acskclean_sz_"
-fi ;}
-IPKs.AcSkClean.Init
 QPKGs.AcToStart.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13266,40 +11770,6 @@ QPKGs.AcToStart.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actostart_sz_=$2; else echo -n "$_ob_qpkgs_actostart_sz_"
 fi ;}
 QPKGs.AcToStart.Init
-IPKs.AcToStart.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToStart.Exist "$it" && _ob_ipks_actostart_ar_+=("$it")
-done ;}
-IPKs.AcToStart.Array()
-{ echo -n "${_ob_ipks_actostart_ar_[@]:-}" ;}
-IPKs.AcToStart.Count()
-{ echo "${#_ob_ipks_actostart_ar_[@]}" ;}
-IPKs.AcToStart.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actostart_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToStart.Init()
-{ _ob_ipks_actostart_sz_=0 _ob_ipks_actostart_ar_=() _ob_ipks_actostart_arin_=1 ;}
-IPKs.AcToStart.IsAny()
-{ [[ ${#_ob_ipks_actostart_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToStart.IsNone()
-{ [[ ${#_ob_ipks_actostart_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToStart.List()
-{ echo -n "${_ob_ipks_actostart_ar_[*]:-}" ;}
-IPKs.AcToStart.ListCSV()
-{ echo -n "${_ob_ipks_actostart_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToStart.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actostart_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actostart_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actostart_ar_[*]+"${_ob_ipks_actostart_ar_[@]}"} ]] && _ob_ipks_actostart_ar_=() ;}
-IPKs.AcToStart.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actostart_sz_=$2; else echo -n "$_ob_ipks_actostart_sz_"
-fi ;}
-IPKs.AcToStart.Init
 QPKGs.AcOkStart.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13334,40 +11804,6 @@ QPKGs.AcOkStart.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokstart_sz_=$2; else echo -n "$_ob_qpkgs_acokstart_sz_"
 fi ;}
 QPKGs.AcOkStart.Init
-IPKs.AcOkStart.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkStart.Exist "$it" && _ob_ipks_acokstart_ar_+=("$it")
-done ;}
-IPKs.AcOkStart.Array()
-{ echo -n "${_ob_ipks_acokstart_ar_[@]:-}" ;}
-IPKs.AcOkStart.Count()
-{ echo "${#_ob_ipks_acokstart_ar_[@]}" ;}
-IPKs.AcOkStart.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokstart_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkStart.Init()
-{ _ob_ipks_acokstart_sz_=0 _ob_ipks_acokstart_ar_=() _ob_ipks_acokstart_arin_=1 ;}
-IPKs.AcOkStart.IsAny()
-{ [[ ${#_ob_ipks_acokstart_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkStart.IsNone()
-{ [[ ${#_ob_ipks_acokstart_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkStart.List()
-{ echo -n "${_ob_ipks_acokstart_ar_[*]:-}" ;}
-IPKs.AcOkStart.ListCSV()
-{ echo -n "${_ob_ipks_acokstart_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkStart.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokstart_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokstart_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokstart_ar_[*]+"${_ob_ipks_acokstart_ar_[@]}"} ]] && _ob_ipks_acokstart_ar_=() ;}
-IPKs.AcOkStart.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokstart_sz_=$2; else echo -n "$_ob_ipks_acokstart_sz_"
-fi ;}
-IPKs.AcOkStart.Init
 QPKGs.AcErStart.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13402,40 +11838,6 @@ QPKGs.AcErStart.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerstart_sz_=$2; else echo -n "$_ob_qpkgs_acerstart_sz_"
 fi ;}
 QPKGs.AcErStart.Init
-IPKs.AcErStart.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErStart.Exist "$it" && _ob_ipks_acerstart_ar_+=("$it")
-done ;}
-IPKs.AcErStart.Array()
-{ echo -n "${_ob_ipks_acerstart_ar_[@]:-}" ;}
-IPKs.AcErStart.Count()
-{ echo "${#_ob_ipks_acerstart_ar_[@]}" ;}
-IPKs.AcErStart.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerstart_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErStart.Init()
-{ _ob_ipks_acerstart_sz_=0 _ob_ipks_acerstart_ar_=() _ob_ipks_acerstart_arin_=1 ;}
-IPKs.AcErStart.IsAny()
-{ [[ ${#_ob_ipks_acerstart_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErStart.IsNone()
-{ [[ ${#_ob_ipks_acerstart_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErStart.List()
-{ echo -n "${_ob_ipks_acerstart_ar_[*]:-}" ;}
-IPKs.AcErStart.ListCSV()
-{ echo -n "${_ob_ipks_acerstart_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErStart.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerstart_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerstart_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerstart_ar_[*]+"${_ob_ipks_acerstart_ar_[@]}"} ]] && _ob_ipks_acerstart_ar_=() ;}
-IPKs.AcErStart.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerstart_sz_=$2; else echo -n "$_ob_ipks_acerstart_sz_"
-fi ;}
-IPKs.AcErStart.Init
 QPKGs.AcSkStart.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13470,40 +11872,6 @@ QPKGs.AcSkStart.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskstart_sz_=$2; else echo -n "$_ob_qpkgs_acskstart_sz_"
 fi ;}
 QPKGs.AcSkStart.Init
-IPKs.AcSkStart.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcSkStart.Exist "$it" && _ob_ipks_acskstart_ar_+=("$it")
-done ;}
-IPKs.AcSkStart.Array()
-{ echo -n "${_ob_ipks_acskstart_ar_[@]:-}" ;}
-IPKs.AcSkStart.Count()
-{ echo "${#_ob_ipks_acskstart_ar_[@]}" ;}
-IPKs.AcSkStart.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskstart_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcSkStart.Init()
-{ _ob_ipks_acskstart_sz_=0 _ob_ipks_acskstart_ar_=() _ob_ipks_acskstart_arin_=1 ;}
-IPKs.AcSkStart.IsAny()
-{ [[ ${#_ob_ipks_acskstart_ar_[@]} -gt 0 ]] ;}
-IPKs.AcSkStart.IsNone()
-{ [[ ${#_ob_ipks_acskstart_ar_[@]} -eq 0 ]] ;}
-IPKs.AcSkStart.List()
-{ echo -n "${_ob_ipks_acskstart_ar_[*]:-}" ;}
-IPKs.AcSkStart.ListCSV()
-{ echo -n "${_ob_ipks_acskstart_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcSkStart.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acskstart_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acskstart_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acskstart_ar_[*]+"${_ob_ipks_acskstart_ar_[@]}"} ]] && _ob_ipks_acskstart_ar_=() ;}
-IPKs.AcSkStart.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskstart_sz_=$2; else echo -n "$_ob_ipks_acskstart_sz_"
-fi ;}
-IPKs.AcSkStart.Init
 QPKGs.AcToRestart.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13538,40 +11906,6 @@ QPKGs.AcToRestart.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_actorestart_sz_=$2; else echo -n "$_ob_qpkgs_actorestart_sz_"
 fi ;}
 QPKGs.AcToRestart.Init
-IPKs.AcToRestart.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcToRestart.Exist "$it" && _ob_ipks_actorestart_ar_+=("$it")
-done ;}
-IPKs.AcToRestart.Array()
-{ echo -n "${_ob_ipks_actorestart_ar_[@]:-}" ;}
-IPKs.AcToRestart.Count()
-{ echo "${#_ob_ipks_actorestart_ar_[@]}" ;}
-IPKs.AcToRestart.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actorestart_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcToRestart.Init()
-{ _ob_ipks_actorestart_sz_=0 _ob_ipks_actorestart_ar_=() _ob_ipks_actorestart_arin_=1 ;}
-IPKs.AcToRestart.IsAny()
-{ [[ ${#_ob_ipks_actorestart_ar_[@]} -gt 0 ]] ;}
-IPKs.AcToRestart.IsNone()
-{ [[ ${#_ob_ipks_actorestart_ar_[@]} -eq 0 ]] ;}
-IPKs.AcToRestart.List()
-{ echo -n "${_ob_ipks_actorestart_ar_[*]:-}" ;}
-IPKs.AcToRestart.ListCSV()
-{ echo -n "${_ob_ipks_actorestart_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcToRestart.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_actorestart_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_actorestart_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_actorestart_ar_[*]+"${_ob_ipks_actorestart_ar_[@]}"} ]] && _ob_ipks_actorestart_ar_=() ;}
-IPKs.AcToRestart.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actorestart_sz_=$2; else echo -n "$_ob_ipks_actorestart_sz_"
-fi ;}
-IPKs.AcToRestart.Init
 QPKGs.AcOkRestart.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13606,40 +11940,6 @@ QPKGs.AcOkRestart.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acokrestart_sz_=$2; else echo -n "$_ob_qpkgs_acokrestart_sz_"
 fi ;}
 QPKGs.AcOkRestart.Init
-IPKs.AcOkRestart.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcOkRestart.Exist "$it" && _ob_ipks_acokrestart_ar_+=("$it")
-done ;}
-IPKs.AcOkRestart.Array()
-{ echo -n "${_ob_ipks_acokrestart_ar_[@]:-}" ;}
-IPKs.AcOkRestart.Count()
-{ echo "${#_ob_ipks_acokrestart_ar_[@]}" ;}
-IPKs.AcOkRestart.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokrestart_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcOkRestart.Init()
-{ _ob_ipks_acokrestart_sz_=0 _ob_ipks_acokrestart_ar_=() _ob_ipks_acokrestart_arin_=1 ;}
-IPKs.AcOkRestart.IsAny()
-{ [[ ${#_ob_ipks_acokrestart_ar_[@]} -gt 0 ]] ;}
-IPKs.AcOkRestart.IsNone()
-{ [[ ${#_ob_ipks_acokrestart_ar_[@]} -eq 0 ]] ;}
-IPKs.AcOkRestart.List()
-{ echo -n "${_ob_ipks_acokrestart_ar_[*]:-}" ;}
-IPKs.AcOkRestart.ListCSV()
-{ echo -n "${_ob_ipks_acokrestart_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcOkRestart.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acokrestart_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acokrestart_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acokrestart_ar_[*]+"${_ob_ipks_acokrestart_ar_[@]}"} ]] && _ob_ipks_acokrestart_ar_=() ;}
-IPKs.AcOkRestart.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokrestart_sz_=$2; else echo -n "$_ob_ipks_acokrestart_sz_"
-fi ;}
-IPKs.AcOkRestart.Init
 QPKGs.AcErRestart.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13674,40 +11974,6 @@ QPKGs.AcErRestart.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acerrestart_sz_=$2; else echo -n "$_ob_qpkgs_acerrestart_sz_"
 fi ;}
 QPKGs.AcErRestart.Init
-IPKs.AcErRestart.Add()
-{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
-for it in "${ar[@]:-}"; do
-! IPKs.AcErRestart.Exist "$it" && _ob_ipks_acerrestart_ar_+=("$it")
-done ;}
-IPKs.AcErRestart.Array()
-{ echo -n "${_ob_ipks_acerrestart_ar_[@]:-}" ;}
-IPKs.AcErRestart.Count()
-{ echo "${#_ob_ipks_acerrestart_ar_[@]}" ;}
-IPKs.AcErRestart.Exist()
-{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerrestart_ar_[*]:-} " =~ $patt ]] ;}
-IPKs.AcErRestart.Init()
-{ _ob_ipks_acerrestart_sz_=0 _ob_ipks_acerrestart_ar_=() _ob_ipks_acerrestart_arin_=1 ;}
-IPKs.AcErRestart.IsAny()
-{ [[ ${#_ob_ipks_acerrestart_ar_[@]} -gt 0 ]] ;}
-IPKs.AcErRestart.IsNone()
-{ [[ ${#_ob_ipks_acerrestart_ar_[@]} -eq 0 ]] ;}
-IPKs.AcErRestart.List()
-{ echo -n "${_ob_ipks_acerrestart_ar_[*]:-}" ;}
-IPKs.AcErRestart.ListCSV()
-{ echo -n "${_ob_ipks_acerrestart_ar_[*]:-}" | tr ' ' ',' ;}
-IPKs.AcErRestart.Remove()
-{ local agar=(${1:-}) tmar=() ag='' it='' m=false
-for it in "${_ob_ipks_acerrestart_ar_[@]:-}"; do m=false
-for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
-done
-[[ $m = false ]] && tmar+=("$it")
-done
-_ob_ipks_acerrestart_ar_=("${tmar[@]+"${tmar[@]}"}")
-[[ -z ${_ob_ipks_acerrestart_ar_[*]+"${_ob_ipks_acerrestart_ar_[@]}"} ]] && _ob_ipks_acerrestart_ar_=() ;}
-IPKs.AcErRestart.Size()
-{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerrestart_sz_=$2; else echo -n "$_ob_ipks_acerrestart_sz_"
-fi ;}
-IPKs.AcErRestart.Init
 QPKGs.AcSkRestart.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
@@ -13742,6 +12008,1196 @@ QPKGs.AcSkRestart.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_acskrestart_sz_=$2; else echo -n "$_ob_qpkgs_acskrestart_sz_"
 fi ;}
 QPKGs.AcSkRestart.Init
+IPKs.AcToDownload.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcToDownload.Exist "$it" && _ob_ipks_actodownload_ar_+=("$it")
+done ;}
+IPKs.AcToDownload.Array()
+{ echo -n "${_ob_ipks_actodownload_ar_[@]:-}" ;}
+IPKs.AcToDownload.Count()
+{ echo "${#_ob_ipks_actodownload_ar_[@]}" ;}
+IPKs.AcToDownload.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actodownload_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcToDownload.Init()
+{ _ob_ipks_actodownload_sz_=0 _ob_ipks_actodownload_ar_=() _ob_ipks_actodownload_arin_=1 ;}
+IPKs.AcToDownload.IsAny()
+{ [[ ${#_ob_ipks_actodownload_ar_[@]} -gt 0 ]] ;}
+IPKs.AcToDownload.IsNone()
+{ [[ ${#_ob_ipks_actodownload_ar_[@]} -eq 0 ]] ;}
+IPKs.AcToDownload.List()
+{ echo -n "${_ob_ipks_actodownload_ar_[*]:-}" ;}
+IPKs.AcToDownload.ListCSV()
+{ echo -n "${_ob_ipks_actodownload_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcToDownload.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_actodownload_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_actodownload_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_actodownload_ar_[*]+"${_ob_ipks_actodownload_ar_[@]}"} ]] && _ob_ipks_actodownload_ar_=() ;}
+IPKs.AcToDownload.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actodownload_sz_=$2; else echo -n "$_ob_ipks_actodownload_sz_"
+fi ;}
+IPKs.AcToDownload.Init
+IPKs.AcOkDownload.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcOkDownload.Exist "$it" && _ob_ipks_acokdownload_ar_+=("$it")
+done ;}
+IPKs.AcOkDownload.Array()
+{ echo -n "${_ob_ipks_acokdownload_ar_[@]:-}" ;}
+IPKs.AcOkDownload.Count()
+{ echo "${#_ob_ipks_acokdownload_ar_[@]}" ;}
+IPKs.AcOkDownload.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokdownload_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcOkDownload.Init()
+{ _ob_ipks_acokdownload_sz_=0 _ob_ipks_acokdownload_ar_=() _ob_ipks_acokdownload_arin_=1 ;}
+IPKs.AcOkDownload.IsAny()
+{ [[ ${#_ob_ipks_acokdownload_ar_[@]} -gt 0 ]] ;}
+IPKs.AcOkDownload.IsNone()
+{ [[ ${#_ob_ipks_acokdownload_ar_[@]} -eq 0 ]] ;}
+IPKs.AcOkDownload.List()
+{ echo -n "${_ob_ipks_acokdownload_ar_[*]:-}" ;}
+IPKs.AcOkDownload.ListCSV()
+{ echo -n "${_ob_ipks_acokdownload_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcOkDownload.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acokdownload_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acokdownload_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acokdownload_ar_[*]+"${_ob_ipks_acokdownload_ar_[@]}"} ]] && _ob_ipks_acokdownload_ar_=() ;}
+IPKs.AcOkDownload.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokdownload_sz_=$2; else echo -n "$_ob_ipks_acokdownload_sz_"
+fi ;}
+IPKs.AcOkDownload.Init
+IPKs.AcErDownload.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcErDownload.Exist "$it" && _ob_ipks_acerdownload_ar_+=("$it")
+done ;}
+IPKs.AcErDownload.Array()
+{ echo -n "${_ob_ipks_acerdownload_ar_[@]:-}" ;}
+IPKs.AcErDownload.Count()
+{ echo "${#_ob_ipks_acerdownload_ar_[@]}" ;}
+IPKs.AcErDownload.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerdownload_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcErDownload.Init()
+{ _ob_ipks_acerdownload_sz_=0 _ob_ipks_acerdownload_ar_=() _ob_ipks_acerdownload_arin_=1 ;}
+IPKs.AcErDownload.IsAny()
+{ [[ ${#_ob_ipks_acerdownload_ar_[@]} -gt 0 ]] ;}
+IPKs.AcErDownload.IsNone()
+{ [[ ${#_ob_ipks_acerdownload_ar_[@]} -eq 0 ]] ;}
+IPKs.AcErDownload.List()
+{ echo -n "${_ob_ipks_acerdownload_ar_[*]:-}" ;}
+IPKs.AcErDownload.ListCSV()
+{ echo -n "${_ob_ipks_acerdownload_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcErDownload.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acerdownload_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acerdownload_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acerdownload_ar_[*]+"${_ob_ipks_acerdownload_ar_[@]}"} ]] && _ob_ipks_acerdownload_ar_=() ;}
+IPKs.AcErDownload.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerdownload_sz_=$2; else echo -n "$_ob_ipks_acerdownload_sz_"
+fi ;}
+IPKs.AcErDownload.Init
+IPKs.AcSkDownload.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcSkDownload.Exist "$it" && _ob_ipks_acskdownload_ar_+=("$it")
+done ;}
+IPKs.AcSkDownload.Array()
+{ echo -n "${_ob_ipks_acskdownload_ar_[@]:-}" ;}
+IPKs.AcSkDownload.Count()
+{ echo "${#_ob_ipks_acskdownload_ar_[@]}" ;}
+IPKs.AcSkDownload.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskdownload_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcSkDownload.Init()
+{ _ob_ipks_acskdownload_sz_=0 _ob_ipks_acskdownload_ar_=() _ob_ipks_acskdownload_arin_=1 ;}
+IPKs.AcSkDownload.IsAny()
+{ [[ ${#_ob_ipks_acskdownload_ar_[@]} -gt 0 ]] ;}
+IPKs.AcSkDownload.IsNone()
+{ [[ ${#_ob_ipks_acskdownload_ar_[@]} -eq 0 ]] ;}
+IPKs.AcSkDownload.List()
+{ echo -n "${_ob_ipks_acskdownload_ar_[*]:-}" ;}
+IPKs.AcSkDownload.ListCSV()
+{ echo -n "${_ob_ipks_acskdownload_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcSkDownload.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acskdownload_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acskdownload_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acskdownload_ar_[*]+"${_ob_ipks_acskdownload_ar_[@]}"} ]] && _ob_ipks_acskdownload_ar_=() ;}
+IPKs.AcSkDownload.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskdownload_sz_=$2; else echo -n "$_ob_ipks_acskdownload_sz_"
+fi ;}
+IPKs.AcSkDownload.Init
+IPKs.AcToStop.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcToStop.Exist "$it" && _ob_ipks_actostop_ar_+=("$it")
+done ;}
+IPKs.AcToStop.Array()
+{ echo -n "${_ob_ipks_actostop_ar_[@]:-}" ;}
+IPKs.AcToStop.Count()
+{ echo "${#_ob_ipks_actostop_ar_[@]}" ;}
+IPKs.AcToStop.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actostop_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcToStop.Init()
+{ _ob_ipks_actostop_sz_=0 _ob_ipks_actostop_ar_=() _ob_ipks_actostop_arin_=1 ;}
+IPKs.AcToStop.IsAny()
+{ [[ ${#_ob_ipks_actostop_ar_[@]} -gt 0 ]] ;}
+IPKs.AcToStop.IsNone()
+{ [[ ${#_ob_ipks_actostop_ar_[@]} -eq 0 ]] ;}
+IPKs.AcToStop.List()
+{ echo -n "${_ob_ipks_actostop_ar_[*]:-}" ;}
+IPKs.AcToStop.ListCSV()
+{ echo -n "${_ob_ipks_actostop_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcToStop.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_actostop_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_actostop_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_actostop_ar_[*]+"${_ob_ipks_actostop_ar_[@]}"} ]] && _ob_ipks_actostop_ar_=() ;}
+IPKs.AcToStop.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actostop_sz_=$2; else echo -n "$_ob_ipks_actostop_sz_"
+fi ;}
+IPKs.AcToStop.Init
+IPKs.AcOkStop.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcOkStop.Exist "$it" && _ob_ipks_acokstop_ar_+=("$it")
+done ;}
+IPKs.AcOkStop.Array()
+{ echo -n "${_ob_ipks_acokstop_ar_[@]:-}" ;}
+IPKs.AcOkStop.Count()
+{ echo "${#_ob_ipks_acokstop_ar_[@]}" ;}
+IPKs.AcOkStop.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokstop_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcOkStop.Init()
+{ _ob_ipks_acokstop_sz_=0 _ob_ipks_acokstop_ar_=() _ob_ipks_acokstop_arin_=1 ;}
+IPKs.AcOkStop.IsAny()
+{ [[ ${#_ob_ipks_acokstop_ar_[@]} -gt 0 ]] ;}
+IPKs.AcOkStop.IsNone()
+{ [[ ${#_ob_ipks_acokstop_ar_[@]} -eq 0 ]] ;}
+IPKs.AcOkStop.List()
+{ echo -n "${_ob_ipks_acokstop_ar_[*]:-}" ;}
+IPKs.AcOkStop.ListCSV()
+{ echo -n "${_ob_ipks_acokstop_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcOkStop.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acokstop_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acokstop_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acokstop_ar_[*]+"${_ob_ipks_acokstop_ar_[@]}"} ]] && _ob_ipks_acokstop_ar_=() ;}
+IPKs.AcOkStop.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokstop_sz_=$2; else echo -n "$_ob_ipks_acokstop_sz_"
+fi ;}
+IPKs.AcOkStop.Init
+IPKs.AcErStop.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcErStop.Exist "$it" && _ob_ipks_acerstop_ar_+=("$it")
+done ;}
+IPKs.AcErStop.Array()
+{ echo -n "${_ob_ipks_acerstop_ar_[@]:-}" ;}
+IPKs.AcErStop.Count()
+{ echo "${#_ob_ipks_acerstop_ar_[@]}" ;}
+IPKs.AcErStop.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerstop_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcErStop.Init()
+{ _ob_ipks_acerstop_sz_=0 _ob_ipks_acerstop_ar_=() _ob_ipks_acerstop_arin_=1 ;}
+IPKs.AcErStop.IsAny()
+{ [[ ${#_ob_ipks_acerstop_ar_[@]} -gt 0 ]] ;}
+IPKs.AcErStop.IsNone()
+{ [[ ${#_ob_ipks_acerstop_ar_[@]} -eq 0 ]] ;}
+IPKs.AcErStop.List()
+{ echo -n "${_ob_ipks_acerstop_ar_[*]:-}" ;}
+IPKs.AcErStop.ListCSV()
+{ echo -n "${_ob_ipks_acerstop_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcErStop.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acerstop_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acerstop_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acerstop_ar_[*]+"${_ob_ipks_acerstop_ar_[@]}"} ]] && _ob_ipks_acerstop_ar_=() ;}
+IPKs.AcErStop.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerstop_sz_=$2; else echo -n "$_ob_ipks_acerstop_sz_"
+fi ;}
+IPKs.AcErStop.Init
+IPKs.AcSkStop.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcSkStop.Exist "$it" && _ob_ipks_acskstop_ar_+=("$it")
+done ;}
+IPKs.AcSkStop.Array()
+{ echo -n "${_ob_ipks_acskstop_ar_[@]:-}" ;}
+IPKs.AcSkStop.Count()
+{ echo "${#_ob_ipks_acskstop_ar_[@]}" ;}
+IPKs.AcSkStop.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskstop_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcSkStop.Init()
+{ _ob_ipks_acskstop_sz_=0 _ob_ipks_acskstop_ar_=() _ob_ipks_acskstop_arin_=1 ;}
+IPKs.AcSkStop.IsAny()
+{ [[ ${#_ob_ipks_acskstop_ar_[@]} -gt 0 ]] ;}
+IPKs.AcSkStop.IsNone()
+{ [[ ${#_ob_ipks_acskstop_ar_[@]} -eq 0 ]] ;}
+IPKs.AcSkStop.List()
+{ echo -n "${_ob_ipks_acskstop_ar_[*]:-}" ;}
+IPKs.AcSkStop.ListCSV()
+{ echo -n "${_ob_ipks_acskstop_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcSkStop.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acskstop_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acskstop_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acskstop_ar_[*]+"${_ob_ipks_acskstop_ar_[@]}"} ]] && _ob_ipks_acskstop_ar_=() ;}
+IPKs.AcSkStop.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskstop_sz_=$2; else echo -n "$_ob_ipks_acskstop_sz_"
+fi ;}
+IPKs.AcSkStop.Init
+IPKs.AcToUninstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcToUninstall.Exist "$it" && _ob_ipks_actouninstall_ar_+=("$it")
+done ;}
+IPKs.AcToUninstall.Array()
+{ echo -n "${_ob_ipks_actouninstall_ar_[@]:-}" ;}
+IPKs.AcToUninstall.Count()
+{ echo "${#_ob_ipks_actouninstall_ar_[@]}" ;}
+IPKs.AcToUninstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actouninstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcToUninstall.Init()
+{ _ob_ipks_actouninstall_sz_=0 _ob_ipks_actouninstall_ar_=() _ob_ipks_actouninstall_arin_=1 ;}
+IPKs.AcToUninstall.IsAny()
+{ [[ ${#_ob_ipks_actouninstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcToUninstall.IsNone()
+{ [[ ${#_ob_ipks_actouninstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcToUninstall.List()
+{ echo -n "${_ob_ipks_actouninstall_ar_[*]:-}" ;}
+IPKs.AcToUninstall.ListCSV()
+{ echo -n "${_ob_ipks_actouninstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcToUninstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_actouninstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_actouninstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_actouninstall_ar_[*]+"${_ob_ipks_actouninstall_ar_[@]}"} ]] && _ob_ipks_actouninstall_ar_=() ;}
+IPKs.AcToUninstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actouninstall_sz_=$2; else echo -n "$_ob_ipks_actouninstall_sz_"
+fi ;}
+IPKs.AcToUninstall.Init
+IPKs.AcOkUninstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcOkUninstall.Exist "$it" && _ob_ipks_acokuninstall_ar_+=("$it")
+done ;}
+IPKs.AcOkUninstall.Array()
+{ echo -n "${_ob_ipks_acokuninstall_ar_[@]:-}" ;}
+IPKs.AcOkUninstall.Count()
+{ echo "${#_ob_ipks_acokuninstall_ar_[@]}" ;}
+IPKs.AcOkUninstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokuninstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcOkUninstall.Init()
+{ _ob_ipks_acokuninstall_sz_=0 _ob_ipks_acokuninstall_ar_=() _ob_ipks_acokuninstall_arin_=1 ;}
+IPKs.AcOkUninstall.IsAny()
+{ [[ ${#_ob_ipks_acokuninstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcOkUninstall.IsNone()
+{ [[ ${#_ob_ipks_acokuninstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcOkUninstall.List()
+{ echo -n "${_ob_ipks_acokuninstall_ar_[*]:-}" ;}
+IPKs.AcOkUninstall.ListCSV()
+{ echo -n "${_ob_ipks_acokuninstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcOkUninstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acokuninstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acokuninstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acokuninstall_ar_[*]+"${_ob_ipks_acokuninstall_ar_[@]}"} ]] && _ob_ipks_acokuninstall_ar_=() ;}
+IPKs.AcOkUninstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokuninstall_sz_=$2; else echo -n "$_ob_ipks_acokuninstall_sz_"
+fi ;}
+IPKs.AcOkUninstall.Init
+IPKs.AcErUninstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcErUninstall.Exist "$it" && _ob_ipks_aceruninstall_ar_+=("$it")
+done ;}
+IPKs.AcErUninstall.Array()
+{ echo -n "${_ob_ipks_aceruninstall_ar_[@]:-}" ;}
+IPKs.AcErUninstall.Count()
+{ echo "${#_ob_ipks_aceruninstall_ar_[@]}" ;}
+IPKs.AcErUninstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_aceruninstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcErUninstall.Init()
+{ _ob_ipks_aceruninstall_sz_=0 _ob_ipks_aceruninstall_ar_=() _ob_ipks_aceruninstall_arin_=1 ;}
+IPKs.AcErUninstall.IsAny()
+{ [[ ${#_ob_ipks_aceruninstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcErUninstall.IsNone()
+{ [[ ${#_ob_ipks_aceruninstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcErUninstall.List()
+{ echo -n "${_ob_ipks_aceruninstall_ar_[*]:-}" ;}
+IPKs.AcErUninstall.ListCSV()
+{ echo -n "${_ob_ipks_aceruninstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcErUninstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_aceruninstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_aceruninstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_aceruninstall_ar_[*]+"${_ob_ipks_aceruninstall_ar_[@]}"} ]] && _ob_ipks_aceruninstall_ar_=() ;}
+IPKs.AcErUninstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_aceruninstall_sz_=$2; else echo -n "$_ob_ipks_aceruninstall_sz_"
+fi ;}
+IPKs.AcErUninstall.Init
+IPKs.AcSkUninstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcSkUninstall.Exist "$it" && _ob_ipks_acskuninstall_ar_+=("$it")
+done ;}
+IPKs.AcSkUninstall.Array()
+{ echo -n "${_ob_ipks_acskuninstall_ar_[@]:-}" ;}
+IPKs.AcSkUninstall.Count()
+{ echo "${#_ob_ipks_acskuninstall_ar_[@]}" ;}
+IPKs.AcSkUninstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskuninstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcSkUninstall.Init()
+{ _ob_ipks_acskuninstall_sz_=0 _ob_ipks_acskuninstall_ar_=() _ob_ipks_acskuninstall_arin_=1 ;}
+IPKs.AcSkUninstall.IsAny()
+{ [[ ${#_ob_ipks_acskuninstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcSkUninstall.IsNone()
+{ [[ ${#_ob_ipks_acskuninstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcSkUninstall.List()
+{ echo -n "${_ob_ipks_acskuninstall_ar_[*]:-}" ;}
+IPKs.AcSkUninstall.ListCSV()
+{ echo -n "${_ob_ipks_acskuninstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcSkUninstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acskuninstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acskuninstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acskuninstall_ar_[*]+"${_ob_ipks_acskuninstall_ar_[@]}"} ]] && _ob_ipks_acskuninstall_ar_=() ;}
+IPKs.AcSkUninstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskuninstall_sz_=$2; else echo -n "$_ob_ipks_acskuninstall_sz_"
+fi ;}
+IPKs.AcSkUninstall.Init
+IPKs.AcToUpgrade.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcToUpgrade.Exist "$it" && _ob_ipks_actoupgrade_ar_+=("$it")
+done ;}
+IPKs.AcToUpgrade.Array()
+{ echo -n "${_ob_ipks_actoupgrade_ar_[@]:-}" ;}
+IPKs.AcToUpgrade.Count()
+{ echo "${#_ob_ipks_actoupgrade_ar_[@]}" ;}
+IPKs.AcToUpgrade.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actoupgrade_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcToUpgrade.Init()
+{ _ob_ipks_actoupgrade_sz_=0 _ob_ipks_actoupgrade_ar_=() _ob_ipks_actoupgrade_arin_=1 ;}
+IPKs.AcToUpgrade.IsAny()
+{ [[ ${#_ob_ipks_actoupgrade_ar_[@]} -gt 0 ]] ;}
+IPKs.AcToUpgrade.IsNone()
+{ [[ ${#_ob_ipks_actoupgrade_ar_[@]} -eq 0 ]] ;}
+IPKs.AcToUpgrade.List()
+{ echo -n "${_ob_ipks_actoupgrade_ar_[*]:-}" ;}
+IPKs.AcToUpgrade.ListCSV()
+{ echo -n "${_ob_ipks_actoupgrade_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcToUpgrade.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_actoupgrade_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_actoupgrade_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_actoupgrade_ar_[*]+"${_ob_ipks_actoupgrade_ar_[@]}"} ]] && _ob_ipks_actoupgrade_ar_=() ;}
+IPKs.AcToUpgrade.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actoupgrade_sz_=$2; else echo -n "$_ob_ipks_actoupgrade_sz_"
+fi ;}
+IPKs.AcToUpgrade.Init
+IPKs.AcOkUpgrade.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcOkUpgrade.Exist "$it" && _ob_ipks_acokupgrade_ar_+=("$it")
+done ;}
+IPKs.AcOkUpgrade.Array()
+{ echo -n "${_ob_ipks_acokupgrade_ar_[@]:-}" ;}
+IPKs.AcOkUpgrade.Count()
+{ echo "${#_ob_ipks_acokupgrade_ar_[@]}" ;}
+IPKs.AcOkUpgrade.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokupgrade_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcOkUpgrade.Init()
+{ _ob_ipks_acokupgrade_sz_=0 _ob_ipks_acokupgrade_ar_=() _ob_ipks_acokupgrade_arin_=1 ;}
+IPKs.AcOkUpgrade.IsAny()
+{ [[ ${#_ob_ipks_acokupgrade_ar_[@]} -gt 0 ]] ;}
+IPKs.AcOkUpgrade.IsNone()
+{ [[ ${#_ob_ipks_acokupgrade_ar_[@]} -eq 0 ]] ;}
+IPKs.AcOkUpgrade.List()
+{ echo -n "${_ob_ipks_acokupgrade_ar_[*]:-}" ;}
+IPKs.AcOkUpgrade.ListCSV()
+{ echo -n "${_ob_ipks_acokupgrade_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcOkUpgrade.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acokupgrade_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acokupgrade_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acokupgrade_ar_[*]+"${_ob_ipks_acokupgrade_ar_[@]}"} ]] && _ob_ipks_acokupgrade_ar_=() ;}
+IPKs.AcOkUpgrade.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokupgrade_sz_=$2; else echo -n "$_ob_ipks_acokupgrade_sz_"
+fi ;}
+IPKs.AcOkUpgrade.Init
+IPKs.AcErUpgrade.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcErUpgrade.Exist "$it" && _ob_ipks_acerupgrade_ar_+=("$it")
+done ;}
+IPKs.AcErUpgrade.Array()
+{ echo -n "${_ob_ipks_acerupgrade_ar_[@]:-}" ;}
+IPKs.AcErUpgrade.Count()
+{ echo "${#_ob_ipks_acerupgrade_ar_[@]}" ;}
+IPKs.AcErUpgrade.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerupgrade_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcErUpgrade.Init()
+{ _ob_ipks_acerupgrade_sz_=0 _ob_ipks_acerupgrade_ar_=() _ob_ipks_acerupgrade_arin_=1 ;}
+IPKs.AcErUpgrade.IsAny()
+{ [[ ${#_ob_ipks_acerupgrade_ar_[@]} -gt 0 ]] ;}
+IPKs.AcErUpgrade.IsNone()
+{ [[ ${#_ob_ipks_acerupgrade_ar_[@]} -eq 0 ]] ;}
+IPKs.AcErUpgrade.List()
+{ echo -n "${_ob_ipks_acerupgrade_ar_[*]:-}" ;}
+IPKs.AcErUpgrade.ListCSV()
+{ echo -n "${_ob_ipks_acerupgrade_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcErUpgrade.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acerupgrade_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acerupgrade_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acerupgrade_ar_[*]+"${_ob_ipks_acerupgrade_ar_[@]}"} ]] && _ob_ipks_acerupgrade_ar_=() ;}
+IPKs.AcErUpgrade.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerupgrade_sz_=$2; else echo -n "$_ob_ipks_acerupgrade_sz_"
+fi ;}
+IPKs.AcErUpgrade.Init
+IPKs.AcSkUpgrade.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcSkUpgrade.Exist "$it" && _ob_ipks_acskupgrade_ar_+=("$it")
+done ;}
+IPKs.AcSkUpgrade.Array()
+{ echo -n "${_ob_ipks_acskupgrade_ar_[@]:-}" ;}
+IPKs.AcSkUpgrade.Count()
+{ echo "${#_ob_ipks_acskupgrade_ar_[@]}" ;}
+IPKs.AcSkUpgrade.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskupgrade_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcSkUpgrade.Init()
+{ _ob_ipks_acskupgrade_sz_=0 _ob_ipks_acskupgrade_ar_=() _ob_ipks_acskupgrade_arin_=1 ;}
+IPKs.AcSkUpgrade.IsAny()
+{ [[ ${#_ob_ipks_acskupgrade_ar_[@]} -gt 0 ]] ;}
+IPKs.AcSkUpgrade.IsNone()
+{ [[ ${#_ob_ipks_acskupgrade_ar_[@]} -eq 0 ]] ;}
+IPKs.AcSkUpgrade.List()
+{ echo -n "${_ob_ipks_acskupgrade_ar_[*]:-}" ;}
+IPKs.AcSkUpgrade.ListCSV()
+{ echo -n "${_ob_ipks_acskupgrade_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcSkUpgrade.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acskupgrade_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acskupgrade_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acskupgrade_ar_[*]+"${_ob_ipks_acskupgrade_ar_[@]}"} ]] && _ob_ipks_acskupgrade_ar_=() ;}
+IPKs.AcSkUpgrade.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskupgrade_sz_=$2; else echo -n "$_ob_ipks_acskupgrade_sz_"
+fi ;}
+IPKs.AcSkUpgrade.Init
+IPKs.AcToReinstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcToReinstall.Exist "$it" && _ob_ipks_actoreinstall_ar_+=("$it")
+done ;}
+IPKs.AcToReinstall.Array()
+{ echo -n "${_ob_ipks_actoreinstall_ar_[@]:-}" ;}
+IPKs.AcToReinstall.Count()
+{ echo "${#_ob_ipks_actoreinstall_ar_[@]}" ;}
+IPKs.AcToReinstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actoreinstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcToReinstall.Init()
+{ _ob_ipks_actoreinstall_sz_=0 _ob_ipks_actoreinstall_ar_=() _ob_ipks_actoreinstall_arin_=1 ;}
+IPKs.AcToReinstall.IsAny()
+{ [[ ${#_ob_ipks_actoreinstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcToReinstall.IsNone()
+{ [[ ${#_ob_ipks_actoreinstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcToReinstall.List()
+{ echo -n "${_ob_ipks_actoreinstall_ar_[*]:-}" ;}
+IPKs.AcToReinstall.ListCSV()
+{ echo -n "${_ob_ipks_actoreinstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcToReinstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_actoreinstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_actoreinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_actoreinstall_ar_[*]+"${_ob_ipks_actoreinstall_ar_[@]}"} ]] && _ob_ipks_actoreinstall_ar_=() ;}
+IPKs.AcToReinstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actoreinstall_sz_=$2; else echo -n "$_ob_ipks_actoreinstall_sz_"
+fi ;}
+IPKs.AcToReinstall.Init
+IPKs.AcOkReinstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcOkReinstall.Exist "$it" && _ob_ipks_acokreinstall_ar_+=("$it")
+done ;}
+IPKs.AcOkReinstall.Array()
+{ echo -n "${_ob_ipks_acokreinstall_ar_[@]:-}" ;}
+IPKs.AcOkReinstall.Count()
+{ echo "${#_ob_ipks_acokreinstall_ar_[@]}" ;}
+IPKs.AcOkReinstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokreinstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcOkReinstall.Init()
+{ _ob_ipks_acokreinstall_sz_=0 _ob_ipks_acokreinstall_ar_=() _ob_ipks_acokreinstall_arin_=1 ;}
+IPKs.AcOkReinstall.IsAny()
+{ [[ ${#_ob_ipks_acokreinstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcOkReinstall.IsNone()
+{ [[ ${#_ob_ipks_acokreinstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcOkReinstall.List()
+{ echo -n "${_ob_ipks_acokreinstall_ar_[*]:-}" ;}
+IPKs.AcOkReinstall.ListCSV()
+{ echo -n "${_ob_ipks_acokreinstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcOkReinstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acokreinstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acokreinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acokreinstall_ar_[*]+"${_ob_ipks_acokreinstall_ar_[@]}"} ]] && _ob_ipks_acokreinstall_ar_=() ;}
+IPKs.AcOkReinstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokreinstall_sz_=$2; else echo -n "$_ob_ipks_acokreinstall_sz_"
+fi ;}
+IPKs.AcOkReinstall.Init
+IPKs.AcErReinstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcErReinstall.Exist "$it" && _ob_ipks_acerreinstall_ar_+=("$it")
+done ;}
+IPKs.AcErReinstall.Array()
+{ echo -n "${_ob_ipks_acerreinstall_ar_[@]:-}" ;}
+IPKs.AcErReinstall.Count()
+{ echo "${#_ob_ipks_acerreinstall_ar_[@]}" ;}
+IPKs.AcErReinstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerreinstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcErReinstall.Init()
+{ _ob_ipks_acerreinstall_sz_=0 _ob_ipks_acerreinstall_ar_=() _ob_ipks_acerreinstall_arin_=1 ;}
+IPKs.AcErReinstall.IsAny()
+{ [[ ${#_ob_ipks_acerreinstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcErReinstall.IsNone()
+{ [[ ${#_ob_ipks_acerreinstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcErReinstall.List()
+{ echo -n "${_ob_ipks_acerreinstall_ar_[*]:-}" ;}
+IPKs.AcErReinstall.ListCSV()
+{ echo -n "${_ob_ipks_acerreinstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcErReinstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acerreinstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acerreinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acerreinstall_ar_[*]+"${_ob_ipks_acerreinstall_ar_[@]}"} ]] && _ob_ipks_acerreinstall_ar_=() ;}
+IPKs.AcErReinstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerreinstall_sz_=$2; else echo -n "$_ob_ipks_acerreinstall_sz_"
+fi ;}
+IPKs.AcErReinstall.Init
+IPKs.AcSkReinstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcSkReinstall.Exist "$it" && _ob_ipks_acskreinstall_ar_+=("$it")
+done ;}
+IPKs.AcSkReinstall.Array()
+{ echo -n "${_ob_ipks_acskreinstall_ar_[@]:-}" ;}
+IPKs.AcSkReinstall.Count()
+{ echo "${#_ob_ipks_acskreinstall_ar_[@]}" ;}
+IPKs.AcSkReinstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskreinstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcSkReinstall.Init()
+{ _ob_ipks_acskreinstall_sz_=0 _ob_ipks_acskreinstall_ar_=() _ob_ipks_acskreinstall_arin_=1 ;}
+IPKs.AcSkReinstall.IsAny()
+{ [[ ${#_ob_ipks_acskreinstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcSkReinstall.IsNone()
+{ [[ ${#_ob_ipks_acskreinstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcSkReinstall.List()
+{ echo -n "${_ob_ipks_acskreinstall_ar_[*]:-}" ;}
+IPKs.AcSkReinstall.ListCSV()
+{ echo -n "${_ob_ipks_acskreinstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcSkReinstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acskreinstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acskreinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acskreinstall_ar_[*]+"${_ob_ipks_acskreinstall_ar_[@]}"} ]] && _ob_ipks_acskreinstall_ar_=() ;}
+IPKs.AcSkReinstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskreinstall_sz_=$2; else echo -n "$_ob_ipks_acskreinstall_sz_"
+fi ;}
+IPKs.AcSkReinstall.Init
+IPKs.AcToInstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcToInstall.Exist "$it" && _ob_ipks_actoinstall_ar_+=("$it")
+done ;}
+IPKs.AcToInstall.Array()
+{ echo -n "${_ob_ipks_actoinstall_ar_[@]:-}" ;}
+IPKs.AcToInstall.Count()
+{ echo "${#_ob_ipks_actoinstall_ar_[@]}" ;}
+IPKs.AcToInstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actoinstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcToInstall.Init()
+{ _ob_ipks_actoinstall_sz_=0 _ob_ipks_actoinstall_ar_=() _ob_ipks_actoinstall_arin_=1 ;}
+IPKs.AcToInstall.IsAny()
+{ [[ ${#_ob_ipks_actoinstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcToInstall.IsNone()
+{ [[ ${#_ob_ipks_actoinstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcToInstall.List()
+{ echo -n "${_ob_ipks_actoinstall_ar_[*]:-}" ;}
+IPKs.AcToInstall.ListCSV()
+{ echo -n "${_ob_ipks_actoinstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcToInstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_actoinstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_actoinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_actoinstall_ar_[*]+"${_ob_ipks_actoinstall_ar_[@]}"} ]] && _ob_ipks_actoinstall_ar_=() ;}
+IPKs.AcToInstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actoinstall_sz_=$2; else echo -n "$_ob_ipks_actoinstall_sz_"
+fi ;}
+IPKs.AcToInstall.Init
+IPKs.AcOkInstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcOkInstall.Exist "$it" && _ob_ipks_acokinstall_ar_+=("$it")
+done ;}
+IPKs.AcOkInstall.Array()
+{ echo -n "${_ob_ipks_acokinstall_ar_[@]:-}" ;}
+IPKs.AcOkInstall.Count()
+{ echo "${#_ob_ipks_acokinstall_ar_[@]}" ;}
+IPKs.AcOkInstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokinstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcOkInstall.Init()
+{ _ob_ipks_acokinstall_sz_=0 _ob_ipks_acokinstall_ar_=() _ob_ipks_acokinstall_arin_=1 ;}
+IPKs.AcOkInstall.IsAny()
+{ [[ ${#_ob_ipks_acokinstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcOkInstall.IsNone()
+{ [[ ${#_ob_ipks_acokinstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcOkInstall.List()
+{ echo -n "${_ob_ipks_acokinstall_ar_[*]:-}" ;}
+IPKs.AcOkInstall.ListCSV()
+{ echo -n "${_ob_ipks_acokinstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcOkInstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acokinstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acokinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acokinstall_ar_[*]+"${_ob_ipks_acokinstall_ar_[@]}"} ]] && _ob_ipks_acokinstall_ar_=() ;}
+IPKs.AcOkInstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokinstall_sz_=$2; else echo -n "$_ob_ipks_acokinstall_sz_"
+fi ;}
+IPKs.AcOkInstall.Init
+IPKs.AcErInstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcErInstall.Exist "$it" && _ob_ipks_acerinstall_ar_+=("$it")
+done ;}
+IPKs.AcErInstall.Array()
+{ echo -n "${_ob_ipks_acerinstall_ar_[@]:-}" ;}
+IPKs.AcErInstall.Count()
+{ echo "${#_ob_ipks_acerinstall_ar_[@]}" ;}
+IPKs.AcErInstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerinstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcErInstall.Init()
+{ _ob_ipks_acerinstall_sz_=0 _ob_ipks_acerinstall_ar_=() _ob_ipks_acerinstall_arin_=1 ;}
+IPKs.AcErInstall.IsAny()
+{ [[ ${#_ob_ipks_acerinstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcErInstall.IsNone()
+{ [[ ${#_ob_ipks_acerinstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcErInstall.List()
+{ echo -n "${_ob_ipks_acerinstall_ar_[*]:-}" ;}
+IPKs.AcErInstall.ListCSV()
+{ echo -n "${_ob_ipks_acerinstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcErInstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acerinstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acerinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acerinstall_ar_[*]+"${_ob_ipks_acerinstall_ar_[@]}"} ]] && _ob_ipks_acerinstall_ar_=() ;}
+IPKs.AcErInstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerinstall_sz_=$2; else echo -n "$_ob_ipks_acerinstall_sz_"
+fi ;}
+IPKs.AcErInstall.Init
+IPKs.AcSkInstall.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcSkInstall.Exist "$it" && _ob_ipks_acskinstall_ar_+=("$it")
+done ;}
+IPKs.AcSkInstall.Array()
+{ echo -n "${_ob_ipks_acskinstall_ar_[@]:-}" ;}
+IPKs.AcSkInstall.Count()
+{ echo "${#_ob_ipks_acskinstall_ar_[@]}" ;}
+IPKs.AcSkInstall.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskinstall_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcSkInstall.Init()
+{ _ob_ipks_acskinstall_sz_=0 _ob_ipks_acskinstall_ar_=() _ob_ipks_acskinstall_arin_=1 ;}
+IPKs.AcSkInstall.IsAny()
+{ [[ ${#_ob_ipks_acskinstall_ar_[@]} -gt 0 ]] ;}
+IPKs.AcSkInstall.IsNone()
+{ [[ ${#_ob_ipks_acskinstall_ar_[@]} -eq 0 ]] ;}
+IPKs.AcSkInstall.List()
+{ echo -n "${_ob_ipks_acskinstall_ar_[*]:-}" ;}
+IPKs.AcSkInstall.ListCSV()
+{ echo -n "${_ob_ipks_acskinstall_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcSkInstall.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acskinstall_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acskinstall_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acskinstall_ar_[*]+"${_ob_ipks_acskinstall_ar_[@]}"} ]] && _ob_ipks_acskinstall_ar_=() ;}
+IPKs.AcSkInstall.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskinstall_sz_=$2; else echo -n "$_ob_ipks_acskinstall_sz_"
+fi ;}
+IPKs.AcSkInstall.Init
+IPKs.AcToRestore.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcToRestore.Exist "$it" && _ob_ipks_actorestore_ar_+=("$it")
+done ;}
+IPKs.AcToRestore.Array()
+{ echo -n "${_ob_ipks_actorestore_ar_[@]:-}" ;}
+IPKs.AcToRestore.Count()
+{ echo "${#_ob_ipks_actorestore_ar_[@]}" ;}
+IPKs.AcToRestore.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actorestore_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcToRestore.Init()
+{ _ob_ipks_actorestore_sz_=0 _ob_ipks_actorestore_ar_=() _ob_ipks_actorestore_arin_=1 ;}
+IPKs.AcToRestore.IsAny()
+{ [[ ${#_ob_ipks_actorestore_ar_[@]} -gt 0 ]] ;}
+IPKs.AcToRestore.IsNone()
+{ [[ ${#_ob_ipks_actorestore_ar_[@]} -eq 0 ]] ;}
+IPKs.AcToRestore.List()
+{ echo -n "${_ob_ipks_actorestore_ar_[*]:-}" ;}
+IPKs.AcToRestore.ListCSV()
+{ echo -n "${_ob_ipks_actorestore_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcToRestore.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_actorestore_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_actorestore_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_actorestore_ar_[*]+"${_ob_ipks_actorestore_ar_[@]}"} ]] && _ob_ipks_actorestore_ar_=() ;}
+IPKs.AcToRestore.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actorestore_sz_=$2; else echo -n "$_ob_ipks_actorestore_sz_"
+fi ;}
+IPKs.AcToRestore.Init
+IPKs.AcOkRestore.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcOkRestore.Exist "$it" && _ob_ipks_acokrestore_ar_+=("$it")
+done ;}
+IPKs.AcOkRestore.Array()
+{ echo -n "${_ob_ipks_acokrestore_ar_[@]:-}" ;}
+IPKs.AcOkRestore.Count()
+{ echo "${#_ob_ipks_acokrestore_ar_[@]}" ;}
+IPKs.AcOkRestore.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokrestore_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcOkRestore.Init()
+{ _ob_ipks_acokrestore_sz_=0 _ob_ipks_acokrestore_ar_=() _ob_ipks_acokrestore_arin_=1 ;}
+IPKs.AcOkRestore.IsAny()
+{ [[ ${#_ob_ipks_acokrestore_ar_[@]} -gt 0 ]] ;}
+IPKs.AcOkRestore.IsNone()
+{ [[ ${#_ob_ipks_acokrestore_ar_[@]} -eq 0 ]] ;}
+IPKs.AcOkRestore.List()
+{ echo -n "${_ob_ipks_acokrestore_ar_[*]:-}" ;}
+IPKs.AcOkRestore.ListCSV()
+{ echo -n "${_ob_ipks_acokrestore_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcOkRestore.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acokrestore_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acokrestore_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acokrestore_ar_[*]+"${_ob_ipks_acokrestore_ar_[@]}"} ]] && _ob_ipks_acokrestore_ar_=() ;}
+IPKs.AcOkRestore.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokrestore_sz_=$2; else echo -n "$_ob_ipks_acokrestore_sz_"
+fi ;}
+IPKs.AcOkRestore.Init
+IPKs.AcErRestore.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcErRestore.Exist "$it" && _ob_ipks_acerrestore_ar_+=("$it")
+done ;}
+IPKs.AcErRestore.Array()
+{ echo -n "${_ob_ipks_acerrestore_ar_[@]:-}" ;}
+IPKs.AcErRestore.Count()
+{ echo "${#_ob_ipks_acerrestore_ar_[@]}" ;}
+IPKs.AcErRestore.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerrestore_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcErRestore.Init()
+{ _ob_ipks_acerrestore_sz_=0 _ob_ipks_acerrestore_ar_=() _ob_ipks_acerrestore_arin_=1 ;}
+IPKs.AcErRestore.IsAny()
+{ [[ ${#_ob_ipks_acerrestore_ar_[@]} -gt 0 ]] ;}
+IPKs.AcErRestore.IsNone()
+{ [[ ${#_ob_ipks_acerrestore_ar_[@]} -eq 0 ]] ;}
+IPKs.AcErRestore.List()
+{ echo -n "${_ob_ipks_acerrestore_ar_[*]:-}" ;}
+IPKs.AcErRestore.ListCSV()
+{ echo -n "${_ob_ipks_acerrestore_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcErRestore.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acerrestore_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acerrestore_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acerrestore_ar_[*]+"${_ob_ipks_acerrestore_ar_[@]}"} ]] && _ob_ipks_acerrestore_ar_=() ;}
+IPKs.AcErRestore.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerrestore_sz_=$2; else echo -n "$_ob_ipks_acerrestore_sz_"
+fi ;}
+IPKs.AcErRestore.Init
+IPKs.AcSkRestore.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcSkRestore.Exist "$it" && _ob_ipks_acskrestore_ar_+=("$it")
+done ;}
+IPKs.AcSkRestore.Array()
+{ echo -n "${_ob_ipks_acskrestore_ar_[@]:-}" ;}
+IPKs.AcSkRestore.Count()
+{ echo "${#_ob_ipks_acskrestore_ar_[@]}" ;}
+IPKs.AcSkRestore.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskrestore_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcSkRestore.Init()
+{ _ob_ipks_acskrestore_sz_=0 _ob_ipks_acskrestore_ar_=() _ob_ipks_acskrestore_arin_=1 ;}
+IPKs.AcSkRestore.IsAny()
+{ [[ ${#_ob_ipks_acskrestore_ar_[@]} -gt 0 ]] ;}
+IPKs.AcSkRestore.IsNone()
+{ [[ ${#_ob_ipks_acskrestore_ar_[@]} -eq 0 ]] ;}
+IPKs.AcSkRestore.List()
+{ echo -n "${_ob_ipks_acskrestore_ar_[*]:-}" ;}
+IPKs.AcSkRestore.ListCSV()
+{ echo -n "${_ob_ipks_acskrestore_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcSkRestore.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acskrestore_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acskrestore_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acskrestore_ar_[*]+"${_ob_ipks_acskrestore_ar_[@]}"} ]] && _ob_ipks_acskrestore_ar_=() ;}
+IPKs.AcSkRestore.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskrestore_sz_=$2; else echo -n "$_ob_ipks_acskrestore_sz_"
+fi ;}
+IPKs.AcSkRestore.Init
+IPKs.AcToStart.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcToStart.Exist "$it" && _ob_ipks_actostart_ar_+=("$it")
+done ;}
+IPKs.AcToStart.Array()
+{ echo -n "${_ob_ipks_actostart_ar_[@]:-}" ;}
+IPKs.AcToStart.Count()
+{ echo "${#_ob_ipks_actostart_ar_[@]}" ;}
+IPKs.AcToStart.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actostart_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcToStart.Init()
+{ _ob_ipks_actostart_sz_=0 _ob_ipks_actostart_ar_=() _ob_ipks_actostart_arin_=1 ;}
+IPKs.AcToStart.IsAny()
+{ [[ ${#_ob_ipks_actostart_ar_[@]} -gt 0 ]] ;}
+IPKs.AcToStart.IsNone()
+{ [[ ${#_ob_ipks_actostart_ar_[@]} -eq 0 ]] ;}
+IPKs.AcToStart.List()
+{ echo -n "${_ob_ipks_actostart_ar_[*]:-}" ;}
+IPKs.AcToStart.ListCSV()
+{ echo -n "${_ob_ipks_actostart_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcToStart.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_actostart_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_actostart_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_actostart_ar_[*]+"${_ob_ipks_actostart_ar_[@]}"} ]] && _ob_ipks_actostart_ar_=() ;}
+IPKs.AcToStart.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actostart_sz_=$2; else echo -n "$_ob_ipks_actostart_sz_"
+fi ;}
+IPKs.AcToStart.Init
+IPKs.AcOkStart.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcOkStart.Exist "$it" && _ob_ipks_acokstart_ar_+=("$it")
+done ;}
+IPKs.AcOkStart.Array()
+{ echo -n "${_ob_ipks_acokstart_ar_[@]:-}" ;}
+IPKs.AcOkStart.Count()
+{ echo "${#_ob_ipks_acokstart_ar_[@]}" ;}
+IPKs.AcOkStart.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokstart_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcOkStart.Init()
+{ _ob_ipks_acokstart_sz_=0 _ob_ipks_acokstart_ar_=() _ob_ipks_acokstart_arin_=1 ;}
+IPKs.AcOkStart.IsAny()
+{ [[ ${#_ob_ipks_acokstart_ar_[@]} -gt 0 ]] ;}
+IPKs.AcOkStart.IsNone()
+{ [[ ${#_ob_ipks_acokstart_ar_[@]} -eq 0 ]] ;}
+IPKs.AcOkStart.List()
+{ echo -n "${_ob_ipks_acokstart_ar_[*]:-}" ;}
+IPKs.AcOkStart.ListCSV()
+{ echo -n "${_ob_ipks_acokstart_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcOkStart.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acokstart_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acokstart_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acokstart_ar_[*]+"${_ob_ipks_acokstart_ar_[@]}"} ]] && _ob_ipks_acokstart_ar_=() ;}
+IPKs.AcOkStart.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokstart_sz_=$2; else echo -n "$_ob_ipks_acokstart_sz_"
+fi ;}
+IPKs.AcOkStart.Init
+IPKs.AcErStart.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcErStart.Exist "$it" && _ob_ipks_acerstart_ar_+=("$it")
+done ;}
+IPKs.AcErStart.Array()
+{ echo -n "${_ob_ipks_acerstart_ar_[@]:-}" ;}
+IPKs.AcErStart.Count()
+{ echo "${#_ob_ipks_acerstart_ar_[@]}" ;}
+IPKs.AcErStart.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerstart_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcErStart.Init()
+{ _ob_ipks_acerstart_sz_=0 _ob_ipks_acerstart_ar_=() _ob_ipks_acerstart_arin_=1 ;}
+IPKs.AcErStart.IsAny()
+{ [[ ${#_ob_ipks_acerstart_ar_[@]} -gt 0 ]] ;}
+IPKs.AcErStart.IsNone()
+{ [[ ${#_ob_ipks_acerstart_ar_[@]} -eq 0 ]] ;}
+IPKs.AcErStart.List()
+{ echo -n "${_ob_ipks_acerstart_ar_[*]:-}" ;}
+IPKs.AcErStart.ListCSV()
+{ echo -n "${_ob_ipks_acerstart_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcErStart.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acerstart_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acerstart_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acerstart_ar_[*]+"${_ob_ipks_acerstart_ar_[@]}"} ]] && _ob_ipks_acerstart_ar_=() ;}
+IPKs.AcErStart.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerstart_sz_=$2; else echo -n "$_ob_ipks_acerstart_sz_"
+fi ;}
+IPKs.AcErStart.Init
+IPKs.AcSkStart.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcSkStart.Exist "$it" && _ob_ipks_acskstart_ar_+=("$it")
+done ;}
+IPKs.AcSkStart.Array()
+{ echo -n "${_ob_ipks_acskstart_ar_[@]:-}" ;}
+IPKs.AcSkStart.Count()
+{ echo "${#_ob_ipks_acskstart_ar_[@]}" ;}
+IPKs.AcSkStart.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acskstart_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcSkStart.Init()
+{ _ob_ipks_acskstart_sz_=0 _ob_ipks_acskstart_ar_=() _ob_ipks_acskstart_arin_=1 ;}
+IPKs.AcSkStart.IsAny()
+{ [[ ${#_ob_ipks_acskstart_ar_[@]} -gt 0 ]] ;}
+IPKs.AcSkStart.IsNone()
+{ [[ ${#_ob_ipks_acskstart_ar_[@]} -eq 0 ]] ;}
+IPKs.AcSkStart.List()
+{ echo -n "${_ob_ipks_acskstart_ar_[*]:-}" ;}
+IPKs.AcSkStart.ListCSV()
+{ echo -n "${_ob_ipks_acskstart_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcSkStart.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acskstart_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acskstart_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acskstart_ar_[*]+"${_ob_ipks_acskstart_ar_[@]}"} ]] && _ob_ipks_acskstart_ar_=() ;}
+IPKs.AcSkStart.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acskstart_sz_=$2; else echo -n "$_ob_ipks_acskstart_sz_"
+fi ;}
+IPKs.AcSkStart.Init
+IPKs.AcToRestart.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcToRestart.Exist "$it" && _ob_ipks_actorestart_ar_+=("$it")
+done ;}
+IPKs.AcToRestart.Array()
+{ echo -n "${_ob_ipks_actorestart_ar_[@]:-}" ;}
+IPKs.AcToRestart.Count()
+{ echo "${#_ob_ipks_actorestart_ar_[@]}" ;}
+IPKs.AcToRestart.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_actorestart_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcToRestart.Init()
+{ _ob_ipks_actorestart_sz_=0 _ob_ipks_actorestart_ar_=() _ob_ipks_actorestart_arin_=1 ;}
+IPKs.AcToRestart.IsAny()
+{ [[ ${#_ob_ipks_actorestart_ar_[@]} -gt 0 ]] ;}
+IPKs.AcToRestart.IsNone()
+{ [[ ${#_ob_ipks_actorestart_ar_[@]} -eq 0 ]] ;}
+IPKs.AcToRestart.List()
+{ echo -n "${_ob_ipks_actorestart_ar_[*]:-}" ;}
+IPKs.AcToRestart.ListCSV()
+{ echo -n "${_ob_ipks_actorestart_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcToRestart.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_actorestart_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_actorestart_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_actorestart_ar_[*]+"${_ob_ipks_actorestart_ar_[@]}"} ]] && _ob_ipks_actorestart_ar_=() ;}
+IPKs.AcToRestart.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_actorestart_sz_=$2; else echo -n "$_ob_ipks_actorestart_sz_"
+fi ;}
+IPKs.AcToRestart.Init
+IPKs.AcOkRestart.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcOkRestart.Exist "$it" && _ob_ipks_acokrestart_ar_+=("$it")
+done ;}
+IPKs.AcOkRestart.Array()
+{ echo -n "${_ob_ipks_acokrestart_ar_[@]:-}" ;}
+IPKs.AcOkRestart.Count()
+{ echo "${#_ob_ipks_acokrestart_ar_[@]}" ;}
+IPKs.AcOkRestart.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acokrestart_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcOkRestart.Init()
+{ _ob_ipks_acokrestart_sz_=0 _ob_ipks_acokrestart_ar_=() _ob_ipks_acokrestart_arin_=1 ;}
+IPKs.AcOkRestart.IsAny()
+{ [[ ${#_ob_ipks_acokrestart_ar_[@]} -gt 0 ]] ;}
+IPKs.AcOkRestart.IsNone()
+{ [[ ${#_ob_ipks_acokrestart_ar_[@]} -eq 0 ]] ;}
+IPKs.AcOkRestart.List()
+{ echo -n "${_ob_ipks_acokrestart_ar_[*]:-}" ;}
+IPKs.AcOkRestart.ListCSV()
+{ echo -n "${_ob_ipks_acokrestart_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcOkRestart.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acokrestart_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acokrestart_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acokrestart_ar_[*]+"${_ob_ipks_acokrestart_ar_[@]}"} ]] && _ob_ipks_acokrestart_ar_=() ;}
+IPKs.AcOkRestart.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acokrestart_sz_=$2; else echo -n "$_ob_ipks_acokrestart_sz_"
+fi ;}
+IPKs.AcOkRestart.Init
+IPKs.AcErRestart.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! IPKs.AcErRestart.Exist "$it" && _ob_ipks_acerrestart_ar_+=("$it")
+done ;}
+IPKs.AcErRestart.Array()
+{ echo -n "${_ob_ipks_acerrestart_ar_[@]:-}" ;}
+IPKs.AcErRestart.Count()
+{ echo "${#_ob_ipks_acerrestart_ar_[@]}" ;}
+IPKs.AcErRestart.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_ipks_acerrestart_ar_[*]:-} " =~ $patt ]] ;}
+IPKs.AcErRestart.Init()
+{ _ob_ipks_acerrestart_sz_=0 _ob_ipks_acerrestart_ar_=() _ob_ipks_acerrestart_arin_=1 ;}
+IPKs.AcErRestart.IsAny()
+{ [[ ${#_ob_ipks_acerrestart_ar_[@]} -gt 0 ]] ;}
+IPKs.AcErRestart.IsNone()
+{ [[ ${#_ob_ipks_acerrestart_ar_[@]} -eq 0 ]] ;}
+IPKs.AcErRestart.List()
+{ echo -n "${_ob_ipks_acerrestart_ar_[*]:-}" ;}
+IPKs.AcErRestart.ListCSV()
+{ echo -n "${_ob_ipks_acerrestart_ar_[*]:-}" | tr ' ' ',' ;}
+IPKs.AcErRestart.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_ipks_acerrestart_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_ipks_acerrestart_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_ipks_acerrestart_ar_[*]+"${_ob_ipks_acerrestart_ar_[@]}"} ]] && _ob_ipks_acerrestart_ar_=() ;}
+IPKs.AcErRestart.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_ipks_acerrestart_sz_=$2; else echo -n "$_ob_ipks_acerrestart_sz_"
+fi ;}
+IPKs.AcErRestart.Init
 IPKs.AcSkRestart.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do

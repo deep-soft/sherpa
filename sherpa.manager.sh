@@ -147,7 +147,7 @@ Self.Init()
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
 
-    local -r PROJECT_BRANCH=main
+    local -r PROJECT_BRANCH=develop
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs
@@ -969,7 +969,7 @@ AdjustMaxForks()
     # don't execute these actions async: QTS installer for each package eventually aborts (looks like QTS can only manage a single package at-a-time, because packages overwrite each other, and package source files end-up in the wrong install paths)
     case ${1:-} in
         Install|Reinstall|Upgrade)
-            DebugInfo "limiting \$max_forks to 1 because '$(Lowercase "$1")' was requested"
+            DebugInfo "limiting \$max_forks to 1 because '$(Lowercase "$1")' action was requested"
             max_forks=1
     esac
 
