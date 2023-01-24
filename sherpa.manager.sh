@@ -147,7 +147,7 @@ Self.Init()
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
 
-    local -r PROJECT_BRANCH=develop
+    local -r PROJECT_BRANCH=main
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs
@@ -3042,9 +3042,7 @@ DisplayWait()
 Help.Basic.Show()
     {
 
-    EraseThisLine
-    DisplayLineSpaceIfNoneAlready
-    Display "Usage: sherpa $(FormatAsAction) $(FormatAsPackages) $(FormatAsGroups) $(FormatAsOptions)"
+    DisplayAsHelpTitle "Usage: sherpa $(FormatAsAction) $(FormatAsPackages) $(FormatAsGroups) $(FormatAsOptions)"
 
     return 0
 
