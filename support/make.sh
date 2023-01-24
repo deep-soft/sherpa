@@ -11,11 +11,14 @@ WORK_PATH=$PWD/..
 # $MANAGEMENT_ACTIONS haven't been coded yet, so don't create objects for it
 #MANAGEMENT_ACTIONS=(Check List Paste Status)
 
-PACKAGE_SCOPES=(All CanBackup CanRestartToUpdate Dependent HasDependents Installable Standalone)	# sorted
-PACKAGE_STATES=(BackedUp Cleaned Downloaded Enabled Installed Missing Started Upgradable)   # sorted
-PACKAGE_STATES_TRANSIENT=(Starting Stopping Restarting) # unsorted
+# these words may be specified by the user when requesting actions, so each word can only be used once across all 4 of the following arrays
+PACKAGE_GROUPS=(All CanBackup CanRestartToUpdate Dependent HasDependents Installable Standalone Upgradable)     # sorted: 'Sc' & 'ScNt'
+PACKAGE_STATES=(BackedUp Cleaned Downloaded Enabled Installed Missing Reassigned Reinstalled Restarted Started Upgraded)  # sorted: 'Is' & 'IsNt'
+PACKAGE_STATES_TRANSIENT=(Starting Stopping Restarting)                                                         # unsorted: 'Is' & 'IsNt'
 PACKAGE_ACTIONS=(Download Rebuild Reassign Backup Stop Disable Uninstall Upgrade Reinstall Install Restore Clean Enable Start Restart)  # ordered
-PACKAGE_RESULTS=(Ok Unknown)    # unsorted
+
+# only used by sherpa QPKG service-script results parser
+PACKAGE_RESULTS=(Ok Unknown)
 
 MANAGER_FILE=sherpa.manager.sh
 MANAGER_ARCHIVE_FILE=${MANAGER_FILE%.*}.tar.gz
@@ -131,11 +134,11 @@ for element in Display.Clean ShowBackupLoc SuggestIssue Summary; do
 done
 
 AddFlagObj Self.LineSpace false false   # disable change logging for this object (low importance)
-AddFlagObj Self.Boring false false      # disable change logging for this object (low importance)
 
 AddFlagObj Self.Debug.ToArchive
 AddFlagObj Self.Debug.ToScreen
-AddFlagObj Self.Debug.ToFile true       # set initial value to 'true' so debug info is recorded early-on
+# AddFlagObj Self.Debug.ToFile true       # set initial value to 'true' so debug info is recorded early-on
+AddFlagObj Self.Debug.ToFile
 
 for element in Loaded States.Built SkProc; do
     AddFlagObj QPKGs.$element
@@ -150,7 +153,7 @@ for element in Deps.Check Vers.View; do
     AddFlagObj Opts.$element
 done
 
-for element in Abbreviations Actions ActionsAll Backups Basic Options Packages Problems Repos Status Tips; do
+for element in Abbreviations Actions ActionsAll Backups Basic Groups Options Packages Problems Repos Status Tips; do
     AddFlagObj Opts.Help.$element
 done
 
@@ -159,9 +162,9 @@ for element in Last Tail; do
     AddFlagObj Opts.Log.$element.View
 done
 
-for scope in "${PACKAGE_SCOPES[@]}"; do
-    AddFlagObj QPKGs.List.Sc${scope}
-    AddFlagObj QPKGs.List.ScNt${scope}
+for group in "${PACKAGE_GROUPS[@]}"; do
+    AddFlagObj QPKGs.List.Sc${group}
+    AddFlagObj QPKGs.List.ScNt${group}
 done
 
 for state in "${PACKAGE_STATES[@]}"; do
@@ -173,19 +176,19 @@ for state in "${PACKAGE_STATES_TRANSIENT[@]}"; do
     AddFlagObj QPKGs.List.Is${state}
 done
 
-for scope in "${PACKAGE_SCOPES[@]}"; do
+for group in "${PACKAGE_GROUPS[@]}"; do
     for action in "${PACKAGE_ACTIONS[@]}"; do
-		[[ $action = Enable || $action = Disable ]] && continue	# don't need objects for these as `start` and `stop` do the same jobs
-		AddFlagObj QPKGs.Ac${action}.Sc${scope}
-		AddFlagObj QPKGs.Ac${action}.ScNt${scope}
+        [[ $action = Enable || $action = Disable ]] && continue # don't need objects for these as `start` and `stop` do the same jobs
+        AddFlagObj QPKGs.Ac${action}.Sc${group}
+        AddFlagObj QPKGs.Ac${action}.ScNt${group}
     done
 done
 
 for state in "${PACKAGE_STATES[@]}"; do
     for action in "${PACKAGE_ACTIONS[@]}"; do
-		[[ $action = Enable || $action = Disable ]] && continue	# don't need objects for these as `start` and `stop` do the same jobs
-		AddFlagObj QPKGs.Ac${action}.Is${state}
-		AddFlagObj QPKGs.Ac${action}.IsNt${state}
+        [[ $action = Enable || $action = Disable ]] && continue # don't need objects for these as `start` and `stop` do the same jobs
+        AddFlagObj QPKGs.Ac${action}.Is${state}
+        AddFlagObj QPKGs.Ac${action}.IsNt${state}
     done
 done
 
@@ -203,7 +206,7 @@ AddListObj Args.Unknown
 # done
 
 for action in "${PACKAGE_ACTIONS[@]}"; do
-	[[ $action = Enable || $action = Disable ]] && continue	# don't need objects for these as `start` and `stop` do the same jobs
+    [[ $action = Enable || $action = Disable ]] && continue # don't need objects for these as `start` and `stop` do the same jobs
 
     for prefix in To Ok Er Sk; do
         AddListObj QPKGs.Ac${prefix}${action}
@@ -211,18 +214,19 @@ for action in "${PACKAGE_ACTIONS[@]}"; do
     done
 done
 
-for scope in "${PACKAGE_SCOPES[@]}"; do
-    AddListObj QPKGs.Sc${scope}
-    AddListObj QPKGs.ScNt${scope}
+for group in "${PACKAGE_GROUPS[@]}"; do
+    AddListObj QPKGs.Sc${group}
+    AddListObj QPKGs.ScNt${group}
 done
 
 for state in "${PACKAGE_STATES[@]}" "${PACKAGE_RESULTS[@]}"; do
-	AddListObj QPKGs.Is${state}
-	AddListObj QPKGs.IsNt${state}
+    AddListObj QPKGs.Is${state}
+    AddListObj QPKGs.IsNt${state}
 done
 
 for state in "${PACKAGE_STATES_TRANSIENT[@]}"; do
     AddListObj QPKGs.Is${state}
+    AddListObj QPKGs.IsNt${state}
 done
 
 tar --create --gzip --numeric-owner --file="$MANAGER_ARCHIVE_PATHFILE" --directory="$WORK_PATH" "$MANAGER_FILE"
