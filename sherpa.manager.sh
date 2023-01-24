@@ -432,7 +432,10 @@ Self.IsAnythingToDo()
         something_to_do=true
     else
         for action in "${PACKAGE_ACTIONS[@]}"; do
-            [[ $action = Enable || $action = Disable ]] && continue     # no objects for these, as `start` and `stop` do the same jobs
+            case $action in
+                Disable|Enable)
+                    continue
+            esac
 
             if QPKGs.AcTo${action}.IsAny; then
                 something_to_do=true
@@ -440,14 +443,34 @@ Self.IsAnythingToDo()
             fi
 
             for group in "${PACKAGE_GROUPS[@]}"; do
-                if QPKGs.Ac${action}.Sc${group}.IsSet || QPKGs.Ac${action}.ScNt${group}.IsSet; then
+                if QPKGs.Ac${action}.Sc${group}.IsSet; then
+                    something_to_do=true
+                    break 2
+                fi
+
+                case $group in
+                    All|CanBackup|CanRestartToUpdate|Dependent|HasDependents|Standalone)
+                        continue
+                esac
+
+                if QPKGs.Ac${action}.ScNt${group}.IsSet; then
                     something_to_do=true
                     break 2
                 fi
             done
 
             for state in "${PACKAGE_STATES[@]}"; do
-                if QPKGs.Ac${action}.Is${state}.IsSet || QPKGs.Ac${action}.IsNt${state}.IsSet; then
+                if QPKGs.Ac${action}.Is${state}.IsSet; then
+                    something_to_do=true
+                    break 2
+                fi
+
+                case $state in
+                    Missing|Reassigned)
+                        continue
+                esac
+
+                if QPKGs.Ac${action}.IsNt${state}.IsSet; then
                     something_to_do=true
                     break 2
                 fi
@@ -722,7 +745,7 @@ Tiers.Proc()
 
     IPKs.Actions.List
     QPKGs.Actions.List
-    QPKGs.States.List rebuild       # rebuild these after processing QPKGs to get current states
+    Self.Debug.ToScreen.IsSet && QPKGs.States.List rebuild       # rebuild these after processing QPKGs to get current states
     DebugScriptFuncEx
 
     }
