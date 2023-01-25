@@ -698,9 +698,9 @@ Tiers.Proc()
     local action=''
     local -i tier_index=0
 
-    Tier.Proc Reassign All QPKG AcToReassign reassign reassigning reassigned short || return
-    Tier.Proc Download All QPKG AcToDownload 'update cache with' 'updating cache with' 'updated cache with' short || return
-    Tier.Proc Backup All QPKG AcToBackup 'backup configuration for' 'backing-up configuration for' 'configuration backed-up for' short || return
+    Action.Proc Reassign All QPKG AcToReassign reassign reassigning reassigned short || return
+    Action.Proc Download All QPKG AcToDownload 'update cache with' 'updating cache with' 'updated cache with' short || return
+    Action.Proc Backup All QPKG AcToBackup 'backup configuration for' 'backing-up configuration for' 'configuration backed-up for' short || return
 
     # -> package removal phase begins here <-
 
@@ -709,8 +709,8 @@ Tiers.Proc()
 
         case $tier in
             Standalone|Dependent)
-                Tier.Proc Stop $tier QPKG AcToStop stop stopping stopped short || return
-                Tier.Proc Uninstall $tier QPKG AcToUninstall uninstall uninstalling uninstalled short || return
+                Action.Proc Stop $tier QPKG AcToStop stop stopping stopped short || return
+                Action.Proc Uninstall $tier QPKG AcToUninstall uninstall uninstalling uninstalled short || return
         esac
     done
 
@@ -719,13 +719,13 @@ Tiers.Proc()
     for tier in "${PACKAGE_TIERS[@]}"; do
         case $tier in
             Standalone|Dependent)
-                Tier.Proc Upgrade $tier QPKG AcToUpgrade upgrade upgrading upgraded long || return
-                Tier.Proc Reinstall $tier QPKG AcToReinstall reinstall reinstalling reinstalled long || return
-                Tier.Proc Install $tier QPKG AcToInstall install installing installed long || return
-                Tier.Proc Restore $tier QPKG AcToRestore 'restore configuration for' 'restoring configuration for' 'configuration restored for' long || return
-                Tier.Proc Clean $tier QPKG AcToClean clean cleaning cleaned long || return
-                Tier.Proc Start $tier QPKG AcToStart start starting started long || return
-                Tier.Proc Restart $tier QPKG AcToRestart restart restarting restarted long || return
+                Action.Proc Upgrade $tier QPKG AcToUpgrade upgrade upgrading upgraded long || return
+                Action.Proc Reinstall $tier QPKG AcToReinstall reinstall reinstalling reinstalled long || return
+                Action.Proc Install $tier QPKG AcToInstall install installing installed long || return
+                Action.Proc Restore $tier QPKG AcToRestore 'restore configuration for' 'restoring configuration for' 'configuration restored for' long || return
+                Action.Proc Clean $tier QPKG AcToClean clean cleaning cleaned long || return
+                Action.Proc Start $tier QPKG AcToStart start starting started long || return
+                Action.Proc Restart $tier QPKG AcToRestart restart restarting restarted long || return
                 ;;
             Addon)
                 for action in Install Reinstall Upgrade Start; do
@@ -735,11 +735,11 @@ Tiers.Proc()
 
                 if QPKGs.IsStarted.Exist Entware; then
                     ModPathToEntware
-                    Tier.Proc Upgrade $tier IPK '' upgrade upgrading upgraded long || return
-                    Tier.Proc Install $tier IPK '' install installing installed long || return
+                    Action.Proc Upgrade $tier IPK '' upgrade upgrading upgraded long || return
+                    Action.Proc Install $tier IPK '' install installing installed long || return
 
                     PIPs.Install.Set
-                    Tier.Proc Install $tier PIP '' install installing installed long || return
+                    Action.Proc Install $tier PIP '' install installing installed long || return
                 fi
         esac
     done
@@ -751,7 +751,7 @@ Tiers.Proc()
 
     }
 
-Tier.Proc()
+Action.Proc()
     {
 
     # run a single action on an entire tier of packages, asynchronously where possible
@@ -927,11 +927,16 @@ Tier.Proc()
     # Need to show completed line in colour if colour was enabled earlier, as ANSI codes create a longer onscreen message due to extra characters used. Showing completed line without colour means part of previous onscreen message may not be blanked.
     if [[ $original_colourful = true && $colourful = false ]]; then
         colourful=true
-        ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PAST"
+        ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$ok_count" "$total_count" "$ACTION_PAST"
         colourful=false
     else
-        ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$ok_count" "$skip_count" "$fail_count" "$total_count" "$ACTION_PAST"
+        ShowAsActionResult "$TIER" "$PACKAGE_TYPE" "$ok_count" "$total_count" "$ACTION_PAST"
     fi
+
+    case $PACKAGE_TYPE in
+        QPKG)
+            ShowAsActionResultDetail "$TARGET_ACTION"
+    esac
 
     EraseForkCountPaths
     DebugScriptFuncEx
@@ -2770,6 +2775,7 @@ IsNtSysFileExist()
 
 readonly HELP_DESC_INDENT=3
 readonly HELP_SYNTAX_INDENT=6
+readonly ACTION_RESULT_INDENT=6
 
 readonly HELP_PACKAGE_NAME_WIDTH=20
 readonly HELP_PACKAGE_STATUS_WIDTH=40
@@ -3048,6 +3054,24 @@ DisplayAsHelpTitleHighlighted()
     # shellcheck disable=2059
     printf "$(ColourTextBrightOrange "${HELP_COL_MAIN_PREF}%s\n")" "$(Capitalise "${1:-}")"
     Self.LineSpace.UnSet
+
+    }
+
+DisplayAsActionResultNtLastLine()
+    {
+
+    # $1 = text
+
+    printf "%${ACTION_RESULT_INDENT}s├─ %s\n" '' "$1"
+
+    }
+
+DisplayAsActionResultLastLine()
+    {
+
+    # $1 = text
+
+    printf "%${ACTION_RESULT_INDENT}s└─ %s\n" '' "$1"
 
     }
 
@@ -6929,7 +6953,7 @@ ShowAsProc()
     [[ -n ${2:-} ]] && suffix=": $2"
 
     EraseThisLine
-    WriteToDisplayWait "$(ColourTextBrightOrange proc)" "${1:-}${suffix}"
+    WriteToDisplayWait "$(ColourTextBrightYellow proc)" "${1:-}${suffix}"
     WriteToLog proc "${1:-}${suffix}"
     [[ $(type -t Self.Debug.ToScreen.Init) = function ]] && Self.Debug.ToScreen.IsSet && Display
 
@@ -7112,10 +7136,8 @@ ShowAsActionResult()
     # $1 = tier (optional) e.g. `Standalone`, `Dependent`, `Addon`, `All`
     # $2 = package type: `QPKG`, `IPK`, `PIP`, etc ...
     # $3 = ok count
-    # $4 = skip count
-    # $5 = fail count
-    # $6 = total count
-    # $7 = verb (past)
+    # $4 = total count
+    # $5 = verb (past)
 
     if [[ -n $1 && $1 != All ]]; then
         local -r TIER=" $(Lowercase "$1")"
@@ -7125,37 +7147,46 @@ ShowAsActionResult()
 
     local -r PACKAGE_TYPE=${2:?null}
     declare -i -r OK_COUNT=${3:-0}
-    declare -i -r SKIP_COUNT=${4:-0}
-    declare -i -r FAIL_COUNT=${5:-0}
-    declare -i -r TOTAL_COUNT=${6:-0}
-    local msg="${7:?null} "
+    declare -i -r TOTAL_COUNT=${4:-0}
+    local msg="${5:?null} "
 
     if [[ $OK_COUNT -gt 0 ]]; then
-        msg+="${OK_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$OK_COUNT"): OK"
-    fi
-
-    if [[ $SKIP_COUNT -gt 0 ]]; then
-        [[ $OK_COUNT -gt 0 ]] && msg+=', '
-        msg+="${SKIP_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$SKIP_COUNT"): skipped"
-    fi
-
-    if [[ $FAIL_COUNT -gt 0 ]]; then
-        [[ $OK_COUNT -gt 0 || $SKIP_COUNT -gt 0 ]] && msg+=' and '
-        msg+="${FAIL_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$FAIL_COUNT"): failed"
+        msg+="${OK_COUNT}${TIER} ${PACKAGE_TYPE}$(Pluralise "$OK_COUNT")"
+    else
+        msg+="no${TIER} ${PACKAGE_TYPE}s"
     fi
 
     case $TOTAL_COUNT in
         0)
             DebugAsDone "no${TIER} ${PACKAGE_TYPE}s processed"
             ;;
-        "$FAIL_COUNT")
-            ShowAsWarn "$msg"
-            ;;
         *)
             ShowAsDone "$msg"
     esac
 
     return 0
+
+    }
+
+ShowAsActionResultDetail()
+    {
+
+    local sk_msg=''
+    local er_msg=''
+
+    [[ $(QPKGs.AcSk${1}.Count) -gt 0 ]] && sk_msg="$(ColourTextBrightOrange 'skipped:') $(QPKGs.AcSk${1}.ListCSV)"
+    [[ $(QPKGs.AcEr${1}.Count) -gt 0 ]] && er_msg="$(ColourTextBrightRed 'failed:') $(QPKGs.AcEr${1}.ListCSV)"
+
+    if [[ -z $sk_msg && -z $er_msg ]]; then
+        return
+    elif [[ -n $sk_msg && -z $er_msg ]]; then
+        DisplayAsActionResultLastLine "$sk_msg"
+    elif [[ -z $sk_msg && -n $er_msg ]]; then
+        DisplayAsActionResultLastLine "$er_msg"
+    else
+        DisplayAsActionResultNtLastLine "$sk_msg"
+        DisplayAsActionResultLastLine "$er_msg"
+    fi
 
     }
 
