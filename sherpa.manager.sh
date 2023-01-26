@@ -304,7 +304,7 @@ Self.Init()
         ParseArgs
     fi
 
-    EraseThisLine >&2
+    EraseThisLine
 
     if Self.Display.Clean.IsNt && Self.Debug.ToScreen.IsNt; then
         Display "$(FormatAsTitle) $MANAGER_SCRIPT_VER • a mini-package-manager for QNAP NAS"
@@ -747,7 +747,7 @@ Actions.Proc()
         esac
     done
 
-    EraseThisLine >&2
+    EraseThisLine
 
     if Self.Debug.ToFile.IsSet; then
         IPKs.Actions.List
@@ -3119,7 +3119,7 @@ EraseThisLine()
 
     echo -en "\033[2K\r"
 
-    }
+    } >&2
 
 Display()
     {
