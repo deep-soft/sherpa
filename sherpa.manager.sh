@@ -3252,7 +3252,7 @@ Help.Failed.Show()
 
     local IFS='#'
 
-    while read datetime action package_name result reason; do
+    while read -r datetime action package_name result reason; do
         case $result in
             failed)
                 [[ $found = false ]] && DisplayAsHelpTitle "these package actions $(ColourTextBrightRed failed):"
@@ -3313,7 +3313,7 @@ Help.Ok.Show()
 
     local IFS='#'
 
-    while read datetime action package_name result reason; do
+    while read -r datetime action package_name result reason; do
         case $result in
             ok)
                 [[ $found = false ]] && DisplayAsHelpTitle "these package actions completed $(ColourTextBrightGreen OK):"
@@ -3440,7 +3440,7 @@ Help.Skipped.Show()
 
     local IFS='#'
 
-    while read datetime action package_name result reason; do
+    while read -r datetime action package_name result reason; do
         case $result in
             skipped|skipped-error)
                 [[ $found = false ]] && DisplayAsHelpTitle "these package actions were $(ColourTextBrightOrange skipped):"
