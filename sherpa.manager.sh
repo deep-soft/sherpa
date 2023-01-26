@@ -54,7 +54,7 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230126
+    local -r SCRIPT_VER=230127
 
     IsQNAP || return
     IsSU || return
@@ -689,7 +689,7 @@ Self.Validate()
 
 #  21. "live" status                (currently supported by most sherpa QPKGs, but no processing code yet exists in management script)
 
-Tiers.Proc()
+Actions.Proc()
     {
 
     QPKGs.SkProc.IsSet && return
@@ -747,8 +747,13 @@ Tiers.Proc()
         esac
     done
 
-    IPKs.Actions.List
-    QPKGs.Actions.List
+    EraseThisLine >&2
+
+    if Self.Debug.ToFile.IsSet; then
+        IPKs.Actions.List
+        QPKGs.Actions.List
+    fi
+
     Self.Debug.ToScreen.IsSet && QPKGs.States.List rebuild       # rebuild these after processing QPKGs to get current states
     DebugScriptFuncEx
 
@@ -928,6 +933,11 @@ Action.Proc()
                 esac
             done <&$msg_pipe_fd
 
+            # show skipped and failed package details later
+            [[ $ok_count -gt 0 ]] && Opts.Help.Ok.Set
+            [[ $skip_count -gt 0 || $skip_error_count -gt 0 ]] && Opts.Help.Skipped.Set
+            [[ $fail_count -gt 0 ]] && Opts.Help.Failed.Set
+
             [[ ${#target_packages[@]} -gt 0 ]] && KillActiveFork        # this should only happen if an action fork hasn't exited properly, and didn't mark its status as `ok`, `skipped`, or `failed`.
             wait 2>/dev/null
             CloseActionMsgPipe
@@ -1033,14 +1043,10 @@ Self.Results()
             Help.ActionsAll.Show
         elif Opts.Help.Backups.IsSet; then
             QPKGs.Backups.Show
-        elif Opts.Help.Failed.IsSet; then
-            Help.Failed.Show
         elif Opts.Help.Groups.IsSet; then
             Help.Groups.Show
         elif Opts.Help.Packages.IsSet; then
             Help.Packages.Show
-        elif Opts.Help.Ok.IsSet; then
-            Help.Ok.Show
         elif Opts.Help.Options.IsSet; then
             Help.Options.Show
         elif Opts.Help.Problems.IsSet; then
@@ -1048,8 +1054,6 @@ Self.Results()
         elif Opts.Help.Repos.IsSet; then
             QPKGs.NewVers.Show
             QPKGs.Repos.Show
-        elif Opts.Help.Skipped.IsSet; then
-            Help.Skipped.Show
         elif Opts.Help.Status.IsSet; then
             QPKGs.NewVers.Show
             QPKGs.Statuses.Show
@@ -1091,6 +1095,9 @@ Self.Results()
         Help.Basic.Example.Show
     fi
 
+    Opts.Help.Ok.IsSet && Help.Ok.Show
+    Opts.Help.Skipped.IsSet && Help.Skipped.Show
+    Opts.Help.Failed.IsSet && Help.Failed.Show
     Self.ShowBackupLoc.IsSet && Help.BackupLocation.Show
     Self.Summary.IsSet && ShowSummary
     Self.SuggestIssue.IsSet && Help.Issue.Show
@@ -3237,7 +3244,7 @@ Help.Failed.Show()
     local package_name=''
     local result=''
     local reason=''
-    local -i count=0
+    local found=false
 
     DisableDebugToArchiveAndFile
 
@@ -3248,13 +3255,13 @@ Help.Failed.Show()
     while read datetime action package_name result reason; do
         case $result in
             failed)
-                [[ $count -eq 0 ]] && DisplayAsHelpTitle "These packages $(ColourTextBrightRed failed) during the last session:"
+                [[ $found = false ]] && DisplayAsHelpTitle "these package actions $(ColourTextBrightRed failed):"
                 ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result" "$reason"
-                ((count++))
+                found=true
         esac
     done < "$ACTIONS_LOG_PATHFILE"
 
-    [[ $count -eq 0 ]] && DisplayAsHelpTitle "No packages $(ColourTextBrightRed failed) during the last session"
+    [[ $found = false ]] && DisplayAsHelpTitle "No package actions $(ColourTextBrightRed failed)"
 
     return 0
 
@@ -3298,7 +3305,7 @@ Help.Ok.Show()
     local package_name=''
     local result=''
     local reason=''
-    local -i count=0
+    local found=false
 
     DisableDebugToArchiveAndFile
 
@@ -3309,13 +3316,13 @@ Help.Ok.Show()
     while read datetime action package_name result reason; do
         case $result in
             ok)
-                [[ $count -eq 0 ]] && DisplayAsHelpTitle "These packages completed $(ColourTextBrightGreen OK) during the last session:"
+                [[ $found = false ]] && DisplayAsHelpTitle "these package actions completed $(ColourTextBrightGreen OK):"
                 ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result"
-                ((count++))
+                found=true
         esac
     done < "$ACTIONS_LOG_PATHFILE"
 
-    [[ $count -eq 0 ]] && DisplayAsHelpTitle "No packages completed $(ColourTextBrightGreen OK) during the last session"
+    [[ $found = false ]] && DisplayAsHelpTitle "No package actions completed $(ColourTextBrightGreen OK)"
 
     return 0
 
@@ -3425,7 +3432,7 @@ Help.Skipped.Show()
     local package_name=''
     local result=''
     local reason=''
-    local -i count=0
+    local found=false
 
     DisableDebugToArchiveAndFile
 
@@ -3436,13 +3443,13 @@ Help.Skipped.Show()
     while read datetime action package_name result reason; do
         case $result in
             skipped|skipped-error)
-                [[ $count -eq 0 ]] && DisplayAsHelpTitle "These packages were $(ColourTextBrightOrange skipped) during the last session:"
+                [[ $found = false ]] && DisplayAsHelpTitle "these package actions were $(ColourTextBrightOrange skipped):"
                 ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result" "$reason"
-                ((count++))
+                found=true
         esac
     done < "$ACTIONS_LOG_PATHFILE"
 
-    [[ $count -eq 0 ]] && DisplayAsHelpTitle "No packages were $(ColourTextBrightOrange skipped) during the last session"
+    [[ $found = false ]] && DisplayAsHelpTitle "No package actions were $(ColourTextBrightOrange skipped)"
 
     return 0
 
@@ -4962,16 +4969,13 @@ _QPKG.Reassign_()
     local package_store_id=$(QPKG.StoreID "$PACKAGE_NAME")
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        DebugAsInfo "skipped $(FormatAsPackName "$PACKAGE_NAME") as it's not installed: use 'install' instead"
-        result_code=2
-    elif [[ $package_store_id = sherpa ]]; then
-        DebugAsInfo "skipped $(FormatAsPackName "$PACKAGE_NAME") as it's already assigned to sherpa"
-        result_code=2
-    fi
-
-    if [[ $result_code -eq 2 ]]; then
+        SaveActionResultToLog "$PACKAGE_NAME" Reassign skipped "it's not installed"
         MarkThisActionForkAsSkipped
-        DebugForkFuncEx $result_code
+        DebugForkFuncEx 2
+    elif [[ $package_store_id = sherpa ]]; then
+        SaveActionResultToLog "$PACKAGE_NAME" Reassign skipped-ok "it's already assigned to sherpa"
+        MarkThisActionForkAsSkipped
+        DebugForkFuncEx 0
     fi
 
     DebugAsProc "reassigning $(FormatAsPackName "$PACKAGE_NAME")"
@@ -4979,11 +4983,11 @@ _QPKG.Reassign_()
     result_code=$?
 
     if [[ $result_code -eq 0 ]]; then
-        DebugAsDone "reassigned $(FormatAsPackName "$PACKAGE_NAME") to sherpa"
+        SaveActionResultToLog "$PACKAGE_NAME" Reassign ok
         SendPackageStateChange IsReassigned
         MarkThisActionForkAsOk
     else
-        DebugAsError "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Reassign failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5115,7 +5119,7 @@ _QPKG.Install_()
     local debug_cmd=''
 
     if QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Install skipped "it's already installed: use 'reinstall' instead"
+        SaveActionResultToLog "$PACKAGE_NAME" Install skipped "it's already installed"
         result_code=2
     elif ! QPKG.URL "$PACKAGE_NAME" &>/dev/null; then
         SaveActionResultToLog "$PACKAGE_NAME" Install skipped "this NAS has an unsupported arch"
@@ -5439,7 +5443,7 @@ _QPKG.Uninstall_()
         result_code=$?
 
         if [[ $result_code -eq 0 ]]; then
-            SaveActionResultToLog "$PACKAGE_NAME" Uninstall ok "uninstalled $current_ver"
+            SaveActionResultToLog "$PACKAGE_NAME" Uninstall ok
             /sbin/rmcfg "$PACKAGE_NAME" -f /etc/config/qpkg.conf
             DebugAsDone 'removed icon information from App Center'
 
@@ -7109,7 +7113,7 @@ ShowAsProcLong()
 
     ShowAsProc "${1:-} (might take a while)" "${2:-}"
 
-    } >&2
+    }
 
 ShowAsProc()
     {
@@ -7331,7 +7335,7 @@ ShowAsActionResult()
 
     return 0
 
-    }
+    } >&2
 
 ShowAsActionResultDetail()
     {
@@ -7353,7 +7357,7 @@ ShowAsActionResultDetail()
         DisplayAsActionResultLastLine "$er_msg"
     fi
 
-    }
+    } >&2
 
 ShowAsActionLogDetail()
     {
@@ -7365,7 +7369,8 @@ ShowAsActionLogDetail()
     #   $4 = result                 : `ok`, `skipped-ok`, `skipped`, `failed`
     #   $5 = reason (optional)      : "file already exists in local cache"
 
-    echo -e "\t$(Lowercase "${3:-}") ${2:-} @ $(/bin/date -d @"${1:-}")$([[ -n ${5:-} ]] && echo "\n\t\treason: '${5:-}'")"
+#     echo -e "\t$(Lowercase "${3:-}") ${2:-} @ $(/bin/date -d @"${1:-}")$([[ -n ${5:-} ]] && echo "\n\t\treason: '${5:-}'")"
+    echo -e "\t$(Lowercase "${3:-}") ${2:-}$([[ -n ${5:-} ]] && echo " : '${5:-}'")"
 
     }
 
@@ -7755,6 +7760,6 @@ Self.Init || exit
 Self.LogEnv
 Self.IsAnythingToDo
 Self.Validate
-Tiers.Proc
+Actions.Proc
 Self.Results
 Self.Error.IsNt
