@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # sherpa.manager.sh
-#   Copyright (C) 2017-2023 OneCD [one.cd.only@gmail.com]
+#   Copyright (C) 2017-2023 OneCD - one.cd.only@gmail.com
 
 #   So, blame OneCD if it all goes horribly wrong. ;)
 
@@ -54,7 +54,7 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230127
+    local -r SCRIPT_VER=230128
 
     IsQNAP || return
     IsSU || return
@@ -147,7 +147,7 @@ Self.Init()
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
 
-    local -r PROJECT_BRANCH=main
+    local -r PROJECT_BRANCH=develop
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs
@@ -933,7 +933,6 @@ Action.Proc()
                 esac
             done <&$msg_pipe_fd
 
-            # show skipped and failed package details later
             [[ $ok_count -gt 0 ]] && Opts.Help.Ok.Set
             [[ $skip_count -gt 0 || $skip_error_count -gt 0 ]] && Opts.Help.Skipped.Set
             [[ $fail_count -gt 0 ]] && Opts.Help.Failed.Set
@@ -1095,9 +1094,9 @@ Self.Results()
         Help.Basic.Example.Show
     fi
 
-    Opts.Help.Ok.IsSet && Help.Ok.Show
-    Opts.Help.Skipped.IsSet && Help.Skipped.Show
-    Opts.Help.Failed.IsSet && Help.Failed.Show
+    Opts.Help.Ok.IsSet && Actions.Results.Show ok
+    Opts.Help.Skipped.IsSet && Actions.Results.Show skipped
+    Opts.Help.Failed.IsSet && Actions.Results.Show failed
     Self.ShowBackupLoc.IsSet && Help.BackupLocation.Show
     Self.Summary.IsSet && ShowSummary
     Self.SuggestIssue.IsSet && Help.Issue.Show
@@ -3236,37 +3235,6 @@ Help.Basic.Example.Show()
 
     }
 
-Help.Failed.Show()
-    {
-
-    local -i datetime=''
-    local action=''
-    local package_name=''
-    local result=''
-    local reason=''
-    local found=false
-
-    DisableDebugToArchiveAndFile
-
-    [[ -e $ACTIONS_LOG_PATHFILE ]] || return
-
-    local IFS='#'
-
-    while read -r datetime action package_name result reason; do
-        case $result in
-            failed)
-                [[ $found = false ]] && DisplayAsHelpTitle "these package actions $(ColourTextBrightRed failed):"
-                ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result" "$reason"
-                found=true
-        esac
-    done < "$ACTIONS_LOG_PATHFILE"
-
-    [[ $found = false ]] && DisplayAsHelpTitle "No package actions $(ColourTextBrightRed failed)"
-
-    return 0
-
-    }
-
 Help.Groups.Show()
     {
 
@@ -3297,8 +3265,10 @@ Help.Issue.Show()
 
     }
 
-Help.Ok.Show()
+Actions.Results.Show()
     {
+
+    # $1 = `ok`, `skipped`, `failed`
 
     local -i datetime=''
     local action=''
@@ -3314,15 +3284,35 @@ Help.Ok.Show()
     local IFS='#'
 
     while read -r datetime action package_name result reason; do
-        case $result in
-            ok)
-                [[ $found = false ]] && DisplayAsHelpTitle "these package actions completed $(ColourTextBrightGreen OK):"
-                ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result"
-                found=true
-        esac
+        if [[ $result = $1 ]] || [[ $1 = skipped && $result = 'skipped-error' ]]; then
+            case $result in
+                ok)
+                    [[ $found = false ]] && DisplayAsHelpTitle "these package actions completed $(ColourTextBrightGreen OK):"
+                    ;;
+                skipped|skipped-error)
+                    [[ $found = false ]] && DisplayAsHelpTitle "these package actions were $(ColourTextBrightOrange skipped):"
+                    ;;
+                failed)
+                    [[ $found = false ]] && DisplayAsHelpTitle "these package actions $(ColourTextBrightRed failed):"
+            esac
+
+            ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result" "$reason"
+            found=true
+        fi
     done < "$ACTIONS_LOG_PATHFILE"
 
-    [[ $found = false ]] && DisplayAsHelpTitle "No package actions completed $(ColourTextBrightGreen OK)"
+    if [[ $found = false ]]; then
+        case $1 in
+            ok)
+                DisplayAsHelpTitle "No package actions completed $(ColourTextBrightGreen OK)"
+                ;;
+            skipped)
+                DisplayAsHelpTitle "No package actions were $(ColourTextBrightOrange skipped)"
+                ;;
+            failed)
+                DisplayAsHelpTitle "No package actions $(ColourTextBrightRed failed)"
+        esac
+    fi
 
     return 0
 
@@ -3419,37 +3409,6 @@ Help.Problems.Show()
     DisplayAsProjSynIndentExam "upload the most-recent session in your $(FormatAsTitle) log to the $(FormatAsURL 'https://termbin.com') public pastebin. A URL will be generated afterward" 'paste last'
     DisplayAsProjSynIndentExam "upload the most-recent $(FormatAsThous "$LOG_TAIL_LINES") lines in your $(FormatAsTitle) log to the $(FormatAsURL 'https://termbin.com') public pastebin. A URL will be generated afterward" 'paste log'
     DisplayAsHelpTitleHighlighted "If you need help, please include a copy of your $(FormatAsTitle) $(ColourTextBrightOrange "log for analysis!")"
-
-    return 0
-
-    }
-
-Help.Skipped.Show()
-    {
-
-    local -i datetime=''
-    local action=''
-    local package_name=''
-    local result=''
-    local reason=''
-    local found=false
-
-    DisableDebugToArchiveAndFile
-
-    [[ -e $ACTIONS_LOG_PATHFILE ]] || return
-
-    local IFS='#'
-
-    while read -r datetime action package_name result reason; do
-        case $result in
-            skipped|skipped-error)
-                [[ $found = false ]] && DisplayAsHelpTitle "these package actions were $(ColourTextBrightOrange skipped):"
-                ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result" "$reason"
-                found=true
-        esac
-    done < "$ACTIONS_LOG_PATHFILE"
-
-    [[ $found = false ]] && DisplayAsHelpTitle "No package actions were $(ColourTextBrightOrange skipped)"
 
     return 0
 
