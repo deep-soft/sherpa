@@ -1,4 +1,4 @@
-PACKAGES_VER=230117
+PACKAGES_VER=230131
 BASE_QPKG_CONFLICTS_WITH='TarMT'
 BASE_QPKG_WARNINGS='Qboost'
 ESSENTIAL_IPKS='ca-certificates coreutils-stty findutils gcc git git-http grep less nano sed setterm'
@@ -162,9 +162,9 @@ QPKG_CAN_RESTART_TO_UPDATE+=(true)
 QPKG_NAME+=(HideThatBanner)
 QPKG_ARCH+=(all)
 QPKG_MIN_RAM_KB+=(none)
-QPKG_VERSION+=(220809)
+QPKG_VERSION+=(230112)
 QPKG_URL+=(https://raw.githubusercontent.com/OneCDOnly/${QPKG_NAME[${#QPKG_NAME[@]}-1]}/main/build/${QPKG_NAME[${#QPKG_NAME[@]}-1]}_${QPKG_VERSION[${#QPKG_VERSION[@]}-1]}.qpkg)
-QPKG_MD5+=(1f96a035adc7dd70887c11ae69e00b33)
+QPKG_MD5+=(785b300ac0d84b6d6c518b2d0be51825)
 QPKG_DESC+=('hides the annoying rotating banner at the top of QTS App Center pages')
 QPKG_ABBRVS+=('hb htb hide hidebanner hidethatbanner')
 QPKG_CONFLICTS_WITH+=('')

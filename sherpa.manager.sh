@@ -54,7 +54,7 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230128
+    local -r SCRIPT_VER=230131
 
     IsQNAP || return
     IsSU || return
@@ -147,7 +147,7 @@ Self.Init()
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
 
-    local -r PROJECT_BRANCH=develop
+    local -r PROJECT_BRANCH=main
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs
@@ -197,6 +197,7 @@ Self.Init()
 
     # only used by sherpa QPKG service-script results parser
     PACKAGE_RESULTS=(Ok Unknown)
+    ACTION_RESULTS=(failed ok skipped)
 
 #     readonly MANAGEMENT_ACTIONS
     readonly PACKAGE_TIERS
@@ -207,6 +208,7 @@ Self.Init()
     readonly PACKAGE_ACTIONS
 
     readonly PACKAGE_RESULTS
+    readonly ACTION_RESULTS
 
     local action=''
 
@@ -1053,6 +1055,10 @@ Self.Results()
         elif Opts.Help.Repos.IsSet; then
             QPKGs.NewVers.Show
             QPKGs.Repos.Show
+        elif Opts.Help.Results.IsSet; then
+            Opts.Help.Ok.Set
+            Opts.Help.Skipped.Set
+            Opts.Help.Failed.Set
         elif Opts.Help.Status.IsSet; then
             QPKGs.NewVers.Show
             QPKGs.Statuses.Show
@@ -1210,7 +1216,7 @@ ParseArgs()
         # stage 1
         if [[ -z $action ]]; then
             case $arg in
-                a|abs|action|actions|actions-all|all-actions|b|backups|dependent|dependents|failed|groups|installable|installed|l|last|log|missing|not-installed|ok|option|options|p|package|packages|problems|r|repo|repos|skipped|standalone|standalones|started|stopped|tail|tips|updatable|updateable|upgradable|v|version|versions|whole)
+                a|abs|action|actions|actions-all|all-actions|b|backups|dependent|dependents|failed|groups|installable|installed|l|last|log|missing|not-installed|ok|option|options|p|package|packages|problems|r|repo|repos|results|skipped|standalone|standalones|started|stopped|tail|tips|updatable|updateable|upgradable|v|version|versions|whole)
                     action=help_
                     arg_identified=true
                     group=''
@@ -1225,7 +1231,7 @@ ParseArgs()
         if [[ -n $action ]]; then
             case $arg in
             # these cases use only a single word or char to specify a single group
-                failed|groups|installable|installed|missing|not-installed|ok|problems|skipped|started|stopped|tail|tips)
+                failed|groups|installable|installed|missing|not-installed|ok|problems|results|skipped|started|stopped|tail|tips)
                     group=${arg}_
                     ;;
             # all cases below can use multiple words or chars to specify a single group
@@ -1421,6 +1427,9 @@ ParseArgs()
                         ;;
                     repos_)
                         Opts.Help.Repos.Set
+                        ;;
+                    results_)
+                        Opts.Help.Results.Set
                         ;;
                     skipped_)
                         Opts.Help.Skipped.Set
@@ -2990,7 +2999,7 @@ DisplayAsHelpPackageNameVerStatus()
     # $1 = package name
     # $2 = package status (optional)
     # $3 = package version number (optional)
-    # $4 = package installation path (optional) only if installed
+    # $4 = package installation path (optional) - only if installed
 
     local maxcols=$(CalcMaxStatusColsToDisplay)
 
@@ -3284,7 +3293,7 @@ Actions.Results.Show()
     local IFS='#'
 
     while read -r datetime action package_name result reason; do
-        if [[ $result = $1 ]] || [[ $1 = skipped && $result = 'skipped-error' ]]; then
+        if [[ $result = "$1" ]] || [[ $1 = skipped && $result = 'skipped-error' ]]; then
             case $result in
                 ok)
                     [[ $found = false ]] && DisplayAsHelpTitle "these package actions completed $(ColourTextBrightGreen OK):"
@@ -4309,19 +4318,19 @@ QPKGs.Statuses.Show()
                         package_status_notes+=($(ColourTextBrightRed stopped))
                     fi
 
+                    if QPKGs.ScUpgradable.Exist "$package_name"; then
+                        package_ver="$(QPKG.Local.Ver "$package_name") $(ColourTextBrightOrange "($(QPKG.Avail.Ver "$package_name"))")"
+                        package_status_notes+=($(ColourTextBrightOrange upgradable))
+                    else
+                        package_ver=$(QPKG.Avail.Ver "$package_name")
+                    fi
+
                     if QPKGs.IsNtOk.Exist "$package_name"; then
                         package_status_notes+=("($(ColourTextBrightRed failed))")
                     elif QPKGs.IsOk.Exist "$package_name"; then
                         package_status_notes+=("($(ColourTextBrightGreen ok))")
                     elif QPKGs.IsUnknown.Exist "$package_name"; then
                         package_status_notes+=("($(ColourTextBrightOrange unknown))")
-                    fi
-
-                    if QPKGs.ScUpgradable.Exist "$package_name"; then
-                        package_ver="$(QPKG.Local.Ver "$package_name") $(ColourTextBrightOrange "($(QPKG.Avail.Ver "$package_name"))")"
-                        package_status_notes+=($(ColourTextBrightOrange upgradable))
-                    else
-                        package_ver=$(QPKG.Avail.Ver "$package_name")
                     fi
 
                     for ((index=0; index<=((${#package_status_notes[@]}-1)); index++)); do
@@ -4748,7 +4757,6 @@ GetCPUCores()
 GetInstalledRAM()
     {
 
-#     $GREP_CMD MemTotal /proc/meminfo | cut -f2 -d':' | $SED_CMD 's|kB||;s| ||g'
     $GREP_CMD MemTotal /proc/meminfo | $SED_CMD 's|.*: ||;s|kB||;s| ||g'
 
     }
@@ -4978,10 +4986,7 @@ SaveActionResultToLog()
         skipped)
             DebugAsWarn "${4:?reason empty}"
             ;;
-        skipped-error)
-            DebugAsError "${4:?reason empty}"
-            ;;
-        failed)
+        failed|skipped-error)
             DebugAsError "${4:?reason empty}"
     esac
 
@@ -5394,7 +5399,6 @@ _QPKG.Uninstall_()
         Self.Debug.ToScreen.IsSet && debug_cmd='DEBUG_QPKG=true '
 
         if [[ $PACKAGE_NAME = Entware ]]; then
-#             SendParentChangeEnv 'ShowKeystrokes'
             SendParentChangeEnv 'ShowCursor'
         fi
 
@@ -5407,7 +5411,6 @@ _QPKG.Uninstall_()
             DebugAsDone 'removed icon information from App Center'
 
             if [[ $PACKAGE_NAME = Entware ]]; then
-#                 sleep 2
                 ModPathToEntware
                 SendParentChangeEnv 'ModPathToEntware'
                 UpdateColourisation
@@ -5421,7 +5424,6 @@ _QPKG.Uninstall_()
             SaveActionResultToLog "$PACKAGE_NAME" Uninstall failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
 
             if [[ $PACKAGE_NAME = Entware ]]; then
-#                 SendParentChangeEnv 'HideKeystrokes'
                 SendParentChangeEnv 'HideCursor'
             fi
 
@@ -7175,7 +7177,6 @@ ShowAsError()
     EraseThisLine
 
     local capitalised="$(Capitalise "${1:-}")"
-#     [[ ${1: -1} != ':' ]] && capitalised+='.'
 
     WriteToDisplayNew "$(ColourTextBrightRed derp)" "$capitalised"
     WriteToLog derp "$capitalised"
@@ -7328,7 +7329,6 @@ ShowAsActionLogDetail()
     #   $4 = result                 : `ok`, `skipped-ok`, `skipped`, `failed`
     #   $5 = reason (optional)      : "file already exists in local cache"
 
-#     echo -e "\t$(Lowercase "${3:-}") ${2:-} @ $(/bin/date -d @"${1:-}")$([[ -n ${5:-} ]] && echo "\n\t\treason: '${5:-}'")"
     echo -e "\t$(Lowercase "${3:-}") ${2:-}$([[ -n ${5:-} ]] && echo " : '${5:-}'")"
 
     }
