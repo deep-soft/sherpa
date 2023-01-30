@@ -147,7 +147,7 @@ Self.Init()
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
 
-    local -r PROJECT_BRANCH=main
+    local -r PROJECT_BRANCH=unstable
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs
@@ -267,7 +267,7 @@ Self.Init()
     done
 
     readonly THIS_PACKAGE_VER=$(QPKG.Local.Ver)
-    readonly MANAGER_SCRIPT_VER="${SCRIPT_VER}$([[ $PROJECT_BRANCH = develop ]] && echo '-alpha' || echo '-beta')"
+    readonly MANAGER_SCRIPT_VER="${SCRIPT_VER}$([[ $PROJECT_BRANCH = unstable ]] && echo '-alpha' || echo '-beta')"
 
     DebugInfoMajSepr
     DebugScript started "$($DATE_CMD -d @"$SCRIPT_STARTSECONDS" | tr -s ' ')"
