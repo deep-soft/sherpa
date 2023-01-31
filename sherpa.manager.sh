@@ -147,7 +147,7 @@ Self.Init()
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
 
-    local -r PROJECT_BRANCH=main
+    local -r PROJECT_BRANCH=unstable
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs
@@ -3281,10 +3281,11 @@ Actions.Results.Show()
 
     # $1 = `ok`, `skipped`, `failed`
 
-    local -i datetime=''
+    local -i datetime=0
     local action=''
     local package_name=''
     local result=''
+    local -i duration=0
     local reason=''
     local found=false
 
@@ -3294,7 +3295,7 @@ Actions.Results.Show()
 
     local IFS='#'
 
-    while read -r datetime action package_name result reason; do
+    while read -r datetime action package_name result duration reason; do
         if [[ $result = "$1" ]] || [[ $1 = skipped && $result = 'skipped-error' ]]; then
             case $result in
                 ok)
@@ -3307,7 +3308,7 @@ Actions.Results.Show()
                     [[ $found = false ]] && DisplayAsHelpTitle "these package actions $(ColourTextBrightRed failed):"
             esac
 
-            ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result" "$reason"
+            ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result" "$duration" "$reason"
             found=true
         fi
     done < "$ACTIONS_LOG_PATHFILE"
@@ -4970,13 +4971,19 @@ SaveActionResultToLog()
 
     # write datetime in seconds, package name, action, result, reason to actions logfile
 
-    # input:
-    #   $1 = QPKG name          : `SABnzbd`
-    #   $2 = action             : `Download`
-    #   $3 = result             : `ok`, `skipped-ok`, `skipped`, `failed`
-    #   $4 = reason (optional)  : "file already exists in local cache"
+    # input:                        example:
+    #   $1 = QPKG name               `SABnzbd`
+    #   $2 = action                  `Download`, `Downloaded`
+    #   $3 = result                  `ok`, `skipped-ok`, `skipped`, `failed`
+    #   $4 = reason (optional)       "file already exists in local cache"
 
-    echo "$(/bin/date +%s)#${2:?action empty}#${1:?package name empty}#${3:?result empty}#${4:-}" >> "$ACTIONS_LOG_PATHFILE"
+    # calculate duration here
+
+    local var_name=${FUNCNAME[1]}_STARTSECONDS
+    local var_safe_name=${var_name//[.-]/_}
+    local duration="$(CalcMilliDifference "${!var_safe_name}" "$($DATE_CMD +%s%N)")"
+
+    echo "$(/bin/date +%s)#${2:?action empty}#${1:?package name empty}#${3:?result empty}#$duration#${4:-}" >> "$ACTIONS_LOG_PATHFILE"
 
     case $3 in
         ok)
@@ -5019,7 +5026,7 @@ _QPKG.Download_()
     local -r LOG_PATHFILE=$LOGS_PATH/$LOCAL_FILENAME.$DOWNLOAD_LOG_FILE
 
     if [[ -z $REMOTE_URL || -z $REMOTE_MD5 ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Download skipped 'NAS is unsupported'
+        SaveActionResultToLog "$PACKAGE_NAME" Downloaded skipped 'NAS is unsupported'
         MarkThisActionForkAsSkipped
         result_code=2
     elif [[ -f $LOCAL_PATHFILE ]]; then
@@ -5541,7 +5548,7 @@ _QPKG.Start_()
 
     if [[ $result_code -eq 0 ]]; then
         QPKG.LogServiceStatus "$PACKAGE_NAME"
-        SaveActionResultToLog "$PACKAGE_NAME" Start ok
+        SaveActionResultToLog "$PACKAGE_NAME" Started ok
 
         if [[ $PACKAGE_NAME = Entware ]]; then
             ModPathToEntware
@@ -5612,7 +5619,7 @@ _QPKG.Stop_()
 
     if [[ $result_code -eq 0 ]]; then
         QPKG.LogServiceStatus "$PACKAGE_NAME"
-        SaveActionResultToLog "$PACKAGE_NAME" Stop ok
+        SaveActionResultToLog "$PACKAGE_NAME" Stopped ok
 
         if [[ $PACKAGE_NAME = Entware ]]; then
             ModPathToEntware
@@ -6906,16 +6913,17 @@ DebugScriptFuncEx()
 
     local var_name=${FUNCNAME[1]}_STARTSECONDS
     local var_safe_name=${var_name//[.-]/_}
-    local diff_milliseconds=$((($($DATE_CMD +%s%N)-${!var_safe_name})/1000000))
-    local elapsed_time=''
+#     local diff_milliseconds=$((($($DATE_CMD +%s%N)-${!var_safe_name})/1000000))
+#     local elapsed_time=''
+#
+#     if [[ $diff_milliseconds -lt 30000 ]]; then
+#         elapsed_time="$(FormatAsThous "$diff_milliseconds")ms"
+#     else
+#         elapsed_time=$(FormatSecsToHoursMinutesSecs "$((diff_milliseconds/1000))")
+#     fi
 
-    if [[ $diff_milliseconds -lt 30000 ]]; then
-        elapsed_time="$(FormatAsThous "$diff_milliseconds")ms"
-    else
-        elapsed_time=$(FormatSecsToHoursMinutesSecs "$((diff_milliseconds/1000))")
-    fi
-
-    DebugAsFuncEx "${1:-0}" "$elapsed_time"
+    DebugAsFuncEx "${1:-0}" "$(FormatAsDuration "$(CalcMilliDifference "${!var_safe_name}" "$($DATE_CMD +%s%N)")")"
+#     DebugAsFuncEx "${1:-0}" "$elapsed_time"
 
     return ${1:-0}
 
@@ -6932,7 +6940,7 @@ DebugForkFuncEn()
 
     local var_name=${FUNCNAME[1]}_STARTSECONDS
     local var_safe_name=${var_name//[.-]/_}
-    eval "$var_safe_name=$(/bin/date +%s%N)"    # $DATE_CMD hasnt been defined when this function is first called in Self.Init()
+    eval "$var_safe_name=$(/bin/date +%s%N)"
 
     DebugAsFuncEn
 
@@ -6945,21 +6953,47 @@ DebugForkFuncEx()
 
     local var_name=${FUNCNAME[1]}_STARTSECONDS
     local var_safe_name=${var_name//[.-]/_}
-    local diff_milliseconds=$((($($DATE_CMD +%s%N)-${!var_safe_name})/1000000))
-    local elapsed_time=''
+#     local diff_milliseconds=$((($($DATE_CMD +%s%N)-${!var_safe_name})/1000000))
+#     local elapsed_time=''
 
-    if [[ $diff_milliseconds -lt 30000 ]]; then
-        elapsed_time="$(FormatAsThous "$diff_milliseconds")ms"
-    else
-        elapsed_time=$(FormatSecsToHoursMinutesSecs "$((diff_milliseconds/1000))")
-    fi
+
+
+#     if [[ $diff_milliseconds -lt 30000 ]]; then
+#         elapsed_time="$(FormatAsThous "$diff_milliseconds")ms"
+#     else
+#         elapsed_time=$(FormatSecsToHoursMinutesSecs "$((diff_milliseconds/1000))")
+#     fi
 
     SendActionStatus Ex
-    DebugAsFuncEx "${1:-0}" "$elapsed_time"
+    DebugAsFuncEx "${1:-0}" "$(FormatAsDuration "$(CalcMilliDifference "${!var_safe_name}" "$($DATE_CMD +%s%N)")")"
 
     $CAT_CMD "$sess_active_pathfile" >> "$original_session_log_pathfile" && rm "$sess_active_pathfile"
 
     exit ${1:-0}
+
+    }
+
+CalcMilliDifference()
+    {
+
+    # $1 = starttime in epoch nanoseconds
+    # $2 = endtime in epoch nanoseconds
+
+    # stdout = difference in milliseconds
+    echo "$((($2-$1)/1000000))"
+
+    }
+
+FormatAsDuration()
+    {
+
+    # $1 = duration in milliseconds
+
+    if [[ ${1:-0} -lt 30000 ]]; then
+        echo "$(FormatAsThous "${1:-0}")ms"
+    else
+        echo "$(FormatSecsToHoursMinutesSecs "$(($1/1000))")"
+    fi
 
     }
 
@@ -7321,14 +7355,15 @@ ShowAsActionResultDetail()
 ShowAsActionLogDetail()
     {
 
-    # input:
-    #   $1 = datetime (in seconds)
-    #   $2 = QPKG name              : `SABnzbd`
-    #   $3 = action                 : `Download`
-    #   $4 = result                 : `ok`, `skipped-ok`, `skipped`, `failed`
-    #   $5 = reason (optional)      : "file already exists in local cache"
+    # input:                            example:
+    #   $1 = datetime in seconds
+    #   $2 = QPKG name                  `SABnzbd`
+    #   $3 = action                     `Download`, 'Downloaded'
+    #   $4 = result                     `ok`, `skipped-ok`, `skipped`, `failed`
+    #   $5 = duration in milliseconds   `56`
+    #   $6 = reason (optional)          "file already exists in local cache"
 
-    echo -e "\t$(Lowercase "${3:-}") ${2:-}$([[ -n ${5:-} ]] && echo " : '${5:-}'")"
+    echo -e "\t$(Lowercase "${3:-}") ${2:-}$([[ $4 != skipped && $4 != skipped-ok ]] && echo " in $(FormatAsDuration "$duration")")$([[ -n ${6:-} ]] && echo ": '${6:-}'")"
 
     }
 
