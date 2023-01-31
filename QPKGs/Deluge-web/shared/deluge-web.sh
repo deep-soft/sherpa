@@ -150,6 +150,18 @@ StartQPKG()
         return 1
     fi
 
+    # Check if deluge-server is starting. If so, wait until deluge-server has completed startup.
+
+    local waiter=0
+
+    if [[ -e /var/run/deluge-server.last.operation ]]; then
+        while [[ $(</var/run/deluge-server.last.operation) = starting ]]; do
+            ((waiter++))
+            [[ $waiter -ge 60 ]] && break
+            sleep 1
+        done
+    fi
+
     DisplayRunAndLog 'start daemon' "$LAUNCHER" || { SetError; return 1 ;}
     WaitForPID || { SetError; return 1 ;}
     IsDaemonActive || { SetError; return 1 ;}
