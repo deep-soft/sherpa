@@ -4936,11 +4936,11 @@ _QPKG.Reassign_()
     local package_store_id=$(QPKG.StoreID "$PACKAGE_NAME")
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Reassign skipped "it's not installed"
+        SaveActionResultToLog "$PACKAGE_NAME" Reassign skipped 'not installed'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     elif [[ $package_store_id = sherpa ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Reassign skipped-ok "it's already assigned to sherpa"
+        SaveActionResultToLog "$PACKAGE_NAME" Reassign skipped-ok 'already assigned to sherpa'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 0
     fi
@@ -5017,7 +5017,7 @@ _QPKG.Download_()
     local -r LOG_PATHFILE=$LOGS_PATH/$LOCAL_FILENAME.$DOWNLOAD_LOG_FILE
 
     if [[ -z $REMOTE_URL || -z $REMOTE_MD5 ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Download skipped "this NAS has an unsupported arch"
+        SaveActionResultToLog "$PACKAGE_NAME" Download skipped 'this NAS has an unsupported arch'
         MarkThisActionForkAsSkipped
         result_code=2
     elif [[ -f $LOCAL_PATHFILE ]]; then
@@ -5083,13 +5083,13 @@ _QPKG.Install_()
     local debug_cmd=''
 
     if QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Install skipped "it's already installed"
+        SaveActionResultToLog "$PACKAGE_NAME" Install skipped 'already installed'
         result_code=2
     elif ! QPKG.URL "$PACKAGE_NAME" &>/dev/null; then
-        SaveActionResultToLog "$PACKAGE_NAME" Install skipped "this NAS has an unsupported arch"
+        SaveActionResultToLog "$PACKAGE_NAME" Install skipped 'this NAS has an unsupported arch'
         result_code=2
     elif ! QPKG.MinRAM "$PACKAGE_NAME" &>/dev/null; then
-        SaveActionResultToLog "$PACKAGE_NAME" Install skipped "this NAS has insufficient RAM"
+        SaveActionResultToLog "$PACKAGE_NAME" Install skipped 'this NAS has insufficient RAM'
         result_code=2
     fi
 
@@ -5150,7 +5150,7 @@ _QPKG.Install_()
         fi
 
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
-        SaveActionResultToLog "$PACKAGE_NAME" Install ok "installed $current_ver"
+        SaveActionResultToLog "$PACKAGE_NAME" Install ok "version $current_ver"
 
         if [[ $PACKAGE_NAME = Entware ]]; then
             ModPathToEntware
@@ -5205,7 +5205,7 @@ _QPKG.Reinstall_()
     local debug_cmd=''
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Reinstall skipped "it's not installed: use 'install' instead"
+        SaveActionResultToLog "$PACKAGE_NAME" Reinstall skipped "not installed: please use 'install' instead"
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     fi
@@ -5249,7 +5249,7 @@ _QPKG.Reinstall_()
         fi
 
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
-        SaveActionResultToLog "$PACKAGE_NAME" Reinstall ok "reinstalled $current_ver"
+        SaveActionResultToLog "$PACKAGE_NAME" Reinstall ok "version $current_ver"
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
         MarkThisActionForkAsOk
     else
@@ -5282,7 +5282,7 @@ _QPKG.Upgrade_()
     local debug_cmd=''
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped "it's not installed: use 'install' instead"
+        SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped "not installed: please use 'install' instead"
         result_code=2
     elif ! QPKGs.ScUpgradable.Exist "$PACKAGE_NAME"; then
         SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped-ok 'no new package is available'
@@ -5293,7 +5293,7 @@ _QPKG.Upgrade_()
     local package_store_id=$(QPKG.StoreID "$PACKAGE_NAME")
 
     if [[ $package_store_id != sherpa ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped "it's assigned to another repository: please 'reassign' it first"
+        SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped "assigned to another repository: please 'reassign' it first"
         result_code=2
     fi
 
@@ -5345,9 +5345,9 @@ _QPKG.Upgrade_()
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
 
         if [[ $current_ver = "$prev_ver" ]]; then
-            SaveActionResultToLog "$PACKAGE_NAME" Upgrade ok "upgraded to $current_ver"
+            SaveActionResultToLog "$PACKAGE_NAME" Upgrade ok "version $current_ver"
         else
-            SaveActionResultToLog "$PACKAGE_NAME" Upgrade ok "upgraded from $prev_ver to $current_ver"
+            SaveActionResultToLog "$PACKAGE_NAME" Upgrade ok "from version $prev_ver to version $current_ver"
         fi
 
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
@@ -5380,7 +5380,7 @@ _QPKG.Uninstall_()
     local debug_cmd=''
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Uninstall skipped "it's not installed"
+        SaveActionResultToLog "$PACKAGE_NAME" Uninstall skipped 'not installed'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     elif [[ $PACKAGE_NAME = sherpa ]]; then
@@ -5432,7 +5432,7 @@ _QPKG.Uninstall_()
         fi
     else
         # standard QPKG .uninstall.sh was not found, so can't continue with uninstallation (maybe force this instead with `rm -r` ?)
-        SaveActionResultToLog "$PACKAGE_NAME" Uninstall failed ".uninstall.sh script is missing"
+        SaveActionResultToLog "$PACKAGE_NAME" Uninstall failed '.uninstall.sh script is missing'
         MarkThisActionForkAsFailed
     fi
 
@@ -5461,7 +5461,7 @@ _QPKG.Restart_()
     QPKG.ClearServiceStatus "$PACKAGE_NAME"
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Restart skipped "it's not installed"
+        SaveActionResultToLog "$PACKAGE_NAME" Restart skipped 'not installed'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     fi
@@ -5517,11 +5517,11 @@ _QPKG.Start_()
     QPKG.ClearServiceStatus "$PACKAGE_NAME"
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Start skipped "it's not installed"
+        SaveActionResultToLog "$PACKAGE_NAME" Start skipped 'not installed'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     elif QPKGs.IsStarted.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Start skipped-ok "it's already started"
+        SaveActionResultToLog "$PACKAGE_NAME" Start skipped-ok 'already started'
         MarkThisActionForkAsSkippedOK
         DebugForkFuncEx 0
     fi
@@ -5584,11 +5584,11 @@ _QPKG.Stop_()
     QPKG.ClearServiceStatus "$PACKAGE_NAME"
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Stop skipped "it's not installed"
+        SaveActionResultToLog "$PACKAGE_NAME" Stop skipped 'not installed'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     elif QPKGs.IsNtStarted.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Stop skipped-ok "it's already stopped"
+        SaveActionResultToLog "$PACKAGE_NAME" Stop skipped-ok 'already stopped'
         MarkThisActionForkAsSkippedOK
         DebugForkFuncEx 0
     elif [[ $PACKAGE_NAME = sherpa ]]; then
@@ -5695,10 +5695,10 @@ _QPKG.Backup_()
     local debug_cmd=''
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Backup skipped "it's not installed"
+        SaveActionResultToLog "$PACKAGE_NAME" Backup skipped 'not installed'
         result_code=2
     elif ! QPKG.IsCanBackup "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Backup skipped "it does not support backup"
+        SaveActionResultToLog "$PACKAGE_NAME" Backup skipped 'does not support backup'
         result_code=2
     fi
 
@@ -5749,10 +5749,10 @@ _QPKG.Restore_()
     local debug_cmd=''
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Restore skipped "it's not installed"
+        SaveActionResultToLog "$PACKAGE_NAME" Restore skipped 'not installed'
         result_code=2
     elif ! QPKG.IsCanBackup "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Restore skipped "it does not support restore"
+        SaveActionResultToLog "$PACKAGE_NAME" Restore skipped 'does not support restore'
         result_code=2
     fi
 
@@ -5803,10 +5803,10 @@ _QPKG.Clean_()
     local debug_cmd=''
 
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Clean skipped "it's not installed"
+        SaveActionResultToLog "$PACKAGE_NAME" Clean skipped 'not installed'
         result_code=2
     elif ! QPKG.IsCanRestartToUpdate "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Clean skipped 'it does not support cleaning'
+        SaveActionResultToLog "$PACKAGE_NAME" Clean skipped 'does not support cleaning'
         result_code=2
     fi
 
