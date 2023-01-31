@@ -685,7 +685,6 @@ Self.Validate()
 #  16. install dependents
 #  17. restore dependents
 #  18. clean dependents             (supported by most dependent packages, but not all)
-
 #  19. enable/start dependents
 #  20. restart dependents
 
@@ -705,7 +704,7 @@ Actions.Proc()
 
     Action.Proc Reassign All QPKG AcToReassign reassign reassigning reassigned short || return
     Action.Proc Download All QPKG AcToDownload download downloading downloaded short || return
-    Action.Proc Backup All QPKG AcToBackup 'backup configuration for' 'backing-up configuration for' 'configuration backed-up for' short || return
+    Action.Proc Backup All QPKG AcToBackup backup backing-up backed-up short || return
 
     # -> package removal phase begins here <-
 
@@ -727,7 +726,7 @@ Actions.Proc()
                 Action.Proc Upgrade $tier QPKG AcToUpgrade upgrade upgrading upgraded long || return
                 Action.Proc Reinstall $tier QPKG AcToReinstall reinstall reinstalling reinstalled long || return
                 Action.Proc Install $tier QPKG AcToInstall install installing installed long || return
-                Action.Proc Restore $tier QPKG AcToRestore 'restore configuration for' 'restoring configuration for' 'configuration restored for' long || return
+                Action.Proc Restore $tier QPKG AcToRestore restore restoring restored long || return
                 Action.Proc Clean $tier QPKG AcToClean clean cleaning cleaned long || return
                 Action.Proc Start $tier QPKG AcToStart start starting started long || return
                 Action.Proc Restart $tier QPKG AcToRestart restart restarting restarted long || return
