@@ -3298,7 +3298,7 @@ Actions.Results.Show()
                 ok)
                     [[ $found = false ]] && DisplayAsHelpTitle "these package actions completed $(ColourTextBrightGreen OK):"
                     ;;
-                skipped|skipped-error)
+                skipped|skipped-ok|skipped-error)
                     [[ $found = false ]] && DisplayAsHelpTitle "these package actions were $(ColourTextBrightOrange skipped):"
                     ;;
                 failed)
@@ -5458,14 +5458,13 @@ _QPKG.Restart_()
     local -i result_code=0
     local debug_cmd=''
 
-    QPKG.ClearServiceStatus "$PACKAGE_NAME"
-
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
         SaveActionResultToLog "$PACKAGE_NAME" Restart skipped 'not installed'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     fi
 
+    QPKG.ClearServiceStatus "$PACKAGE_NAME"
     local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile "$PACKAGE_NAME")
     local -r LOG_PATHFILE=$LOGS_PATH/$PACKAGE_NAME.$RESTART_LOG_FILE
 
@@ -5514,18 +5513,17 @@ _QPKG.Start_()
     local -i result_code=0
     local debug_cmd=''
 
-    QPKG.ClearServiceStatus "$PACKAGE_NAME"
-
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
         SaveActionResultToLog "$PACKAGE_NAME" Start skipped 'not installed'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     elif QPKGs.IsStarted.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Start skipped-ok 'already started'
-        MarkThisActionForkAsSkippedOK
+        SaveActionResultToLog "$PACKAGE_NAME" Start skipped 'already started'
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx 0
     fi
 
+    QPKG.ClearServiceStatus "$PACKAGE_NAME"
     local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile "$PACKAGE_NAME")
     local -r LOG_PATHFILE=$LOGS_PATH/$PACKAGE_NAME.$START_LOG_FILE
 
@@ -5581,15 +5579,13 @@ _QPKG.Stop_()
     local -i result_code=0
     local debug_cmd=''
 
-    QPKG.ClearServiceStatus "$PACKAGE_NAME"
-
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
         SaveActionResultToLog "$PACKAGE_NAME" Stop skipped 'not installed'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     elif QPKGs.IsNtStarted.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Stop skipped-ok 'already stopped'
-        MarkThisActionForkAsSkippedOK
+        SaveActionResultToLog "$PACKAGE_NAME" Stop skipped 'already stopped'
+        MarkThisActionForkAsSkipped
         DebugForkFuncEx 0
     elif [[ $PACKAGE_NAME = sherpa ]]; then
         SaveActionResultToLog "$PACKAGE_NAME" Stop skipped-ok "it's needed here! 😉"
@@ -5597,6 +5593,7 @@ _QPKG.Stop_()
         DebugForkFuncEx 0
     fi
 
+    QPKG.ClearServiceStatus "$PACKAGE_NAME"
     local -r PACKAGE_INIT_PATHFILE=$(QPKG.ServicePathFile "$PACKAGE_NAME")
     local -r LOG_PATHFILE=$LOGS_PATH/$PACKAGE_NAME.$STOP_LOG_FILE
 
