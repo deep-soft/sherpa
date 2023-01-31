@@ -2,7 +2,7 @@
 ####################################################################################
 # nzbtomedia.sh
 #
-# Copyright (C) 2020-2023 OneCD [one.cd.only@gmail.com]
+# Copyright (C) 2020-2023 OneCD - one.cd.only@gmail.com
 #
 # so, blame OneCD if it all goes horribly wrong. ;)
 #
@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=nzbToMedia
-    readonly SCRIPT_VERSION=230109
+    readonly SCRIPT_VERSION=230131
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -1135,8 +1135,10 @@ SetServiceOperation()
             : # don't display when running the above actions
             ;;
         *)
-            DisplayCommitToLog "scripts_path_source: $scripts_path_source"
-            DisplayCommitToLog "scripts_path: $scripts_path"
+            if IsQPKGEnabled; then
+                DisplayCommitToLog "scripts_path_source: $scripts_path_source"
+                DisplayCommitToLog "scripts_path: $scripts_path"
+            fi
     esac
 
     service_operation="${1:-}"
