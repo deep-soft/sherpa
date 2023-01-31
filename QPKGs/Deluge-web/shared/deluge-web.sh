@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=Deluge-web
-    readonly SCRIPT_VERSION=230105
+    readonly SCRIPT_VERSION=230131
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -44,7 +44,7 @@ Init()
     readonly DAEMON_PATHFILE=/opt/bin/deluge-web
     readonly DAEMON_PID_PATHFILE=/var/run/$QPKG_NAME.pid
     readonly LAUNCHER="$DAEMON_PATHFILE --logfile $(/usr/bin/dirname "$QPKG_INI_PATHFILE")/$QPKG_NAME.log --config $(/usr/bin/dirname "$QPKG_INI_PATHFILE")/ --pidfile $DAEMON_PID_PATHFILE"
-    readonly PORT_CHECK_TIMEOUT=60
+    readonly PORT_CHECK_TIMEOUT=120
     readonly DAEMON_STOP_TIMEOUT=60
     readonly DAEMON_PORT_CMD=''
     readonly UI_PORT_CMD="/opt/bin/jq -r .port < $QPKG_INI_PATHFILE | /usr/bin/tail -n1"
