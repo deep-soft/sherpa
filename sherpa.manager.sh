@@ -6912,17 +6912,8 @@ DebugScriptFuncEx()
 
     local var_name=${FUNCNAME[1]}_STARTSECONDS
     local var_safe_name=${var_name//[.-]/_}
-#     local diff_milliseconds=$((($($DATE_CMD +%s%N)-${!var_safe_name})/1000000))
-#     local elapsed_time=''
-#
-#     if [[ $diff_milliseconds -lt 30000 ]]; then
-#         elapsed_time="$(FormatAsThous "$diff_milliseconds")ms"
-#     else
-#         elapsed_time=$(FormatSecsToHoursMinutesSecs "$((diff_milliseconds/1000))")
-#     fi
 
     DebugAsFuncEx "${1:-0}" "$(FormatAsDuration "$(CalcMilliDifference "${!var_safe_name}" "$($DATE_CMD +%s%N)")")"
-#     DebugAsFuncEx "${1:-0}" "$elapsed_time"
 
     return ${1:-0}
 
@@ -6952,20 +6943,9 @@ DebugForkFuncEx()
 
     local var_name=${FUNCNAME[1]}_STARTSECONDS
     local var_safe_name=${var_name//[.-]/_}
-#     local diff_milliseconds=$((($($DATE_CMD +%s%N)-${!var_safe_name})/1000000))
-#     local elapsed_time=''
-
-
-
-#     if [[ $diff_milliseconds -lt 30000 ]]; then
-#         elapsed_time="$(FormatAsThous "$diff_milliseconds")ms"
-#     else
-#         elapsed_time=$(FormatSecsToHoursMinutesSecs "$((diff_milliseconds/1000))")
-#     fi
 
     SendActionStatus Ex
     DebugAsFuncEx "${1:-0}" "$(FormatAsDuration "$(CalcMilliDifference "${!var_safe_name}" "$($DATE_CMD +%s%N)")")"
-
     $CAT_CMD "$sess_active_pathfile" >> "$original_session_log_pathfile" && rm "$sess_active_pathfile"
 
     exit ${1:-0}
@@ -7362,7 +7342,7 @@ ShowAsActionLogDetail()
     #   $5 = duration in milliseconds   `56`
     #   $6 = reason (optional)          "file already exists in local cache"
 
-    echo -e "\t$(Lowercase "${3:-}") ${2:-}$([[ $4 != skipped && $4 != skipped-ok ]] && echo " in $(FormatAsDuration "$duration")")$([[ -n ${6:-} ]] && echo ": '${6:-}'")"
+    echo -e "\t$(Lowercase "${3:-}") ${2:-}$([[ $4 != skipped && $4 != skipped-ok ]] && echo " in $(FormatMilliSecsToMinutesSecs "$duration")")$([[ -n ${6:-} ]] && echo ": '${6:-}'")"
 
     }
 
@@ -7605,6 +7585,24 @@ ShowKeystrokes()
     [[ -e $GNU_STTY_CMD && -t 0 ]] && $GNU_STTY_CMD 'echo'
 
     }
+
+FormatMilliSecsToMinutesSecs()
+    {
+
+    # http://stackoverflow.com/questions/12199631/convert-seconds-to-hours-minutes-seconds
+
+    # input:
+    #   $1 = a time in milliseconds to convert to `MMm:SSs`
+
+    local seconds=$((${1:-0}/1000))
+    ((m=(seconds%3600)/60))
+    ((s=seconds%60))
+
+    [[ $s -eq 0 ]] && s=1
+
+    printf '%02dm:%02ds\n' "$m" "$s"
+
+    } 2>/dev/null
 
 FormatSecsToHoursMinutesSecs()
     {
