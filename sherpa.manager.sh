@@ -1956,6 +1956,8 @@ AllocGroupPacksToAcs()
                             All|Dependent|Standalone)
                                 found=true
 
+                                QPKGs.AcTo${action}.Add "$(QPKGs.ScUpgradable.Array)"
+
                                 for prospect in $(QPKGs.Sc${group}.Array); do
                                     QPKGs.ScCanRestartToUpdate.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
