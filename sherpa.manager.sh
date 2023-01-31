@@ -147,7 +147,7 @@ Self.Init()
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
 
-    local -r PROJECT_BRANCH=unstable
+    local -r PROJECT_BRANCH=main
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs
@@ -6984,7 +6984,7 @@ FormatAsDuration()
     if [[ ${1:-0} -lt 30000 ]]; then
         echo "$(FormatAsThous "${1:-0}")ms"
     else
-        echo "$(FormatSecsToHoursMinutesSecs "$(($1/1000))")"
+        FormatSecsToHoursMinutesSecs "$(($1/1000))"
     fi
 
     }
