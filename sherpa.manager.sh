@@ -147,7 +147,7 @@ Self.Init()
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
 
-    local -r PROJECT_BRANCH=main
+    local -r PROJECT_BRANCH=unstable
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs
@@ -704,7 +704,7 @@ Actions.Proc()
     [[ -e $ACTIONS_LOG_PATHFILE ]] && rm "$ACTIONS_LOG_PATHFILE"
 
     Action.Proc Reassign All QPKG AcToReassign reassign reassigning reassigned short || return
-    Action.Proc Download All QPKG AcToDownload 'update cache with' 'updating cache with' 'updated cache with' short || return
+    Action.Proc Download All QPKG AcToDownload download downloading downloaded short || return
     Action.Proc Backup All QPKG AcToBackup 'backup configuration for' 'backing-up configuration for' 'configuration backed-up for' short || return
 
     # -> package removal phase begins here <-
@@ -812,7 +812,7 @@ Action.Proc()
     local original_colourful=$colourful
 
 #     if [[ $RUNTIME = short ]]; then
-        ShowAsProc "$ACTION_INTRANSITIVE $([[ $TIER != All ]] && Lowercase "$TIER ")${PACKAGE_TYPE}s"
+        ShowAsProc "$ACTION_PRESENT $([[ $TIER != All ]] && Lowercase "$TIER ")${PACKAGE_TYPE}s"
 #     else
 #         ShowAsProcLong "$([[ $TIER != All ]] && Lowercase "$TIER ")packages to $ACTION_INTRANSITIVE"
 #     fi
@@ -5019,7 +5019,7 @@ _QPKG.Download_()
     local -r LOG_PATHFILE=$LOGS_PATH/$LOCAL_FILENAME.$DOWNLOAD_LOG_FILE
 
     if [[ -z $REMOTE_URL || -z $REMOTE_MD5 ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Download skipped 'this NAS has an unsupported arch'
+        SaveActionResultToLog "$PACKAGE_NAME" Download skipped 'NAS is unsupported'
         MarkThisActionForkAsSkipped
         result_code=2
     elif [[ -f $LOCAL_PATHFILE ]]; then
@@ -5088,10 +5088,10 @@ _QPKG.Install_()
         SaveActionResultToLog "$PACKAGE_NAME" Install skipped 'already installed'
         result_code=2
     elif ! QPKG.URL "$PACKAGE_NAME" &>/dev/null; then
-        SaveActionResultToLog "$PACKAGE_NAME" Install skipped 'this NAS has an unsupported arch'
+        SaveActionResultToLog "$PACKAGE_NAME" Install skipped 'NAS is unsupported'
         result_code=2
     elif ! QPKG.MinRAM "$PACKAGE_NAME" &>/dev/null; then
-        SaveActionResultToLog "$PACKAGE_NAME" Install skipped 'this NAS has insufficient RAM'
+        SaveActionResultToLog "$PACKAGE_NAME" Install skipped 'NAS has insufficient RAM'
         result_code=2
     fi
 
