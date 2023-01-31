@@ -147,7 +147,7 @@ Self.Init()
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
 
-    local -r PROJECT_BRANCH=main
+    local -r PROJECT_BRANCH=unstable
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs

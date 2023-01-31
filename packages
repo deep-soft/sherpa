@@ -1,4 +1,4 @@
-PACKAGES_VER=230131
+PACKAGES_VER=230201
 BASE_QPKG_CONFLICTS_WITH='TarMT'
 BASE_QPKG_WARNINGS='Qboost'
 ESSENTIAL_IPKS='ca-certificates coreutils-stty findutils gcc git git-http grep less nano sed setterm'
@@ -246,6 +246,21 @@ QPKG_CONFLICTS_WITH+=('')
 QPKG_DEPENDS_ON+=(Entware)
 QPKG_DEPENDED_UPON+=(false)
 QPKG_REQUIRES_IPKS+=(nzbget)
+QPKG_CAN_BACKUP+=(true)
+QPKG_CAN_RESTART_TO_UPDATE+=(false)
+
+QPKG_NAME+=(NZBHydra2)
+QPKG_ARCH+=(a64)
+QPKG_MIN_RAM_KB+=(none)
+QPKG_VERSION+=(230201)
+QPKG_URL+=(https://raw.githubusercontent.com/OneCDOnly/sherpa/$PROJECT_BRANCH/QPKGs/${QPKG_NAME[${#QPKG_NAME[@]}-1]}/build/${QPKG_NAME[${#QPKG_NAME[@]}-1]}_${QPKG_VERSION[${#QPKG_VERSION[@]}-1]}.qpkg)
+QPKG_MD5+=(ebf77a07117d4a966d5fa2ef4eae03db)
+QPKG_DESC+=('meta search for newznab indexers and torznab trackers')
+QPKG_ABBRVS+=('nh nzbh hydra hydra2 nzbhydra nzbhydra2')
+QPKG_CONFLICTS_WITH+=('')
+QPKG_DEPENDS_ON+=('Entware')
+QPKG_DEPENDED_UPON+=(false)
+QPKG_REQUIRES_IPKS+=('python3-pip')
 QPKG_CAN_BACKUP+=(true)
 QPKG_CAN_RESTART_TO_UPDATE+=(false)
 
