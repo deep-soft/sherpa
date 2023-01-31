@@ -1926,12 +1926,25 @@ AllocGroupPacksToAcs()
                                 DebugAsWarn "specified group $group has no handler for specifed action $action"
                         esac
                         ;;
-                    Install|Restart|Start|Stop|Uninstall)
+                    Install)
                         case $group in
                             All|Dependent|Standalone)
                                 found=true
 
                                 QPKGs.AcTo${action}.Add "$(QPKGs.Sc${group}.Array)"
+                                ;;
+                            *)
+                                DebugAsWarn "specified group $group has no handler for specifed action $action"
+                        esac
+                        ;;
+                    Restart|Start|Stop|Uninstall)
+                        case $group in
+                            All|Dependent|Standalone)
+                                found=true
+
+                                for prospect in $(QPKGs.Sc${group}.Array); do
+                                    QPKGs.IsInstalled.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
+                                done
                                 ;;
                             *)
                                 DebugAsWarn "specified group $group has no handler for specifed action $action"
