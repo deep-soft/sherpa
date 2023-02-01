@@ -47,6 +47,7 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
+readonly PROJECT_BRANCH=unstable
 
 Self.Init()
     {
@@ -147,7 +148,6 @@ Self.Init()
     IsSysFileExist $UPTIME_CMD || return
     IsSysFileExist $WC_CMD || return
 
-    local -r PROJECT_BRANCH=main
     readonly PROJECT_PATH=$(QPKG.InstallationPath)
     readonly WORK_PATH=$PROJECT_PATH/cache
     readonly LOGS_PATH=$PROJECT_PATH/logs
@@ -537,6 +537,7 @@ Self.Validate()
 
     QPKGs.IsCanBackup.Build
     QPKGs.IsCanRestartToUpdate.Build
+    QPKGs.IsCanClean.Build
     AllocGroupPacksToAcs
 
     # Meta-action pre-processing
@@ -1014,16 +1015,19 @@ AdjustMaxForks()
 
     # no-point running actions async in debug mode: their stdout will make a confusing mess of the screen
     if Self.Debug.ToScreen.IsSet; then
-        DebugInfo "limiting \$max_forks to 1 because debug mode is active"
         max_forks=1
+        DebugInfo "limiting \$max_forks to $max_forks because debug mode is active"
+    else
+        case ${1:-} in
+            Clean)                      # don't make too-many calls to PyPI at the same time
+                max_forks=$(((max_forks+1)/2))
+                DebugInfo "limiting \$max_forks to $max_forks because '$(Lowercase "$1")' action was requested"
+                ;;
+            Install|Reinstall|Upgrade)  # don't execute these actions async: QTS installer for each package eventually aborts (looks like QTS can only manage a single package at-a-time, because packages overwrite each other, and package source files end-up in the wrong install paths)
+                max_forks=1
+                DebugInfo "limiting \$max_forks to $max_forks because '$(Lowercase "$1")' action was requested"
+        esac
     fi
-
-    # don't execute these actions async: QTS installer for each package eventually aborts (looks like QTS can only manage a single package at-a-time, because packages overwrite each other, and package source files end-up in the wrong install paths)
-    case ${1:-} in
-        Install|Reinstall|Upgrade)
-            DebugInfo "limiting \$max_forks to 1 because '$(Lowercase "$1")' action was requested"
-            max_forks=1
-    esac
 
     DebugVar max_forks
 
@@ -1919,7 +1923,7 @@ AllocGroupPacksToAcs()
                                 found=true
 
                                 for prospect in $(QPKGs.Sc${group}.Array); do
-                                    QPKGs.ScCanRestartToUpdate.Exist "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
+                                    QPKG.IsCanClean "$prospect" && QPKGs.AcTo${action}.Add "$prospect"
                                 done
                                 ;;
                             *)
@@ -4157,7 +4161,6 @@ QPKGs.IsCanRestartToUpdate.Build()
     {
 
     # Build a list of QPKGs that do and don't support application updating on QPKG restart
-    # these packages also do and don't support `clean` actions
 
     DebugScriptFuncEn
 
@@ -4168,6 +4171,27 @@ QPKGs.IsCanRestartToUpdate.Build()
             QPKGs.ScCanRestartToUpdate.Add "$package"
         else
             QPKGs.ScNtCanRestartToUpdate.Add "$package"
+        fi
+    done
+
+    DebugScriptFuncEx
+
+    }
+
+QPKGs.IsCanClean.Build()
+    {
+
+    # Build a list of QPKGs that do and don't support `clean` actions
+
+    DebugScriptFuncEn
+
+    local package=''
+
+    for package in $(QPKGs.ScAll.Array); do
+        if QPKG.IsCanClean "$package"; then
+            QPKGs.ScCanClean.Add "$package"
+        else
+            QPKGs.ScNtCanClean.Add "$package"
         fi
     done
 
@@ -5823,7 +5847,7 @@ _QPKG.Clean_()
     if QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME"; then
         SaveActionResultToLog "$PACKAGE_NAME" Clean skipped 'not installed'
         result_code=2
-    elif ! QPKG.IsCanRestartToUpdate "$PACKAGE_NAME"; then
+    elif ! QPKG.IsCanClean "$PACKAGE_NAME"; then
         SaveActionResultToLog "$PACKAGE_NAME" Clean skipped 'does not support cleaning'
         result_code=2
     fi
@@ -6078,6 +6102,33 @@ QPKG.IsCanRestartToUpdate()
     for index in "${!QPKG_NAME[@]}"; do
         if [[ ${QPKG_NAME[$index]} = "${1:?package name null}" ]]; then
             if ${QPKG_CAN_RESTART_TO_UPDATE[$index]}; then
+                return 0
+            else
+                break
+            fi
+        fi
+    done
+
+    return 1
+
+    }
+
+QPKG.IsCanClean()
+    {
+
+    # Does this QPKG service-script support cleaning of the internal application?
+
+    # input:
+    #   $1 = QPKG name
+
+    # output:
+    #   $? = 0 if true, 1 if false
+
+    local -i index=0
+
+    for index in "${!QPKG_NAME[@]}"; do
+        if [[ ${QPKG_NAME[$index]} = "${1:?package name null}" ]]; then
+            if ${QPKG_CAN_CLEAN[$index]}; then
                 return 0
             else
                 break
@@ -7742,6 +7793,7 @@ Packages.Load()
         readonly QPKG_REQUIRES_IPKS
         readonly QPKG_CAN_BACKUP
         readonly QPKG_CAN_RESTART_TO_UPDATE
+        readonly QPKG_CAN_CLEAN
 
     QPKGs.Loaded.Set
     DebugScript version "packages: ${PACKAGES_VER:-unknown}"

@@ -684,6 +684,42 @@ _ob_qpkgs_list_sccanbackup_fl_=false
 QPKGs.List.ScCanBackup.NoLogMods()
 { _ob_qpkgs_list_sccanbackup_chfl_=false ;}
 QPKGs.List.ScCanBackup.Init
+QPKGs.List.ScCanClean.Init()
+{ _ob_qpkgs_list_sccanclean_fl_=false
+_ob_qpkgs_list_sccanclean_chfl_=true ;}
+QPKGs.List.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_list_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.List.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_list_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.List.ScCanClean.Set()
+{ [[ $_ob_qpkgs_list_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_list_sccanclean_fl_=true
+[[ $_ob_qpkgs_list_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_list_sccanclean_fl_ ;}
+QPKGs.List.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_list_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_list_sccanclean_fl_=false
+[[ $_ob_qpkgs_list_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_list_sccanclean_fl_ ;}
+QPKGs.List.ScCanClean.NoLogMods()
+{ _ob_qpkgs_list_sccanclean_chfl_=false ;}
+QPKGs.List.ScCanClean.Init
+QPKGs.List.ScNtCanClean.Init()
+{ _ob_qpkgs_list_scntcanclean_fl_=false
+_ob_qpkgs_list_scntcanclean_chfl_=true ;}
+QPKGs.List.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_list_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.List.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_list_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.List.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_list_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_list_scntcanclean_fl_=true
+[[ $_ob_qpkgs_list_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_list_scntcanclean_fl_ ;}
+QPKGs.List.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_list_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_list_scntcanclean_fl_=false
+[[ $_ob_qpkgs_list_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_list_scntcanclean_fl_ ;}
+QPKGs.List.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_list_scntcanclean_chfl_=false ;}
+QPKGs.List.ScNtCanClean.Init
 QPKGs.List.ScCanRestartToUpdate.Init()
 { _ob_qpkgs_list_sccanrestarttoupdate_fl_=false
 _ob_qpkgs_list_sccanrestarttoupdate_chfl_=true ;}
@@ -1638,6 +1674,474 @@ _ob_qpkgs_acrestart_sccanbackup_fl_=false
 QPKGs.AcRestart.ScCanBackup.NoLogMods()
 { _ob_qpkgs_acrestart_sccanbackup_chfl_=false ;}
 QPKGs.AcRestart.ScCanBackup.Init
+QPKGs.AcDownload.ScCanClean.Init()
+{ _ob_qpkgs_acdownload_sccanclean_fl_=false
+_ob_qpkgs_acdownload_sccanclean_chfl_=true ;}
+QPKGs.AcDownload.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acdownload_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcDownload.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acdownload_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcDownload.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acdownload_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acdownload_sccanclean_fl_=true
+[[ $_ob_qpkgs_acdownload_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acdownload_sccanclean_fl_ ;}
+QPKGs.AcDownload.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acdownload_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acdownload_sccanclean_fl_=false
+[[ $_ob_qpkgs_acdownload_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acdownload_sccanclean_fl_ ;}
+QPKGs.AcDownload.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acdownload_sccanclean_chfl_=false ;}
+QPKGs.AcDownload.ScCanClean.Init
+QPKGs.AcRebuild.ScCanClean.Init()
+{ _ob_qpkgs_acrebuild_sccanclean_fl_=false
+_ob_qpkgs_acrebuild_sccanclean_chfl_=true ;}
+QPKGs.AcRebuild.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acrebuild_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcRebuild.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acrebuild_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcRebuild.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acrebuild_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acrebuild_sccanclean_fl_=true
+[[ $_ob_qpkgs_acrebuild_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrebuild_sccanclean_fl_ ;}
+QPKGs.AcRebuild.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acrebuild_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acrebuild_sccanclean_fl_=false
+[[ $_ob_qpkgs_acrebuild_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrebuild_sccanclean_fl_ ;}
+QPKGs.AcRebuild.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acrebuild_sccanclean_chfl_=false ;}
+QPKGs.AcRebuild.ScCanClean.Init
+QPKGs.AcReassign.ScCanClean.Init()
+{ _ob_qpkgs_acreassign_sccanclean_fl_=false
+_ob_qpkgs_acreassign_sccanclean_chfl_=true ;}
+QPKGs.AcReassign.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acreassign_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcReassign.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acreassign_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcReassign.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acreassign_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acreassign_sccanclean_fl_=true
+[[ $_ob_qpkgs_acreassign_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acreassign_sccanclean_fl_ ;}
+QPKGs.AcReassign.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acreassign_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acreassign_sccanclean_fl_=false
+[[ $_ob_qpkgs_acreassign_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acreassign_sccanclean_fl_ ;}
+QPKGs.AcReassign.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acreassign_sccanclean_chfl_=false ;}
+QPKGs.AcReassign.ScCanClean.Init
+QPKGs.AcBackup.ScCanClean.Init()
+{ _ob_qpkgs_acbackup_sccanclean_fl_=false
+_ob_qpkgs_acbackup_sccanclean_chfl_=true ;}
+QPKGs.AcBackup.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acbackup_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcBackup.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acbackup_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcBackup.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acbackup_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acbackup_sccanclean_fl_=true
+[[ $_ob_qpkgs_acbackup_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acbackup_sccanclean_fl_ ;}
+QPKGs.AcBackup.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acbackup_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acbackup_sccanclean_fl_=false
+[[ $_ob_qpkgs_acbackup_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acbackup_sccanclean_fl_ ;}
+QPKGs.AcBackup.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acbackup_sccanclean_chfl_=false ;}
+QPKGs.AcBackup.ScCanClean.Init
+QPKGs.AcStop.ScCanClean.Init()
+{ _ob_qpkgs_acstop_sccanclean_fl_=false
+_ob_qpkgs_acstop_sccanclean_chfl_=true ;}
+QPKGs.AcStop.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acstop_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcStop.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acstop_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcStop.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acstop_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acstop_sccanclean_fl_=true
+[[ $_ob_qpkgs_acstop_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acstop_sccanclean_fl_ ;}
+QPKGs.AcStop.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acstop_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acstop_sccanclean_fl_=false
+[[ $_ob_qpkgs_acstop_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acstop_sccanclean_fl_ ;}
+QPKGs.AcStop.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acstop_sccanclean_chfl_=false ;}
+QPKGs.AcStop.ScCanClean.Init
+QPKGs.AcUninstall.ScCanClean.Init()
+{ _ob_qpkgs_acuninstall_sccanclean_fl_=false
+_ob_qpkgs_acuninstall_sccanclean_chfl_=true ;}
+QPKGs.AcUninstall.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acuninstall_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcUninstall.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acuninstall_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcUninstall.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acuninstall_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acuninstall_sccanclean_fl_=true
+[[ $_ob_qpkgs_acuninstall_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acuninstall_sccanclean_fl_ ;}
+QPKGs.AcUninstall.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acuninstall_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acuninstall_sccanclean_fl_=false
+[[ $_ob_qpkgs_acuninstall_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acuninstall_sccanclean_fl_ ;}
+QPKGs.AcUninstall.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acuninstall_sccanclean_chfl_=false ;}
+QPKGs.AcUninstall.ScCanClean.Init
+QPKGs.AcUpgrade.ScCanClean.Init()
+{ _ob_qpkgs_acupgrade_sccanclean_fl_=false
+_ob_qpkgs_acupgrade_sccanclean_chfl_=true ;}
+QPKGs.AcUpgrade.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acupgrade_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcUpgrade.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acupgrade_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcUpgrade.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acupgrade_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acupgrade_sccanclean_fl_=true
+[[ $_ob_qpkgs_acupgrade_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acupgrade_sccanclean_fl_ ;}
+QPKGs.AcUpgrade.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acupgrade_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acupgrade_sccanclean_fl_=false
+[[ $_ob_qpkgs_acupgrade_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acupgrade_sccanclean_fl_ ;}
+QPKGs.AcUpgrade.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acupgrade_sccanclean_chfl_=false ;}
+QPKGs.AcUpgrade.ScCanClean.Init
+QPKGs.AcReinstall.ScCanClean.Init()
+{ _ob_qpkgs_acreinstall_sccanclean_fl_=false
+_ob_qpkgs_acreinstall_sccanclean_chfl_=true ;}
+QPKGs.AcReinstall.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acreinstall_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcReinstall.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acreinstall_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcReinstall.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acreinstall_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acreinstall_sccanclean_fl_=true
+[[ $_ob_qpkgs_acreinstall_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acreinstall_sccanclean_fl_ ;}
+QPKGs.AcReinstall.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acreinstall_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acreinstall_sccanclean_fl_=false
+[[ $_ob_qpkgs_acreinstall_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acreinstall_sccanclean_fl_ ;}
+QPKGs.AcReinstall.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acreinstall_sccanclean_chfl_=false ;}
+QPKGs.AcReinstall.ScCanClean.Init
+QPKGs.AcInstall.ScCanClean.Init()
+{ _ob_qpkgs_acinstall_sccanclean_fl_=false
+_ob_qpkgs_acinstall_sccanclean_chfl_=true ;}
+QPKGs.AcInstall.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acinstall_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcInstall.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acinstall_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcInstall.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acinstall_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acinstall_sccanclean_fl_=true
+[[ $_ob_qpkgs_acinstall_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acinstall_sccanclean_fl_ ;}
+QPKGs.AcInstall.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acinstall_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acinstall_sccanclean_fl_=false
+[[ $_ob_qpkgs_acinstall_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acinstall_sccanclean_fl_ ;}
+QPKGs.AcInstall.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acinstall_sccanclean_chfl_=false ;}
+QPKGs.AcInstall.ScCanClean.Init
+QPKGs.AcRestore.ScCanClean.Init()
+{ _ob_qpkgs_acrestore_sccanclean_fl_=false
+_ob_qpkgs_acrestore_sccanclean_chfl_=true ;}
+QPKGs.AcRestore.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acrestore_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcRestore.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acrestore_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcRestore.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acrestore_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acrestore_sccanclean_fl_=true
+[[ $_ob_qpkgs_acrestore_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrestore_sccanclean_fl_ ;}
+QPKGs.AcRestore.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acrestore_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acrestore_sccanclean_fl_=false
+[[ $_ob_qpkgs_acrestore_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrestore_sccanclean_fl_ ;}
+QPKGs.AcRestore.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acrestore_sccanclean_chfl_=false ;}
+QPKGs.AcRestore.ScCanClean.Init
+QPKGs.AcClean.ScCanClean.Init()
+{ _ob_qpkgs_acclean_sccanclean_fl_=false
+_ob_qpkgs_acclean_sccanclean_chfl_=true ;}
+QPKGs.AcClean.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acclean_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcClean.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acclean_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcClean.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acclean_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acclean_sccanclean_fl_=true
+[[ $_ob_qpkgs_acclean_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acclean_sccanclean_fl_ ;}
+QPKGs.AcClean.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acclean_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acclean_sccanclean_fl_=false
+[[ $_ob_qpkgs_acclean_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acclean_sccanclean_fl_ ;}
+QPKGs.AcClean.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acclean_sccanclean_chfl_=false ;}
+QPKGs.AcClean.ScCanClean.Init
+QPKGs.AcStart.ScCanClean.Init()
+{ _ob_qpkgs_acstart_sccanclean_fl_=false
+_ob_qpkgs_acstart_sccanclean_chfl_=true ;}
+QPKGs.AcStart.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acstart_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcStart.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acstart_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcStart.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acstart_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acstart_sccanclean_fl_=true
+[[ $_ob_qpkgs_acstart_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acstart_sccanclean_fl_ ;}
+QPKGs.AcStart.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acstart_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acstart_sccanclean_fl_=false
+[[ $_ob_qpkgs_acstart_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acstart_sccanclean_fl_ ;}
+QPKGs.AcStart.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acstart_sccanclean_chfl_=false ;}
+QPKGs.AcStart.ScCanClean.Init
+QPKGs.AcRestart.ScCanClean.Init()
+{ _ob_qpkgs_acrestart_sccanclean_fl_=false
+_ob_qpkgs_acrestart_sccanclean_chfl_=true ;}
+QPKGs.AcRestart.ScCanClean.IsNt()
+{ [[ $_ob_qpkgs_acrestart_sccanclean_fl_ != 'true' ]] ;}
+QPKGs.AcRestart.ScCanClean.IsSet()
+{ [[ $_ob_qpkgs_acrestart_sccanclean_fl_ = 'true' ]] ;}
+QPKGs.AcRestart.ScCanClean.Set()
+{ [[ $_ob_qpkgs_acrestart_sccanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acrestart_sccanclean_fl_=true
+[[ $_ob_qpkgs_acrestart_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrestart_sccanclean_fl_ ;}
+QPKGs.AcRestart.ScCanClean.UnSet()
+{ [[ $_ob_qpkgs_acrestart_sccanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acrestart_sccanclean_fl_=false
+[[ $_ob_qpkgs_acrestart_sccanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrestart_sccanclean_fl_ ;}
+QPKGs.AcRestart.ScCanClean.NoLogMods()
+{ _ob_qpkgs_acrestart_sccanclean_chfl_=false ;}
+QPKGs.AcRestart.ScCanClean.Init
+QPKGs.AcDownload.ScNtCanClean.Init()
+{ _ob_qpkgs_acdownload_scntcanclean_fl_=false
+_ob_qpkgs_acdownload_scntcanclean_chfl_=true ;}
+QPKGs.AcDownload.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acdownload_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcDownload.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acdownload_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcDownload.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acdownload_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acdownload_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acdownload_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acdownload_scntcanclean_fl_ ;}
+QPKGs.AcDownload.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acdownload_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acdownload_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acdownload_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acdownload_scntcanclean_fl_ ;}
+QPKGs.AcDownload.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acdownload_scntcanclean_chfl_=false ;}
+QPKGs.AcDownload.ScNtCanClean.Init
+QPKGs.AcRebuild.ScNtCanClean.Init()
+{ _ob_qpkgs_acrebuild_scntcanclean_fl_=false
+_ob_qpkgs_acrebuild_scntcanclean_chfl_=true ;}
+QPKGs.AcRebuild.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acrebuild_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcRebuild.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acrebuild_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcRebuild.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acrebuild_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acrebuild_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acrebuild_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrebuild_scntcanclean_fl_ ;}
+QPKGs.AcRebuild.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acrebuild_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acrebuild_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acrebuild_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrebuild_scntcanclean_fl_ ;}
+QPKGs.AcRebuild.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acrebuild_scntcanclean_chfl_=false ;}
+QPKGs.AcRebuild.ScNtCanClean.Init
+QPKGs.AcReassign.ScNtCanClean.Init()
+{ _ob_qpkgs_acreassign_scntcanclean_fl_=false
+_ob_qpkgs_acreassign_scntcanclean_chfl_=true ;}
+QPKGs.AcReassign.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acreassign_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcReassign.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acreassign_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcReassign.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acreassign_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acreassign_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acreassign_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acreassign_scntcanclean_fl_ ;}
+QPKGs.AcReassign.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acreassign_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acreassign_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acreassign_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acreassign_scntcanclean_fl_ ;}
+QPKGs.AcReassign.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acreassign_scntcanclean_chfl_=false ;}
+QPKGs.AcReassign.ScNtCanClean.Init
+QPKGs.AcBackup.ScNtCanClean.Init()
+{ _ob_qpkgs_acbackup_scntcanclean_fl_=false
+_ob_qpkgs_acbackup_scntcanclean_chfl_=true ;}
+QPKGs.AcBackup.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acbackup_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcBackup.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acbackup_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcBackup.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acbackup_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acbackup_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acbackup_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acbackup_scntcanclean_fl_ ;}
+QPKGs.AcBackup.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acbackup_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acbackup_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acbackup_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acbackup_scntcanclean_fl_ ;}
+QPKGs.AcBackup.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acbackup_scntcanclean_chfl_=false ;}
+QPKGs.AcBackup.ScNtCanClean.Init
+QPKGs.AcStop.ScNtCanClean.Init()
+{ _ob_qpkgs_acstop_scntcanclean_fl_=false
+_ob_qpkgs_acstop_scntcanclean_chfl_=true ;}
+QPKGs.AcStop.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acstop_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcStop.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acstop_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcStop.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acstop_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acstop_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acstop_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acstop_scntcanclean_fl_ ;}
+QPKGs.AcStop.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acstop_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acstop_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acstop_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acstop_scntcanclean_fl_ ;}
+QPKGs.AcStop.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acstop_scntcanclean_chfl_=false ;}
+QPKGs.AcStop.ScNtCanClean.Init
+QPKGs.AcUninstall.ScNtCanClean.Init()
+{ _ob_qpkgs_acuninstall_scntcanclean_fl_=false
+_ob_qpkgs_acuninstall_scntcanclean_chfl_=true ;}
+QPKGs.AcUninstall.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acuninstall_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcUninstall.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acuninstall_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcUninstall.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acuninstall_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acuninstall_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acuninstall_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acuninstall_scntcanclean_fl_ ;}
+QPKGs.AcUninstall.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acuninstall_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acuninstall_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acuninstall_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acuninstall_scntcanclean_fl_ ;}
+QPKGs.AcUninstall.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acuninstall_scntcanclean_chfl_=false ;}
+QPKGs.AcUninstall.ScNtCanClean.Init
+QPKGs.AcUpgrade.ScNtCanClean.Init()
+{ _ob_qpkgs_acupgrade_scntcanclean_fl_=false
+_ob_qpkgs_acupgrade_scntcanclean_chfl_=true ;}
+QPKGs.AcUpgrade.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acupgrade_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcUpgrade.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acupgrade_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcUpgrade.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acupgrade_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acupgrade_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acupgrade_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acupgrade_scntcanclean_fl_ ;}
+QPKGs.AcUpgrade.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acupgrade_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acupgrade_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acupgrade_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acupgrade_scntcanclean_fl_ ;}
+QPKGs.AcUpgrade.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acupgrade_scntcanclean_chfl_=false ;}
+QPKGs.AcUpgrade.ScNtCanClean.Init
+QPKGs.AcReinstall.ScNtCanClean.Init()
+{ _ob_qpkgs_acreinstall_scntcanclean_fl_=false
+_ob_qpkgs_acreinstall_scntcanclean_chfl_=true ;}
+QPKGs.AcReinstall.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acreinstall_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcReinstall.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acreinstall_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcReinstall.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acreinstall_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acreinstall_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acreinstall_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acreinstall_scntcanclean_fl_ ;}
+QPKGs.AcReinstall.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acreinstall_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acreinstall_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acreinstall_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acreinstall_scntcanclean_fl_ ;}
+QPKGs.AcReinstall.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acreinstall_scntcanclean_chfl_=false ;}
+QPKGs.AcReinstall.ScNtCanClean.Init
+QPKGs.AcInstall.ScNtCanClean.Init()
+{ _ob_qpkgs_acinstall_scntcanclean_fl_=false
+_ob_qpkgs_acinstall_scntcanclean_chfl_=true ;}
+QPKGs.AcInstall.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acinstall_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcInstall.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acinstall_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcInstall.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acinstall_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acinstall_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acinstall_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acinstall_scntcanclean_fl_ ;}
+QPKGs.AcInstall.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acinstall_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acinstall_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acinstall_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acinstall_scntcanclean_fl_ ;}
+QPKGs.AcInstall.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acinstall_scntcanclean_chfl_=false ;}
+QPKGs.AcInstall.ScNtCanClean.Init
+QPKGs.AcRestore.ScNtCanClean.Init()
+{ _ob_qpkgs_acrestore_scntcanclean_fl_=false
+_ob_qpkgs_acrestore_scntcanclean_chfl_=true ;}
+QPKGs.AcRestore.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acrestore_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcRestore.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acrestore_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcRestore.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acrestore_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acrestore_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acrestore_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrestore_scntcanclean_fl_ ;}
+QPKGs.AcRestore.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acrestore_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acrestore_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acrestore_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrestore_scntcanclean_fl_ ;}
+QPKGs.AcRestore.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acrestore_scntcanclean_chfl_=false ;}
+QPKGs.AcRestore.ScNtCanClean.Init
+QPKGs.AcClean.ScNtCanClean.Init()
+{ _ob_qpkgs_acclean_scntcanclean_fl_=false
+_ob_qpkgs_acclean_scntcanclean_chfl_=true ;}
+QPKGs.AcClean.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acclean_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcClean.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acclean_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcClean.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acclean_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acclean_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acclean_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acclean_scntcanclean_fl_ ;}
+QPKGs.AcClean.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acclean_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acclean_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acclean_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acclean_scntcanclean_fl_ ;}
+QPKGs.AcClean.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acclean_scntcanclean_chfl_=false ;}
+QPKGs.AcClean.ScNtCanClean.Init
+QPKGs.AcStart.ScNtCanClean.Init()
+{ _ob_qpkgs_acstart_scntcanclean_fl_=false
+_ob_qpkgs_acstart_scntcanclean_chfl_=true ;}
+QPKGs.AcStart.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acstart_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcStart.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acstart_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcStart.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acstart_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acstart_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acstart_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acstart_scntcanclean_fl_ ;}
+QPKGs.AcStart.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acstart_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acstart_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acstart_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acstart_scntcanclean_fl_ ;}
+QPKGs.AcStart.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acstart_scntcanclean_chfl_=false ;}
+QPKGs.AcStart.ScNtCanClean.Init
+QPKGs.AcRestart.ScNtCanClean.Init()
+{ _ob_qpkgs_acrestart_scntcanclean_fl_=false
+_ob_qpkgs_acrestart_scntcanclean_chfl_=true ;}
+QPKGs.AcRestart.ScNtCanClean.IsNt()
+{ [[ $_ob_qpkgs_acrestart_scntcanclean_fl_ != 'true' ]] ;}
+QPKGs.AcRestart.ScNtCanClean.IsSet()
+{ [[ $_ob_qpkgs_acrestart_scntcanclean_fl_ = 'true' ]] ;}
+QPKGs.AcRestart.ScNtCanClean.Set()
+{ [[ $_ob_qpkgs_acrestart_scntcanclean_fl_ = 'true' ]] && return
+_ob_qpkgs_acrestart_scntcanclean_fl_=true
+[[ $_ob_qpkgs_acrestart_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrestart_scntcanclean_fl_ ;}
+QPKGs.AcRestart.ScNtCanClean.UnSet()
+{ [[ $_ob_qpkgs_acrestart_scntcanclean_fl_ != 'true' ]] && return
+_ob_qpkgs_acrestart_scntcanclean_fl_=false
+[[ $_ob_qpkgs_acrestart_scntcanclean_chfl_ = 'true' ]] && DebugVar _ob_qpkgs_acrestart_scntcanclean_fl_ ;}
+QPKGs.AcRestart.ScNtCanClean.NoLogMods()
+{ _ob_qpkgs_acrestart_scntcanclean_chfl_=false ;}
+QPKGs.AcRestart.ScNtCanClean.Init
 QPKGs.AcDownload.ScCanRestartToUpdate.Init()
 { _ob_qpkgs_acdownload_sccanrestarttoupdate_fl_=false
 _ob_qpkgs_acdownload_sccanrestarttoupdate_chfl_=true ;}
@@ -11692,6 +12196,74 @@ QPKGs.ScNtCanBackup.Size()
 { if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_scntcanbackup_sz_=$2; else echo -n "$_ob_qpkgs_scntcanbackup_sz_"
 fi ;}
 QPKGs.ScNtCanBackup.Init
+QPKGs.ScCanClean.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! QPKGs.ScCanClean.Exist "$it" && _ob_qpkgs_sccanclean_ar_+=("$it")
+done ;}
+QPKGs.ScCanClean.Array()
+{ echo -n "${_ob_qpkgs_sccanclean_ar_[@]:-}" ;}
+QPKGs.ScCanClean.Count()
+{ echo "${#_ob_qpkgs_sccanclean_ar_[@]}" ;}
+QPKGs.ScCanClean.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_qpkgs_sccanclean_ar_[*]:-} " =~ $patt ]] ;}
+QPKGs.ScCanClean.Init()
+{ _ob_qpkgs_sccanclean_sz_=0 _ob_qpkgs_sccanclean_ar_=() _ob_qpkgs_sccanclean_arin_=1 ;}
+QPKGs.ScCanClean.IsAny()
+{ [[ ${#_ob_qpkgs_sccanclean_ar_[@]} -gt 0 ]] ;}
+QPKGs.ScCanClean.IsNone()
+{ [[ ${#_ob_qpkgs_sccanclean_ar_[@]} -eq 0 ]] ;}
+QPKGs.ScCanClean.List()
+{ echo -n "${_ob_qpkgs_sccanclean_ar_[*]:-}" ;}
+QPKGs.ScCanClean.ListCSV()
+{ echo -n "${_ob_qpkgs_sccanclean_ar_[*]:-}" | tr ' ' ',' ;}
+QPKGs.ScCanClean.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_qpkgs_sccanclean_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_qpkgs_sccanclean_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_qpkgs_sccanclean_ar_[*]+"${_ob_qpkgs_sccanclean_ar_[@]}"} ]] && _ob_qpkgs_sccanclean_ar_=() ;}
+QPKGs.ScCanClean.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_sccanclean_sz_=$2; else echo -n "$_ob_qpkgs_sccanclean_sz_"
+fi ;}
+QPKGs.ScCanClean.Init
+QPKGs.ScNtCanClean.Add()
+{ local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
+for it in "${ar[@]:-}"; do
+! QPKGs.ScNtCanClean.Exist "$it" && _ob_qpkgs_scntcanclean_ar_+=("$it")
+done ;}
+QPKGs.ScNtCanClean.Array()
+{ echo -n "${_ob_qpkgs_scntcanclean_ar_[@]:-}" ;}
+QPKGs.ScNtCanClean.Count()
+{ echo "${#_ob_qpkgs_scntcanclean_ar_[@]}" ;}
+QPKGs.ScNtCanClean.Exist()
+{ local patt="\b${1:-}\b"; [[ " ${_ob_qpkgs_scntcanclean_ar_[*]:-} " =~ $patt ]] ;}
+QPKGs.ScNtCanClean.Init()
+{ _ob_qpkgs_scntcanclean_sz_=0 _ob_qpkgs_scntcanclean_ar_=() _ob_qpkgs_scntcanclean_arin_=1 ;}
+QPKGs.ScNtCanClean.IsAny()
+{ [[ ${#_ob_qpkgs_scntcanclean_ar_[@]} -gt 0 ]] ;}
+QPKGs.ScNtCanClean.IsNone()
+{ [[ ${#_ob_qpkgs_scntcanclean_ar_[@]} -eq 0 ]] ;}
+QPKGs.ScNtCanClean.List()
+{ echo -n "${_ob_qpkgs_scntcanclean_ar_[*]:-}" ;}
+QPKGs.ScNtCanClean.ListCSV()
+{ echo -n "${_ob_qpkgs_scntcanclean_ar_[*]:-}" | tr ' ' ',' ;}
+QPKGs.ScNtCanClean.Remove()
+{ local agar=(${1:-}) tmar=() ag='' it='' m=false
+for it in "${_ob_qpkgs_scntcanclean_ar_[@]:-}"; do m=false
+for ag in "${agar[@]+"${agar[@]}"}"; do if [[ $ag = "$it" ]]; then m=true; break; fi
+done
+[[ $m = false ]] && tmar+=("$it")
+done
+_ob_qpkgs_scntcanclean_ar_=("${tmar[@]+"${tmar[@]}"}")
+[[ -z ${_ob_qpkgs_scntcanclean_ar_[*]+"${_ob_qpkgs_scntcanclean_ar_[@]}"} ]] && _ob_qpkgs_scntcanclean_ar_=() ;}
+QPKGs.ScNtCanClean.Size()
+{ if [[ -n ${1:-} && ${1:-} = "=" ]]; then _ob_qpkgs_scntcanclean_sz_=$2; else echo -n "$_ob_qpkgs_scntcanclean_sz_"
+fi ;}
+QPKGs.ScNtCanClean.Init
 QPKGs.ScCanRestartToUpdate.Add()
 { local ar=(${1:-}) it=''; [[ ${#ar[@]} -eq 0 ]] && return
 for it in "${ar[@]:-}"; do
