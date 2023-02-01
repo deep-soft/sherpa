@@ -1811,7 +1811,7 @@ ParseArgs()
                         group=''
                         ;;
                     upgradable_)
-                        QPKGs.AcUpgrade.IsUpgradable.Set
+                        QPKGs.AcUpgrade.ScUpgradable.Set
                         group=''
                         ;;
                     *)
