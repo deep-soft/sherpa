@@ -5866,7 +5866,7 @@ QPKG.ClearAppCenterNotifier()
     # KLUDGE: `clean` QTS 4.5.1 App Center notifier status
     [[ -e /sbin/qpkg_cli ]] && /sbin/qpkg_cli --clean "$PACKAGE_NAME"
 
-    QPKGs.IsNtInstalled.Exist "$PACKAGE_NAME" && return 0
+    QPKG.IsNtInstalled "$PACKAGE_NAME" && return 0
 
     # need to do this when installing QPKGs at the CLI
     $SETCFG_CMD "$PACKAGE_NAME" Status complete -f /etc/config/qpkg.conf
@@ -6368,6 +6368,19 @@ QPKG.IsInstalled()
     #   $? = 0 (true) or 1 (false)
 
     $GREP_CMD -q "^\[${1:?package name null}\]" /etc/config/qpkg.conf
+
+    }
+
+QPKG.IsNtInstalled()
+    {
+
+    # input:
+    #   $1 = package name to check
+
+    # output:
+    #   $? = 0 (true) or 1 (false)
+
+    ! QPKG.IsInstalled "${1:?package name null}"
 
     }
 
