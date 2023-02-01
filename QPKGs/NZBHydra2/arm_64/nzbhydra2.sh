@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 ####################################################################################
 # nzbhydra2.sh
-#
+
 # Copyright (C) 2023 OneCD - one.cd.only@gmail.com
-#
+
 # so, blame OneCD if it all goes horribly wrong. ;)
-#
+
 # This is a type 5 service-script: https://github.com/OneCDOnly/sherpa/wiki/Service-Script-Types
-#
+
 # For more info: https://forum.qnap.com/viewtopic.php?f=320&t=132373
 ####################################################################################
 
@@ -38,13 +38,23 @@ Init()
     readonly DEBUG_LOG_DATAWIDTH=100
     local re=''
 
-    # specific to downloaded applications only
+    # specific to online-sourced applications only
+    readonly SOURCE_GIT_URL=https://api.github.com/repos/theotherp/nzbhydra2/releases/latest
+    readonly SOURCE_ARCH=arm64-linux
+    readonly SOURCE_GIT_BRANCH=''
+    # 'shallow' (depth 1) or 'single-branch' ... 'shallow' implies 'single-branch'
+    readonly SOURCE_GIT_DEPTH=''
+    readonly QPKG_REPO_PATH=$QPKG_PATH/repo-cache
+    readonly PIP_CACHE_PATH=''
     readonly INTERPRETER=/opt/bin/python3
+    readonly VENV_PATH=''
+    readonly VENV_INTERPRETER=''
+    readonly ALLOW_ACCESS_TO_SYS_PACKAGES=false
 
     # specific to daemonised applications only
-    readonly DAEMON_PATHFILE=$QPKG_PATH/nzbhydra2wrapperPy3.py
+    readonly DAEMON_PATHFILE=$QPKG_REPO_PATH/nzbhydra2wrapperPy3.py
     readonly DAEMON_PID_PATHFILE=/var/run/$QPKG_NAME.pid
-    readonly LAUNCHER="cd $QPKG_PATH; $INTERPRETER $DAEMON_PATHFILE --nobrowser --daemon --datafolder $QPKG_CONFIG_PATH --pidfile $DAEMON_PID_PATHFILE"
+    readonly LAUNCHER="cd $QPKG_REPO_PATH && $INTERPRETER $DAEMON_PATHFILE --nobrowser --daemon --datafolder $QPKG_CONFIG_PATH --pidfile $DAEMON_PID_PATHFILE"
     readonly PORT_CHECK_TIMEOUT=120
     readonly DAEMON_CHECK_TIMEOUT=20
     readonly DAEMON_STOP_TIMEOUT=60
@@ -134,6 +144,21 @@ StartQPKG()
     fi
 
     IsNotDaemon && return
+
+    [[ -n ${QPKG_REPO_PATH:-} && ! -d $QPKG_REPO_PATH ]] && mkdir -p "$QPKG_REPO_PATH"
+
+    if [[ ! -e $DAEMON_PATHFILE ]]; then    # download zip file from GitHub & extract all files
+        readonly NAS_FIRMWARE_VER=$(/sbin/getcfg System Version -f /etc/config/uLinux.conf)
+        [[ ${NAS_FIRMWARE_VER//.} -lt 426 ]] && curl_insecure_arg=' --insecure' || curl_insecure_arg=''
+
+        # https://gist.github.com/steinwaywhw/a4cd19cda655b8249d908261a62687f8
+        local remote_archive_url=$(/sbin/curl${curl_insecure_arg} --silent "$SOURCE_GIT_URL" | /bin/grep browser_download_url | cut -d\" -f4 | /bin/grep "$SOURCE_ARCH")
+        local local_archive_pathfile=$QPKG_PATH/nzbhydra2.zip
+
+        DisplayRunAndLog 'download source archive' "/sbin/curl${curl_insecure_arg} --silent --show-error --location --output $local_archive_pathfile $remote_archive_url" || { SetError; return 1 ;}
+        DisplayRunAndLog 'extract from archive' "/usr/bin/unzip -o $local_archive_pathfile -d $QPKG_REPO_PATH" || { SetError; return 1 ;}
+    fi
+
     WaitForLaunchTarget || { SetError; return 1 ;}
     EnsureConfigFileExists
     LoadPorts app || { SetError; return 1 ;}
@@ -422,9 +447,8 @@ CleanLocalClone()
 
     StopQPKG
     DisplayRunAndLog 'clean local repository' "rm -rf $QPKG_REPO_PATH" log:failure-only
-    [[ -d $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME ]] && DisplayRunAndLog 'KLUDGE: remove previous local repository' "rm -r $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME" log:failure-only
-    DisplayRunAndLog 'clean virtual environment' "rm -rf $VENV_PATH" log:failure-only
-    DisplayRunAndLog 'clean PyPI cache' "rm -rf $PIP_CACHE_PATH" log:failure-only
+    [[ -n $VENV_PATH && -d $VENV_PATH ]] && DisplayRunAndLog 'clean virtual environment' "rm -rf $VENV_PATH" log:failure-only
+    [[ -n $PIP_CACHE_PATH && -d $PIP_CACHE_PATH ]] && DisplayRunAndLog 'clean PyPI cache' "rm -rf $PIP_CACHE_PATH" log:failure-only
     StartQPKG
 
     }
@@ -1784,6 +1808,15 @@ if IsNotError; then
             if IsSupportBackup; then
                 SetServiceOperation restoring
                 RestoreConfig
+            else
+                SetServiceOperation none
+                ShowHelp
+            fi
+            ;;
+        clean|--clean)
+            if IsSourcedOnline; then
+                SetServiceOperation cleaning
+                CleanLocalClone
             else
                 SetServiceOperation none
                 ShowHelp
