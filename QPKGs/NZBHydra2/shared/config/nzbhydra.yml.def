@@ -341,7 +341,6 @@ main:
   databaseCompactTime: 15000
   databaseRetentionTime: 1000
   databaseWriteDelay: 5000
-  apiKey: "HHEQBUN07U9M4ME2VCH3S0S7PJ"
   dereferer: null
   instanceCounterDownloaded: true
   repositoryBase: "https://github.com/theotherp"

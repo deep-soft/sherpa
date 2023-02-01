@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=NZBHydra2
-    readonly SCRIPT_VERSION=230201
+    readonly SCRIPT_VERSION=230201a
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -54,18 +54,16 @@ Init()
     # specific to daemonised applications only
     readonly DAEMON_PATHFILE=$QPKG_REPO_PATH/nzbhydra2wrapperPy3.py
     readonly DAEMON_PID_PATHFILE=/var/run/$QPKG_NAME.pid
-    readonly LAUNCHER="cd $QPKG_REPO_PATH && $INTERPRETER $DAEMON_PATHFILE --nobrowser --daemon --datafolder $QPKG_CONFIG_PATH --pidfile $DAEMON_PID_PATHFILE"
+    readonly LAUNCHER_CMD="cd $QPKG_REPO_PATH && $INTERPRETER $DAEMON_PATHFILE --nobrowser --daemon --datafolder $QPKG_CONFIG_PATH --pidfile $DAEMON_PID_PATHFILE"
     readonly PORT_CHECK_TIMEOUT=120
-    readonly DAEMON_CHECK_TIMEOUT=20
+    readonly DAEMON_CHECK_TIMEOUT=30
     readonly DAEMON_STOP_TIMEOUT=60
     readonly DAEMON_PORT_CMD=''
-#     readonly UI_PORT_CMD="/opt/bin/jq -r .port < $QPKG_INI_PATHFILE | /usr/bin/tail -n1"
-    readonly UI_PORT_CMD="echo 5076"
-    readonly UI_PORT_SECURE_CMD=''
-#     readonly UI_PORT_SECURE_ENABLED_TEST_CMD='[[ $(/opt/bin/jq -r .https < '$QPKG_INI_PATHFILE' | /usr/bin/tail -n1) = true ]]'
-    readonly UI_PORT_SECURE_ENABLED_TEST_CMD='false'
-#     readonly UI_LISTENING_ADDRESS_CMD="/opt/bin/jq -r .interface < $QPKG_INI_PATHFILE | /usr/bin/tail -n1"
-    readonly UI_LISTENING_ADDRESS_CMD="echo '0.0.0.0'"
+    readonly UI_PORT_CMD='parse_yaml '$QPKG_INI_PATHFILE' | /bin/grep main_port= | cut -d\" -f2'
+    readonly UI_PORT_SECURE_CMD='parse_yaml '$QPKG_INI_PATHFILE' | /bin/grep main_port= | cut -d\" -f2'
+    readonly UI_PORT_SECURE_ENABLED_TEST_CMD='[[ $(parse_yaml '$QPKG_INI_PATHFILE' | /bin/grep main_ssl= | cut -d\" -f2) = true ]]'
+    readonly UI_LISTENING_ADDRESS_CMD='parse_yaml '$QPKG_INI_PATHFILE' | /bin/grep main_host= | cut -d\" -f2'
+
     daemon_port=0
     ui_port=0
     ui_port_secure=0
@@ -180,7 +178,7 @@ StartQPKG()
         return 1
     fi
 
-    DisplayRunAndLog 'start daemon' "$LAUNCHER" || { SetError; return 1 ;}
+    DisplayRunAndLog 'start daemon' "$LAUNCHER_CMD" || { SetError; return 1 ;}
     WaitForPID || { SetError; return 1 ;}
     WaitForDaemon || { SetError; return 1 ;}
     CheckPorts || { SetError; return 1 ;}
@@ -619,21 +617,7 @@ EnsureConfigFileExists()
     if IsNotConfigFound && IsDefaultConfigFound; then
         DisplayCommitToLog 'no configuration file found: using default'
         cp "$QPKG_INI_DEFAULT_PATHFILE" "$QPKG_INI_PATHFILE"
-
-        # update to match installed environment
-#         local buff=$(/opt/bin/jq ".plugins_location |= \"$QPKG_PATH/config/plugins\"" "$QPKG_INI_PATHFILE") && echo "$buff" > "$QPKG_INI_PATHFILE"
     fi
-
-    # Deluge-server and Deluge-web need access to the same auth file, or to duplicate copies of it
-
-#     if [[ $(/sbin/getcfg Deluge-server Enable -d FALSE -f /etc/config/qpkg.conf) = TRUE ]]; then
-#         web_auth_pathfile=$(/usr/bin/dirname "$QPKG_INI_PATHFILE")/auth
-#         server_auth_pathfile=$(/sbin/getcfg Deluge-server Install_Path -f "/etc/config/qpkg.conf")/config/auth
-#
-#         if [[ -e $server_auth_pathfile ]]; then         # the grass is always greener
-#             cp "$server_auth_pathfile" "$web_auth_pathfile"
-#         fi
-#     fi
 
     }
 
@@ -914,6 +898,34 @@ CheckPorts()
         return 0
     fi
 
+    }
+
+parse_yaml()
+    {
+
+    # a nice bit of coding! https://stackoverflow.com/a/21189044
+
+    # input:
+    #   $1 = filename to parse
+
+    # output:
+    #   stdout = parsed YAML
+
+    local prefix=$2
+    local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+
+    /bin/sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+        /bin/awk -F$fs '{
+            indent = length($1)/2;
+            vname[indent] = $2;
+            for (i in vname) {if (i > indent) {delete vname[i]}}
+                if (length($3) > 0) {
+                vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+                printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+                }
+            }'
     }
 
 IsQNAP()
