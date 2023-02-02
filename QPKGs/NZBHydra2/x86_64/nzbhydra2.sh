@@ -40,7 +40,7 @@ Init()
 
     # specific to online-sourced applications only
     readonly SOURCE_GIT_URL=https://api.github.com/repos/theotherp/nzbhydra2/releases/latest
-    readonly SOURCE_ARCH=arm64-linux
+    readonly SOURCE_ARCH=amd64-linux
     readonly SOURCE_GIT_BRANCH=''
     # 'shallow' (depth 1) or 'single-branch' ... 'shallow' implies 'single-branch'
     readonly SOURCE_GIT_DEPTH=''
