@@ -6229,6 +6229,33 @@ QPKG.IsCanClean()
 
     }
 
+QPKG.IsCanLog()
+    {
+
+    # Does this QPKG service-script support logging of operations?
+
+    # input:
+    #   $1 = QPKG name
+
+    # output:
+    #   $? = 0 if true, 1 if false
+
+    local -i index=0
+
+    for index in "${!QPKG_NAME[@]}"; do
+        if [[ ${QPKG_NAME[$index]} = "${1:?package name null}" ]]; then
+            if ${QPKG_CAN_LOG[$index]}; then
+                return 0
+            else
+                break
+            fi
+        fi
+    done
+
+    return 1
+
+    }
+
 QPKG.IsDependent()
     {
 
@@ -7538,7 +7565,18 @@ ShowAsActionLogDetail()
     #   $5 = duration in milliseconds   `56`
     #   $6 = reason (optional)          "file already exists in local cache"
 
-    echo -e "\t$(Lowercase "${3:-}") ${2:-}$([[ $4 != skipped && $4 != skipped-ok ]] && echo " in $(FormatMilliSecsToMinutesSecs "$duration")")$([[ -n ${6:-} ]] && echo ";\n\t\t${6:-}")"
+    echo -ne "\t$(Lowercase "${3:-}") ${2:-}"
+    [[ $4 != skipped && $4 != skipped-ok ]] && echo -ne " in $(FormatMilliSecsToMinutesSecs "$duration")"
+
+    if [[ $4 != ok ]]; then
+        if [[ -n ${6:-} && $(QPKG.IsCanLog "$2") = false ]]; then
+            echo -ne "; ${6:-}"
+        else
+            echo -ne ";\n\t\t${6:-}"
+        fi
+    fi
+
+    echo
 
     }
 
@@ -7798,12 +7836,12 @@ FormatMilliSecsToMinutesSecs()
 
     if [[ $m -eq 0 ]]; then
         if [[ $s -eq 1 ]]; then
-            printf '%d second\n' "$s"
+            printf '%d second' "$s"
         else
-            printf '%d seconds\n' "$s"
+            printf '%d seconds' "$s"
         fi
     else
-        printf '%dm:%02ds\n' "$m" "$s"
+        printf '%dm:%02ds' "$m" "$s"
     fi
 
     } 2>/dev/null
@@ -7924,6 +7962,7 @@ Packages.Load()
         readonly QPKG_CAN_BACKUP
         readonly QPKG_CAN_RESTART_TO_UPDATE
         readonly QPKG_CAN_CLEAN
+        readonly QPKG_CAN_LOG
 
     QPKGs.Loaded.Set
     DebugScript version "packages: ${PACKAGES_VER:-unknown}"
