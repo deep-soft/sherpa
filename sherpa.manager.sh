@@ -7788,7 +7788,7 @@ FormatMilliSecsToMinutesSecs()
     # http://stackoverflow.com/questions/12199631/convert-seconds-to-hours-minutes-seconds
 
     # input:
-    #   $1 = a time in milliseconds to convert to `MMm:SSs`
+    #   $1 = a time in milliseconds to convert to `S seconds` or `Mm:SSs`
 
     local seconds=$((${1:-0}/1000))
     ((m=(seconds%3600)/60))
@@ -7796,7 +7796,15 @@ FormatMilliSecsToMinutesSecs()
 
     [[ $s -eq 0 ]] && s=1
 
-    printf '%02dm:%02ds\n' "$m" "$s"
+    if [[ $m -eq 0 ]]; then
+        if [[ $s -eq 1 ]]; then
+            printf '%d second\n' "$s"
+        else
+            printf '%d seconds\n' "$s"
+        fi
+    else
+        printf '%dm:%02ds\n' "$m" "$s"
+    fi
 
     } 2>/dev/null
 
