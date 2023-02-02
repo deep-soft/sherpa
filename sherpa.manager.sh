@@ -2940,8 +2940,13 @@ DisplayAsHelpPackageNameAuthorDesc()
     # $1 = package name
     # $2 = author
     # $3 = description
+    # $4 = notes (optional)
 
-    printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-${HELP_PACKAGE_NAME_WIDTH}s${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-${HELP_PACKAGE_AUTHOR_WIDTH}s${HELP_COL_SPACER}${HELP_COL_OTHER_PREFIX}%s\n" "${1:-}" "${2:-}" "${3:-}"
+    if [[ -z ${4:-} ]]; then
+        printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-${HELP_PACKAGE_NAME_WIDTH}s${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-${HELP_PACKAGE_AUTHOR_WIDTH}s${HELP_COL_SPACER}${HELP_COL_OTHER_PREFIX}%s\n" "${1:-}" "${2:-}" "${3:-}"
+    else
+        printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-${HELP_PACKAGE_NAME_WIDTH}s${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-${HELP_PACKAGE_AUTHOR_WIDTH}s${HELP_COL_SPACER}${HELP_COL_OTHER_PREFIX}%s $(ColourTextBrightOrange "%s")\n" "${1:-}" "${2:-}" "${3:-}" "${4:-}"
+    fi
 
     }
 
@@ -3401,7 +3406,7 @@ Help.Packages.Show()
         DisplayAsHelpTitlePackageNameAuthorDesc "$tier QPKGs" author 'package description'
 
         for package in $(QPKGs.Sc${tier}.Array); do
-            DisplayAsHelpPackageNameAuthorDesc "$package" "$(QPKG.Author "$package")" "$(QPKG.Desc "$package")"
+            DisplayAsHelpPackageNameAuthorDesc "$package" "$(QPKG.Author "$package")" "$(QPKG.Desc "$package")" "$(QPKG.Note "$package")"
         done
     done
 
@@ -6394,6 +6399,36 @@ QPKG.Desc()
 
     }
 
+QPKG.Note()
+    {
+
+    # return any additional notes to be prominently displayed
+
+    # input:
+    #   $1 = QPKG name
+
+    # output:
+    #   stdout = package note
+    #   $? = 0 if found, !0 if not
+
+    local -i index=0
+    local package=''
+    local prev=''
+
+    for index in "${!QPKG_NAME[@]}"; do
+        package="${QPKG_NAME[$index]}"
+        [[ $package = "$prev" ]] && continue || prev=$package
+
+        if [[ $1 = "$package" ]]; then
+            echo "${QPKG_NOTE[$index]}"
+            return 0
+        fi
+    done
+
+    return 1
+
+    }
+
 QPKG.MD5()
     {
 
@@ -7872,6 +7907,7 @@ Packages.Load()
         readonly QPKG_URL
         readonly QPKG_MD5
         readonly QPKG_DESC
+        readonly QPKG_NOTE
         readonly QPKG_ABBRVS
         readonly QPKG_CONFLICTS_WITH
         readonly QPKG_DEPENDS_ON
