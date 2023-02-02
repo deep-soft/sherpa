@@ -5554,11 +5554,11 @@ _QPKG.Restart_()
 
     if [[ $result_code -eq 0 ]]; then
         QPKG.LogServiceStatus "$PACKAGE_NAME"
-        SaveActionResultToLog "$PACKAGE_NAME" Restart ok
+        SaveActionResultToLog "$PACKAGE_NAME" Restarted ok
         SendPackageStateChange IsRestarted
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Restart failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Restarted failed "please check the QPKG service log for more information: /etc/init.d/$($BASENAME_CMD "$PACKAGE_INIT_PATHFILE") log"
         SendPackageStateChange IsNtRestarted
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
@@ -5788,7 +5788,7 @@ _QPKG.Backup_()
 
     if [[ $result_code -eq 0 ]]; then
         QPKG.LogServiceStatus "$PACKAGE_NAME"
-        SaveActionResultToLog "$PACKAGE_NAME" Backup ok
+        SaveActionResultToLog "$PACKAGE_NAME" Backed-up ok
         SendPackageStateChange IsBackedUp
         MarkThisActionForkAsOk
     else
@@ -5842,7 +5842,7 @@ _QPKG.Restore_()
 
     if [[ $result_code -eq 0 ]]; then
         QPKG.LogServiceStatus "$PACKAGE_NAME"
-        SaveActionResultToLog "$PACKAGE_NAME" Restore ok
+        SaveActionResultToLog "$PACKAGE_NAME" Restored ok
         SendPackageStateChange IsRestored
         MarkThisActionForkAsOk
     else
@@ -5896,7 +5896,7 @@ _QPKG.Clean_()
 
     if [[ $result_code -eq 0 ]]; then
         QPKG.LogServiceStatus "$PACKAGE_NAME"
-        SaveActionResultToLog "$PACKAGE_NAME" Clean ok
+        SaveActionResultToLog "$PACKAGE_NAME" Cleaned ok
         SendPackageStateChange IsCleaned
         MarkThisActionForkAsOk
     else
@@ -7538,7 +7538,7 @@ ShowAsActionLogDetail()
     #   $5 = duration in milliseconds   `56`
     #   $6 = reason (optional)          "file already exists in local cache"
 
-    echo -e "\t$(Lowercase "${3:-}") ${2:-}$([[ $4 != skipped && $4 != skipped-ok ]] && echo " in $(FormatMilliSecsToMinutesSecs "$duration")")$([[ -n ${6:-} ]] && echo ": '${6:-}'")"
+    echo -e "\t$(Lowercase "${3:-}") ${2:-}$([[ $4 != skipped && $4 != skipped-ok ]] && echo " in $(FormatMilliSecsToMinutesSecs "$duration")")$([[ -n ${6:-} ]] && echo ";\n\t\t${6:-}")"
 
     }
 
