@@ -55,7 +55,7 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230202
+    local -r SCRIPT_VER=230203
 
     IsQNAP || return
     IsSU || return
@@ -2839,6 +2839,7 @@ readonly HELP_SYNTAX_INDENT=6
 readonly ACTION_RESULT_INDENT=6
 
 readonly HELP_PACKAGE_NAME_WIDTH=20
+readonly HELP_PACKAGE_AUTHOR_WIDTH=12
 readonly HELP_PACKAGE_STATUS_WIDTH=40
 readonly HELP_PACKAGE_VER_WIDTH=17
 readonly HELP_PACKAGE_PATH_WIDTH=42
@@ -2846,10 +2847,10 @@ readonly HELP_PACKAGE_REPO_WIDTH=40
 readonly HELP_FILE_NAME_WIDTH=33
 
 readonly HELP_COL_SPACER=' '
-readonly HELP_COL_MAIN_PREF='* '
-readonly HELP_COL_OTHER_PREF='- '
-readonly HELP_COL_BLANK_PREF='  '
-readonly HELP_SYNTAX_PREF='# '
+readonly HELP_COL_MAIN_PREFIX='* '
+readonly HELP_COL_OTHER_PREFIX='- '
+readonly HELP_COL_BLANK_PREFIX='  '
+readonly HELP_SYNTAX_PREFIX='# '
 
 LenANSIDiff()
     {
@@ -2872,9 +2873,9 @@ DisplayAsProjSynExam()
     Display
 
     if [[ ${1: -1} = '!' ]]; then
-        printf "${HELP_COL_MAIN_PREF}%s\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREF}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+        printf "${HELP_COL_MAIN_PREFIX}%s\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
     else
-        printf "${HELP_COL_MAIN_PREF}%s:\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREF}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+        printf "${HELP_COL_MAIN_PREFIX}%s:\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
     fi
 
     Self.LineSpace.UnSet
@@ -2890,11 +2891,11 @@ DisplayAsProjSynIndentExam()
     # $2 = example syntax
 
     if [[ -z ${1:-} ]]; then
-        printf "%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREF}%s\n" '' "sherpa ${2:-}"
+        printf "%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" '' "sherpa ${2:-}"
     elif [[ ${1: -1} = '!' ]]; then
-        printf "\n%${HELP_DESC_INDENT}s%s\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREF}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+        printf "\n%${HELP_DESC_INDENT}s%s\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
     else
-        printf "\n%${HELP_DESC_INDENT}s%s:\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREF}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+        printf "\n%${HELP_DESC_INDENT}s%s:\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
     fi
 
     Self.LineSpace.UnSet
@@ -2910,45 +2911,68 @@ DisplayAsSynExam()
     # $2 = example syntax
 
     if [[ -z ${2:-} && ${1: -1} = ':' ]]; then
-        printf "\n${HELP_COL_MAIN_PREF}%s\n" "$1"
+        printf "\n${HELP_COL_MAIN_PREFIX}%s\n" "$1"
     elif [[ ${1: -1} = '!' ]]; then
-        printf "\n${HELP_COL_MAIN_PREF}%s\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREF}%s\n" "$(Capitalise "${1:-}")" '' "${2:-}"
+        printf "\n${HELP_COL_MAIN_PREFIX}%s\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" "$(Capitalise "${1:-}")" '' "${2:-}"
     else
-        printf "\n${HELP_COL_MAIN_PREF}%s:\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREF}%s\n" "$(Capitalise "${1:-}")" '' "${2:-}"
+        printf "\n${HELP_COL_MAIN_PREFIX}%s:\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" "$(Capitalise "${1:-}")" '' "${2:-}"
     fi
 
     Self.LineSpace.UnSet
 
     }
 
-DisplayAsHelpTitlePackageNamePlusSomething()
+DisplayAsHelpTitlePackageNameAuthorDesc()
     {
 
     # $1 = package name title
-    # $2 = second column title
+    # $2 = author title
+    # $2 = description title
 
     Display
-    printf "${HELP_COL_MAIN_PREF}%-${HELP_PACKAGE_NAME_WIDTH}s${HELP_COL_SPACER}${HELP_COL_MAIN_PREF}%s\n" "$(Capitalise "${1:-}"):" "$(Capitalise "${2:-}"):"
+    printf "${HELP_COL_MAIN_PREFIX}%-${HELP_PACKAGE_NAME_WIDTH}s${HELP_COL_SPACER}${HELP_COL_MAIN_PREFIX}%-${HELP_PACKAGE_AUTHOR_WIDTH}s${HELP_COL_SPACER}${HELP_COL_MAIN_PREFIX}%s\n" "$(Capitalise "${1:-}"):" "$(Capitalise "${2:-}"):" "$(Capitalise "${3:-}"):"
 
     }
 
-DisplayAsHelpPackageNamePlusSomething()
+DisplayAsHelpPackageNameAuthorDesc()
     {
 
     # $1 = package name
-    # $2 = second column text
+    # $2 = author
+    # $3 = description
 
-    printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREF}%-${HELP_PACKAGE_NAME_WIDTH}s${HELP_COL_SPACER}${HELP_COL_OTHER_PREF}%s\n" "${1:-}" "${2:-}"
+    printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-${HELP_PACKAGE_NAME_WIDTH}s${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-${HELP_PACKAGE_AUTHOR_WIDTH}s${HELP_COL_SPACER}${HELP_COL_OTHER_PREFIX}%s\n" "${1:-}" "${2:-}" "${3:-}"
+
+    }
+
+DisplayAsHelpTitlePackageNameAbs()
+    {
+
+    # $1 = package name title
+    # $2 = abreviations title
+
+    Display
+    printf "${HELP_COL_MAIN_PREFIX}%-${HELP_PACKAGE_NAME_WIDTH}s${HELP_COL_SPACER}${HELP_COL_MAIN_PREFIX}%s\n" "$(Capitalise "${1:-}"):" "$(Capitalise "${2:-}"):"
+
+    }
+
+DisplayAsHelpPackageNameAbs()
+    {
+
+    # $1 = package name
+    # $2 = abreviations
+
+    printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-${HELP_PACKAGE_NAME_WIDTH}s${HELP_COL_SPACER}${HELP_COL_OTHER_PREFIX}%s\n" "${1:-}" "${2:-}"
 
     }
 
 CalcMaxStatusColsToDisplay()
     {
 
-    local col1_width=$((${#HELP_COL_MAIN_PREF}+HELP_PACKAGE_NAME_WIDTH))
-    local col2_width=$((${#HELP_COL_SPACER}+${#HELP_COL_MAIN_PREF}+HELP_PACKAGE_STATUS_WIDTH))
-    local col3_width=$((${#HELP_COL_SPACER}+${#HELP_COL_MAIN_PREF}+HELP_PACKAGE_VER_WIDTH))
-    local col4_width=$((${#HELP_COL_SPACER}+${#HELP_COL_MAIN_PREF}+HELP_PACKAGE_PATH_WIDTH))
+    local col1_width=$((${#HELP_COL_MAIN_PREFIX}+HELP_PACKAGE_NAME_WIDTH))
+    local col2_width=$((${#HELP_COL_SPACER}+${#HELP_COL_MAIN_PREFIX}+HELP_PACKAGE_STATUS_WIDTH))
+    local col3_width=$((${#HELP_COL_SPACER}+${#HELP_COL_MAIN_PREFIX}+HELP_PACKAGE_VER_WIDTH))
+    local col4_width=$((${#HELP_COL_SPACER}+${#HELP_COL_MAIN_PREFIX}+HELP_PACKAGE_PATH_WIDTH))
 
     if [[ $((col1_width+col2_width)) -ge $SESS_COLS ]]; then
         echo 1
@@ -2967,8 +2991,8 @@ CalcMaxStatusColsToDisplay()
 CalcMaxRepoColsToDisplay()
     {
 
-    local col1_width=$((${#HELP_COL_MAIN_PREF}+HELP_PACKAGE_NAME_WIDTH))
-    local col2_width=$((${#HELP_COL_SPACER}+${#HELP_COL_MAIN_PREF}+HELP_PACKAGE_REPO_WIDTH))
+    local col1_width=$((${#HELP_COL_MAIN_PREFIX}+HELP_PACKAGE_NAME_WIDTH))
+    local col2_width=$((${#HELP_COL_SPACER}+${#HELP_COL_MAIN_PREFIX}+HELP_PACKAGE_REPO_WIDTH))
 
     if [[ $((col1_width+col2_width)) -ge $SESS_COLS ]]; then
         echo 1
@@ -2992,19 +3016,19 @@ DisplayAsHelpTitlePackageNameVerStatus()
     DisplayLineSpaceIfNoneAlready
 
     if [[ -n ${1:-} && $maxcols -ge 1 ]]; then
-        printf "${HELP_COL_MAIN_PREF}%-${HELP_PACKAGE_NAME_WIDTH}s" "$(Capitalise "$1"):"
+        printf "${HELP_COL_MAIN_PREFIX}%-${HELP_PACKAGE_NAME_WIDTH}s" "$(Capitalise "$1"):"
     fi
 
     if [[ -n ${2:-} && $maxcols -ge 2 ]]; then
-        printf "${HELP_COL_SPACER}${HELP_COL_MAIN_PREF}%-${HELP_PACKAGE_STATUS_WIDTH}s" "$(Capitalise "$2"):"
+        printf "${HELP_COL_SPACER}${HELP_COL_MAIN_PREFIX}%-${HELP_PACKAGE_STATUS_WIDTH}s" "$(Capitalise "$2"):"
     fi
 
     if [[ -n ${3:-} && $maxcols -ge 3 ]]; then
-        printf "${HELP_COL_SPACER}${HELP_COL_MAIN_PREF}%-${HELP_PACKAGE_VER_WIDTH}s" "$(Capitalise "$3"):"
+        printf "${HELP_COL_SPACER}${HELP_COL_MAIN_PREFIX}%-${HELP_PACKAGE_VER_WIDTH}s" "$(Capitalise "$3"):"
     fi
 
     if [[ -n ${4:-} && $maxcols -ge 4 ]]; then
-        printf "${HELP_COL_SPACER}${HELP_COL_MAIN_PREF}%s" "$(Capitalise "$4"):"
+        printf "${HELP_COL_SPACER}${HELP_COL_MAIN_PREFIX}%s" "$(Capitalise "$4"):"
     fi
 
     printf '\n'
@@ -3022,19 +3046,19 @@ DisplayAsHelpPackageNameVerStatus()
     local maxcols=$(CalcMaxStatusColsToDisplay)
 
     if [[ -n ${1:-} && $maxcols -ge 1 ]]; then
-        printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREF}%-$((HELP_PACKAGE_NAME_WIDTH+$(LenANSIDiff "$1")))s" "$1"
+        printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-$((HELP_PACKAGE_NAME_WIDTH+$(LenANSIDiff "$1")))s" "$1"
     fi
 
     if [[ -n ${2:-} && $maxcols -ge 2 ]]; then
-        printf "${HELP_COL_SPACER}${HELP_COL_OTHER_PREF}%-$((HELP_PACKAGE_STATUS_WIDTH+$(LenANSIDiff "$2")))s" "$2"
+        printf "${HELP_COL_SPACER}${HELP_COL_OTHER_PREFIX}%-$((HELP_PACKAGE_STATUS_WIDTH+$(LenANSIDiff "$2")))s" "$2"
     fi
 
     if [[ -n ${3:-} && $maxcols -ge 3 ]]; then
-        printf "${HELP_COL_SPACER}${HELP_COL_OTHER_PREF}%-$((HELP_PACKAGE_VER_WIDTH+$(LenANSIDiff "$3")))s" "$3"
+        printf "${HELP_COL_SPACER}${HELP_COL_OTHER_PREFIX}%-$((HELP_PACKAGE_VER_WIDTH+$(LenANSIDiff "$3")))s" "$3"
     fi
 
     if [[ -n ${4:-} && $maxcols -ge 4 ]]; then
-        printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREF}%s" "$4"
+        printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%s" "$4"
     fi
 
     printf '\n'
@@ -3051,11 +3075,11 @@ DisplayAsHelpTitlePackageNameRepo()
     DisplayLineSpaceIfNoneAlready
 
     if [[ -n ${1:-} && $maxcols -ge 1 ]]; then
-        printf "${HELP_COL_MAIN_PREF}%-${HELP_PACKAGE_NAME_WIDTH}s" "$(Capitalise "$1"):"
+        printf "${HELP_COL_MAIN_PREFIX}%-${HELP_PACKAGE_NAME_WIDTH}s" "$(Capitalise "$1"):"
     fi
 
     if [[ -n ${2:-} && $maxcols -ge 2 ]]; then
-        printf "${HELP_COL_SPACER}${HELP_COL_MAIN_PREF}%-${HELP_PACKAGE_REPO_WIDTH}s" "$(Capitalise "$2"):"
+        printf "${HELP_COL_SPACER}${HELP_COL_MAIN_PREFIX}%-${HELP_PACKAGE_REPO_WIDTH}s" "$(Capitalise "$2"):"
     fi
 
     printf '\n'
@@ -3072,11 +3096,11 @@ DisplayAsHelpPackageNameRepo()
     local maxcols=$(CalcMaxRepoColsToDisplay)
 
     if [[ -n ${1:-} && $maxcols -ge 1 ]]; then
-        printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREF}%-$((HELP_PACKAGE_NAME_WIDTH+$(LenANSIDiff "$1")))s" "$1"
+        printf "${HELP_COL_SPACER}${HELP_COL_BLANK_PREFIX}%-$((HELP_PACKAGE_NAME_WIDTH+$(LenANSIDiff "$1")))s" "$1"
     fi
 
     if [[ -n ${2:-} && $maxcols -ge 2 ]]; then
-        printf "${HELP_COL_SPACER}${HELP_COL_OTHER_PREF}%-$((HELP_PACKAGE_REPO_WIDTH+$(LenANSIDiff "$2")))s" "$2"
+        printf "${HELP_COL_SPACER}${HELP_COL_OTHER_PREFIX}%-$((HELP_PACKAGE_REPO_WIDTH+$(LenANSIDiff "$2")))s" "$2"
     fi
 
     printf '\n'
@@ -3090,7 +3114,7 @@ DisplayAsHelpTitleFileNamePlusSomething()
     # $2 = second column title
 
     DisplayLineSpaceIfNoneAlready
-    printf "${HELP_COL_MAIN_PREF}%-${HELP_FILE_NAME_WIDTH}s ${HELP_COL_MAIN_PREF}%s\n" "$(Capitalise "${1:-}"):" "$(Capitalise "${2:-}"):"
+    printf "${HELP_COL_MAIN_PREFIX}%-${HELP_FILE_NAME_WIDTH}s ${HELP_COL_MAIN_PREFIX}%s\n" "$(Capitalise "${1:-}"):" "$(Capitalise "${2:-}"):"
     Self.LineSpace.UnSet
 
     }
@@ -3101,7 +3125,7 @@ DisplayAsHelpTitle()
     # $1 = text
 
     DisplayLineSpaceIfNoneAlready
-    printf "${HELP_COL_MAIN_PREF}%s\n" "$(Capitalise "${1:-}")"
+    printf "${HELP_COL_MAIN_PREFIX}%s\n" "$(Capitalise "${1:-}")"
     Self.LineSpace.UnSet
 
     }
@@ -3113,7 +3137,7 @@ DisplayAsHelpTitleHighlighted()
 
     DisplayLineSpaceIfNoneAlready
     # shellcheck disable=2059
-    printf "$(ColourTextBrightOrange "${HELP_COL_MAIN_PREF}%s\n")" "$(Capitalise "${1:-}")"
+    printf "$(ColourTextBrightOrange "${HELP_COL_MAIN_PREFIX}%s\n")" "$(Capitalise "${1:-}")"
     Self.LineSpace.UnSet
 
     }
@@ -3374,10 +3398,10 @@ Help.Packages.Show()
     DisplayAsHelpTitle "One-or-more $(FormatAsPackages) may be specified at-once"
 
     for tier in Standalone Dependent; do
-        DisplayAsHelpTitlePackageNamePlusSomething "$tier QPKGs" 'package description'
+        DisplayAsHelpTitlePackageNameAuthorDesc "$tier QPKGs" author 'package description'
 
         for package in $(QPKGs.Sc${tier}.Array); do
-            DisplayAsHelpPackageNamePlusSomething "$package" "$(QPKG.Desc "$package")"
+            DisplayAsHelpPackageNameAuthorDesc "$package" "$(QPKG.Author "$package")" "$(QPKG.Desc "$package")"
         done
     done
 
@@ -3400,11 +3424,11 @@ Help.PackageAbbreviations.Show()
     DisplayAsHelpTitle "$(FormatAsTitle) can recognise various abbreviations as $(FormatAsPackages)"
 
     for tier in Standalone Dependent; do
-        DisplayAsHelpTitlePackageNamePlusSomething "$tier QPKGs" 'acceptable package name abreviations'
+        DisplayAsHelpTitlePackageNameAbs "$tier QPKGs" 'acceptable package name abreviations'
 
         for package in $(QPKGs.Sc${tier}.Array); do
             abs=$(QPKG.Abbrvs "$package")
-            [[ -n $abs ]] && DisplayAsHelpPackageNamePlusSomething "$package" "${abs// /, }"
+            [[ -n $abs ]] && DisplayAsHelpPackageNameAbs "$package" "${abs// /, }"
         done
     done
 
