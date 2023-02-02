@@ -47,7 +47,7 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
-readonly PROJECT_BRANCH=main
+readonly PROJECT_BRANCH=unstable
 
 Self.Init()
     {
@@ -55,7 +55,7 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230201
+    local -r SCRIPT_VER=230202
 
     IsQNAP || return
     IsSU || return
@@ -6059,6 +6059,66 @@ QPKG.IsBackupExist()
 
     }
 
+QPKG.Author()
+    {
+
+    # return the maintainer of the specified QPKG
+
+    # input:
+    #   $1 = QPKG name
+
+    # output:
+    #   stdout = package author
+    #   $? = 0 if found, !0 if not
+
+    local -i index=0
+    local package=''
+    local prev=''
+
+    for index in "${!QPKG_NAME[@]}"; do
+        package="${QPKG_NAME[$index]}"
+        [[ $package = "$prev" ]] && continue || prev=$package
+
+        if [[ $1 = "$package" ]]; then
+            echo "${QPKG_AUTHOR[$index]}"
+            return 0
+        fi
+    done
+
+    return 1
+
+    }
+
+QPKG.AppAuthor()
+    {
+
+    # return the author of the application contained within the specified QPKG
+
+    # input:
+    #   $1 = QPKG name
+
+    # output:
+    #   stdout = application author
+    #   $? = 0 if found, !0 if not
+
+    local -i index=0
+    local package=''
+    local prev=''
+
+    for index in "${!QPKG_NAME[@]}"; do
+        package="${QPKG_NAME[$index]}"
+        [[ $package = "$prev" ]] && continue || prev=$package
+
+        if [[ $1 = "$package" ]]; then
+            echo "${QPKG_APP_AUTHOR[$index]}"
+            return 0
+        fi
+    done
+
+    return 1
+
+    }
+
 QPKG.IsCanBackup()
     {
 
@@ -7780,6 +7840,8 @@ Packages.Load()
 
     # package arrays are now full, so lock them
     readonly QPKG_NAME
+        readonly QPKG_AUTHOR
+        readonly QPKG_APP_AUTHOR
         readonly QPKG_ARCH
         readonly QPKG_MIN_RAM_KB
         readonly QPKG_VERSION
