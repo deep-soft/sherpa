@@ -3322,6 +3322,7 @@ Help.Groups.Show()
     DisplayAsProjSynIndentExam 'select only installed packages' "$(FormatAsAction) installed"
     DisplayAsProjSynIndentExam 'select only packages that are not installed' "$(FormatAsAction) not-installed"
     DisplayAsProjSynIndentExam 'select only packages that are backed-up' "$(FormatAsAction) backedup"
+    DisplayAsProjSynIndentExam 'select only packages that are not backed-up' "$(FormatAsAction) not-backedup"
     DisplayAsProjSynIndentExam 'select only packages that are upgradable' "$(FormatAsAction) upgradable"
     DisplayAsProjSynIndentExam 'select only missing packages (these are partly installed and broken)' "$(FormatAsAction) missing"
     DisplayAsProjSynExam 'multiple groups are supported like this' "$(FormatAsAction) $(FormatAsGroups) $(FormatAsGroups)"
