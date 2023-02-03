@@ -55,7 +55,7 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230203
+    local -r SCRIPT_VER=230204
 
     IsQNAP || return
     IsSU || return
@@ -550,7 +550,7 @@ Self.Validate()
     fi
 
     # Ensure standalone packages are also installed when processing these specific actions
-    for action in Upgrade Reinstall Install Start Restart; do
+    for action in Upgrade Reinstall Install; do
         for package in $(QPKGs.AcTo${action}.Array); do
             for prospect in $(QPKG.GetStandalones "$package"); do
                 QPKGs.AcToInstall.Add "$prospect"
@@ -908,7 +908,7 @@ Action.Proc()
                                 QPKGs.AcSk${TARGET_ACTION}.Add "$msg2_value"
                                 ((skip_count++))
                                 ;;
-                            Se)     # action skipped due to error prior to action being tried (might be a big-deal)
+                            Se)     # action was skipped due to error prior to action being tried (might be a big-deal)
                                 QPKGs.AcTo${TARGET_ACTION}.Remove "$msg2_value"
                                 QPKGs.AcSe${TARGET_ACTION}.Add "$msg2_value"
                                 ((skip_error_count++))
@@ -918,7 +918,7 @@ Action.Proc()
                                 QPKGs.AcEr${TARGET_ACTION}.Add "$msg2_value"
                                 ((fail_count++))
                                 ;;
-                            Ex)     # action has exited
+                            Ex)     # action is about to exit
                                 for package_index in "${!target_packages[@]}"; do
                                     if [[ ${target_packages[package_index]} = "$msg2_value" ]]; then
                                         unset 'target_packages[package_index]'
@@ -939,7 +939,7 @@ Action.Proc()
             [[ $skip_count -gt 0 || $skip_error_count -gt 0 ]] && Opts.Help.Skipped.Set
             [[ $fail_count -gt 0 ]] && Opts.Help.Failed.Set
 
-            [[ ${#target_packages[@]} -gt 0 ]] && KillActiveFork        # this should only happen if an action fork hasn't exited properly, and didn't mark its status as `ok`, `skipped`, or `failed`.
+            [[ ${#target_packages[@]} -gt 0 ]] && KillActiveFork        # this should only be needed if an action fork didn't exit properly
             wait 2>/dev/null
             CloseActionMsgPipe
             ;;
