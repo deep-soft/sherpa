@@ -5029,7 +5029,7 @@ _QPKG.Reassign_()
         SendPackageStateChange IsReassigned
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Reassignment failed "$result_code"
+        SaveActionResultToLog "$PACKAGE_NAME" Reassign failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5136,7 +5136,7 @@ _QPKG.Download_()
                 MarkThisActionForkAsFailed
             fi
         else
-            SaveActionResultToLog "$PACKAGE_NAME" Downloaded failed "$result_code"
+            SaveActionResultToLog "$PACKAGE_NAME" Download failed "$result_code"
             result_code=1    # remap to 1 (last time I checked, 'curl' had 92 return codes)
             MarkThisActionForkAsFailed
         fi
@@ -5258,7 +5258,7 @@ _QPKG.Install_()
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Installed failed "$result_code"
+        SaveActionResultToLog "$PACKAGE_NAME" Install failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5286,7 +5286,7 @@ _QPKG.Reinstall_()
     local debug_cmd=''
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Reinstall skipped "not installed: please use 'install' instead"
+        SaveActionResultToLog "$PACKAGE_NAME" Reinstall skipped "not installed, please use 'install' instead"
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     fi
@@ -5299,7 +5299,7 @@ _QPKG.Reinstall_()
     fi
 
     if [[ -z $local_pathfile ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Reinstall skipped-error 'no local file found for processing: please report this issue'
+        SaveActionResultToLog "$PACKAGE_NAME" Reinstall skipped-error 'no local file found for processing, please report this issue'
         MarkThisActionForkAsSkippedError
         DebugForkFuncEx 2
     fi
@@ -5334,7 +5334,7 @@ _QPKG.Reinstall_()
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Reinstalled failed "$result_code"
+        SaveActionResultToLog "$PACKAGE_NAME" Reinstall failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5363,7 +5363,7 @@ _QPKG.Upgrade_()
     local debug_cmd=''
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped "not installed: please use 'install' instead"
+        SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped 'not installed'
         result_code=2
     elif ! QPKGs.ScUpgradable.Exist "$PACKAGE_NAME"; then
         SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped-ok 'no new package is available'
@@ -5374,7 +5374,7 @@ _QPKG.Upgrade_()
     local package_store_id=$(QPKG.StoreID "$PACKAGE_NAME")
 
     if [[ $package_store_id != sherpa ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped "assigned to another repository: please 'reassign' it first"
+        SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped "assigned to another repository, please 'reassign' it first"
         result_code=2
     fi
 
@@ -5391,7 +5391,7 @@ _QPKG.Upgrade_()
     fi
 
     if [[ -z $local_pathfile ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped-error 'no local file found for processing: please report this issue'
+        SaveActionResultToLog "$PACKAGE_NAME" Upgrade skipped-error 'no local file found for processing, please report this issue'
         MarkThisActionForkAsSkippedError
         DebugForkFuncEx 2
     fi
@@ -5434,7 +5434,7 @@ _QPKG.Upgrade_()
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Upgraded failed "$result_code"
+        SaveActionResultToLog "$PACKAGE_NAME" Upgrade failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5502,7 +5502,7 @@ _QPKG.Uninstall_()
             SendPackageStateChange IsNtEnabled
             MarkThisActionForkAsOk
         else
-            SaveActionResultToLog "$PACKAGE_NAME" Uninstalled failed "$result_code"
+            SaveActionResultToLog "$PACKAGE_NAME" Uninstall failed "$result_code"
 
             if [[ $PACKAGE_NAME = Entware ]]; then
                 SendParentChangeEnv 'HideCursor'
@@ -5513,7 +5513,7 @@ _QPKG.Uninstall_()
         fi
     else
         # standard QPKG .uninstall.sh was not found, so can't continue with uninstallation (maybe force this instead with `rm -r` ?)
-        SaveActionResultToLog "$PACKAGE_NAME" Uninstalled failed '.uninstall.sh script is missing'
+        SaveActionResultToLog "$PACKAGE_NAME" Uninstall failed '.uninstall.sh script is missing'
         MarkThisActionForkAsFailed
     fi
 
@@ -5565,7 +5565,7 @@ _QPKG.Restart_()
         SendPackageStateChange IsRestarted
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Restarted failed "$result_code"
+        SaveActionResultToLog "$PACKAGE_NAME" Restart failed "$result_code"
         SendPackageStateChange IsNtRestarted
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
@@ -5631,7 +5631,7 @@ _QPKG.Start_()
         SendPackageStateChange IsStarted
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Started failed "$result_code"
+        SaveActionResultToLog "$PACKAGE_NAME" Start failed "$result_code"
         SendPackageStateChange IsNtStarted
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
@@ -5702,7 +5702,7 @@ _QPKG.Stop_()
         SendPackageStateChange IsNtStarted
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Stopped failed "$result_code"
+        SaveActionResultToLog "$PACKAGE_NAME" Stop failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5799,7 +5799,7 @@ _QPKG.Backup_()
         SendPackageStateChange IsBackedUp
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Backed-up failed "$result_code"
+        SaveActionResultToLog "$PACKAGE_NAME" Backup failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5853,7 +5853,7 @@ _QPKG.Restore_()
         SendPackageStateChange IsRestored
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Restored failed "$result_code"
+        SaveActionResultToLog "$PACKAGE_NAME" Restore failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5907,7 +5907,7 @@ _QPKG.Clean_()
         SendPackageStateChange IsCleaned
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Cleaned failed "$result_code"
+        SaveActionResultToLog "$PACKAGE_NAME" Clean failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -7572,24 +7572,25 @@ ShowAsActionLogDetail()
     #   $5 = duration in milliseconds   `56`
     #   $6 = reason (optional)          "file already exists in local cache"
 
-    echo -ne "\t$(Lowercase "${3:-}") ${2:-}"
-
     case ${4:-} in
         skipped|skipped-failed)
-            [[ -n ${6:-} ]] && echo -ne ";\n\t\treason: ${6:-}"
+            echo -ne "\t$(Lowercase "${3:-}") ${2:-}"
+            [[ -n ${6:-} ]] && echo -ne ";\n\t\tReason: ${6:-}"
             ;;
         failed)
+            echo -ne "\tUnable to $(Lowercase "${3:-}") ${2:-}"
             echo -ne " in $(FormatMilliSecsToMinutesSecs "$duration")"
 
             if [[ -n ${6:-} ]]; then
                 if QPKG.IsCanLog "$2"; then
-                    echo -ne ";\n\t\tfor more information, please check the service log: /etc/init.d/$($BASENAME_CMD "$(QPKG.ServicePathFile "$2")") log"
+                    echo -ne ";\n\t\tFor more information, please check the service log: /etc/init.d/$($BASENAME_CMD "$(QPKG.ServicePathFile "$2")") log"
                 else
                     echo -ne "; ${6:-}"
                 fi
             fi
             ;;
         *)
+            echo -ne "\t$(Lowercase "${3:-}") ${2:-}"
             echo -ne " in $(FormatMilliSecsToMinutesSecs "$duration")"
     esac
 
