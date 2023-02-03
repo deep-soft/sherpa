@@ -47,7 +47,7 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
-readonly PROJECT_BRANCH=main
+readonly PROJECT_BRANCH=unstable
 
 Self.Init()
     {
@@ -1046,6 +1046,10 @@ Self.Results()
             Help.Actions.Show
         elif Opts.Help.ActionsAll.IsSet; then
             Help.ActionsAll.Show
+        elif QPKGs.List.IsBackedUp.IsSet; then
+            QPKGs.IsBackedUp.Show
+        elif QPKGs.List.IsNtBackedUp.IsSet; then
+            QPKGs.IsNtBackedUp.Show
         elif Opts.Help.Backups.IsSet; then
             QPKGs.Backups.Show
         elif Opts.Help.Groups.IsSet; then
@@ -1236,7 +1240,7 @@ ParseArgs()
         if [[ -n $action ]]; then
             case $arg in
             # these cases use only a single word or char to specify a single group
-                failed|groups|installable|installed|missing|not-installed|ok|problems|results|skipped|started|stopped|tail|tips)
+                backedup|failed|installable|installed|missing|not-backedup|not-installed|ok|problems|results|skipped|started|stopped|tail|tips)
                     group=${arg}_
                     ;;
             # all cases below can use multiple words or chars to specify a single group
@@ -1257,6 +1261,9 @@ ParseArgs()
                     ;;
                 dependent|dependents)
                     group=dependent_
+                    ;;
+                group|groups)
+                    group=groups_
                     ;;
                 l|last)
                     group=last_
@@ -1385,6 +1392,10 @@ ParseArgs()
                     all-actions_|all_)
                         Opts.Help.ActionsAll.Set
                         ;;
+                    backedup_)
+                        QPKGs.List.IsBackedUp.Set
+                        Self.Display.Clean.Set
+                        ;;
                     backups_)
                         Opts.Help.Backups.Set
                         ;;
@@ -1412,6 +1423,10 @@ ParseArgs()
                         ;;
                     log_)
                         Opts.Log.Tail.View.Set
+                        Self.Display.Clean.Set
+                        ;;
+                    not-backedup_)
+                        QPKGs.List.IsNtBackedUp.Set
                         Self.Display.Clean.Set
                         ;;
                     not-installed_)
@@ -3285,7 +3300,7 @@ Help.Basic.Example.Show()
     DisplayAsProjSynIndentExam "to list available $(FormatAsAction)s, type" 'list actions'
     DisplayAsProjSynIndentExam "to list available $(FormatAsPackages), type" 'list packages'
     DisplayAsProjSynIndentExam '' p
-    DisplayAsProjSynIndentExam "to list available package $(FormatAsGroups), type" 'list groups'
+    DisplayAsProjSynIndentExam "to list available $(FormatAsGroups), type" 'list groups'
     DisplayAsProjSynIndentExam "or, for more $(FormatAsOptions), type" 'list options'
     DisplayAsHelpTitle "More in the wiki: $(FormatAsURL "https://github.com/OneCDOnly/sherpa/wiki")"
 
@@ -3298,12 +3313,18 @@ Help.Groups.Show()
 
     DisableDebugToArchiveAndFile
     Help.Basic.Show
-    DisplayAsHelpTitle "groups explained:"
-    Display "all: all packages will be selected"
-    Display "standalone: all standalone packages will be selected. These are not dependent on other packages."
-    Display "dependent: all dependent packages will be selected. These depend on another package being present."
-    DisplayAsProjSynExam "multiple groups are supported like this" "$(FormatAsAction) $(FormatAsPackages) $(FormatAsAction) $(FormatAsPackages)"
-    DisplayAsProjSynIndentExam '' 'reinstall dependents stopped'
+    DisplayAsHelpTitle "$(FormatAsGroups) usage examples:"
+    DisplayAsProjSynIndentExam 'select every package' "$(FormatAsAction) all"
+    DisplayAsProjSynIndentExam 'select only standalone packages (these do not depend on other QPKGs)' "$(FormatAsAction) standalone"
+    DisplayAsProjSynIndentExam 'select only dependent packages (these require another QPKG to be installed and started)' "$(FormatAsAction) dependent"
+    DisplayAsProjSynIndentExam 'select only started packages' "$(FormatAsAction) started"
+    DisplayAsProjSynIndentExam 'select only stopped packages' "$(FormatAsAction) stopped"
+    DisplayAsProjSynIndentExam 'select only installed packages' "$(FormatAsAction) installed"
+    DisplayAsProjSynIndentExam 'select only packages that are not installed' "$(FormatAsAction) not-installed"
+    DisplayAsProjSynIndentExam 'select only packages that are backed-up' "$(FormatAsAction) backedup"
+    DisplayAsProjSynIndentExam 'select only packages that are upgradable' "$(FormatAsAction) upgradable"
+    DisplayAsProjSynIndentExam 'select only missing packages (these are partly installed and broken)' "$(FormatAsAction) missing"
+    DisplayAsProjSynExam 'multiple groups are supported like this' "$(FormatAsAction) $(FormatAsGroups) $(FormatAsGroups)"
 
     return 0
 
@@ -4163,7 +4184,13 @@ QPKGs.States.Build()
             fi
         fi
 
-        QPKG.IsCanBackup "$package" && QPKG.IsBackupExist "$package" && QPKGs.IsBackedUp.Add "$package"
+        if QPKG.IsCanBackup "$package"; then
+            if QPKG.IsBackupExist "$package"; then
+                QPKGs.IsBackedUp.Add "$package"
+            else
+                QPKGs.IsNtBackedUp.Add "$package"
+            fi
+        fi
     done
 
     QPKGs.States.Built.Set
@@ -4426,6 +4453,36 @@ QPKGs.Statuses.Show()
 
     QPKGs.Actions.List
     QPKGs.States.List
+
+    return 0
+
+    }
+
+QPKGs.IsBackedUp.Show()
+    {
+
+    local package=''
+    QPKGs.States.Build
+    DisableDebugToArchiveAndFile
+
+    for package in $(QPKGs.IsBackedUp.Array); do
+        Display "$package"
+    done
+
+    return 0
+
+    }
+
+QPKGs.IsNtBackedUp.Show()
+    {
+
+    local package=''
+    QPKGs.States.Build
+    DisableDebugToArchiveAndFile
+
+    for package in $(QPKGs.IsNtBackedUp.Array); do
+        Display "$package"
+    done
 
     return 0
 
@@ -6817,7 +6874,7 @@ FormatAsPackages()
 FormatAsGroups()
     {
 
-    ColourTextBrightOrange '[groups...]'
+    ColourTextBrightOrange '[package group...]'
 
     }
 
