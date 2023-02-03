@@ -293,6 +293,7 @@ Self.Init()
     readonly LOG_TAIL_LINES=5000        # note: a full download and install of everything generates a session log of around 1600 lines, but include a bunch of opkg updates and it can get much longer
     prev_msg=' '
     fork_pid=''
+    last_action_datetime_displayed=false
     [[ ${NAS_FIRMWARE_VER//.} -lt 426 ]] && curl_insecure_arg=' --insecure' || curl_insecure_arg=''
     QPKG.IsInstalled Entware && [[ $ENTWARE_VER = none ]] && DebugAsWarn "$(FormatAsPackName Entware) appears to be installed but is not visible"
 
@@ -3130,7 +3131,7 @@ DisplayAsHelpTitle()
     # $1 = text
 
     DisplayLineSpaceIfNoneAlready
-    printf "${HELP_COL_MAIN_PREFIX}%s\n" "$(Capitalise "${1:-}")"
+    printf "${HELP_COL_MAIN_PREFIX}%s\n" "$(Capitalise "${1:-}" | tr -s ' ')"
     Self.LineSpace.UnSet
 
     }
@@ -3342,6 +3343,11 @@ Actions.Results.Show()
 
     while read -r datetime action package_name result duration reason; do
         if [[ $result = "$1" ]] || [[ $1 = skipped && $result = 'skipped-error' ]]; then
+            if [[ $last_action_datetime_displayed = false ]]; then
+                DisplayAsHelpTitle "the following package actions were run: $($DATE_CMD -d @"$datetime")"
+                last_action_datetime_displayed=true
+            fi
+
             case $result in
                 ok)
                     [[ $found = false ]] && DisplayAsHelpTitle "these package actions completed $(ColourTextBrightGreen OK):"
@@ -5558,7 +5564,7 @@ _QPKG.Restart_()
         SendPackageStateChange IsRestarted
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Restarted failed "please check the QPKG service log for more information: /etc/init.d/$($BASENAME_CMD "$PACKAGE_INIT_PATHFILE") log"
+        SaveActionResultToLog "$PACKAGE_NAME" Restarted failed "please check the QPKG service log: /etc/init.d/$($BASENAME_CMD "$PACKAGE_INIT_PATHFILE") log"
         SendPackageStateChange IsNtRestarted
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
@@ -7566,17 +7572,25 @@ ShowAsActionLogDetail()
     #   $6 = reason (optional)          "file already exists in local cache"
 
     echo -ne "\t$(Lowercase "${3:-}") ${2:-}"
-    [[ $4 != skipped && $4 != skipped-ok ]] && echo -ne " in $(FormatMilliSecsToMinutesSecs "$duration")"
 
-    if [[ $4 != ok ]]; then
-        if [[ -n ${6:-} && $(QPKG.IsCanLog "$2") = false ]]; then
-            echo -ne "; ${6:-}"
-        else
-            echo -ne ";\n\t\t${6:-}"
-        fi
-    fi
+    case ${4:-} in
+        skipped|skipped-failed)
+            [[ -n ${6:-} ]] && echo -ne ";\n\t\treason: ${6:-}"
+            ;;
+        failed)
+            echo -ne " in $(FormatMilliSecsToMinutesSecs "$duration")"
 
-    echo
+            if [[ -n ${6:-} ]] && QPKG.IsCanLog "$2"; then
+                echo -ne ";\n\t\tfor more information: ${6:-}"
+            else
+                echo -ne "; ${6:-}"
+            fi
+            ;;
+        *)
+            echo -ne " in $(FormatMilliSecsToMinutesSecs "$duration")"
+    esac
+
+    echo    # force a LF here
 
     }
 
