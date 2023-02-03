@@ -293,7 +293,6 @@ Self.Init()
     readonly LOG_TAIL_LINES=5000        # note: a full download and install of everything generates a session log of around 1600 lines, but include a bunch of opkg updates and it can get much longer
     prev_msg=' '
     fork_pid=''
-    last_action_datetime_displayed=false
     [[ ${NAS_FIRMWARE_VER//.} -lt 426 ]] && curl_insecure_arg=' --insecure' || curl_insecure_arg=''
     QPKG.IsInstalled Entware && [[ $ENTWARE_VER = none ]] && DebugAsWarn "$(FormatAsPackName Entware) appears to be installed but is not visible"
 
@@ -1037,6 +1036,7 @@ AdjustMaxForks()
 Self.Results()
     {
 
+    display_last_action_datetime=false
     Opts.Deps.Check.IsSet && ShowAsDone 'check OK'
 
     if Args.Unknown.IsNone; then
@@ -1060,6 +1060,7 @@ Self.Results()
             QPKGs.NewVers.Show
             QPKGs.Repos.Show
         elif Opts.Help.Results.IsSet; then
+            display_last_action_datetime=true
             Opts.Help.Ok.Set
             Opts.Help.Skipped.Set
             Opts.Help.Failed.Set
@@ -3337,32 +3338,32 @@ Actions.Results.Show()
 
     DisableDebugToArchiveAndFile
 
-    [[ -e $ACTIONS_LOG_PATHFILE ]] || return
+    if [[ -e $ACTIONS_LOG_PATHFILE ]]; then
+        local IFS='#'
 
-    local IFS='#'
-
-    while read -r datetime action package_name result duration reason; do
-        if [[ $result = "$1" ]] || [[ $1 = skipped && $result = 'skipped-error' ]]; then
-            if [[ $last_action_datetime_displayed = false ]]; then
+        while read -r datetime action package_name result duration reason; do
+            if [[ $display_last_action_datetime = true ]]; then
                 DisplayAsHelpTitle "the following package actions were run: $($DATE_CMD -d @"$datetime")"
-                last_action_datetime_displayed=true
+                display_last_action_datetime=false
             fi
 
-            case $result in
-                ok)
-                    [[ $found = false ]] && DisplayAsHelpTitle "these package actions completed $(ColourTextBrightGreen OK):"
-                    ;;
-                skipped|skipped-ok|skipped-error)
-                    [[ $found = false ]] && DisplayAsHelpTitle "these package actions were $(ColourTextBrightOrange skipped):"
-                    ;;
-                failed)
-                    [[ $found = false ]] && DisplayAsHelpTitle "these package actions $(ColourTextBrightRed failed):"
-            esac
+            if [[ $result = "$1" ]] || [[ $1 = skipped && $result = 'skipped-error' ]]; then
+                case $result in
+                    ok)
+                        [[ $found = false ]] && DisplayAsHelpTitle "these package actions completed $(ColourTextBrightGreen OK):"
+                        ;;
+                    skipped|skipped-ok|skipped-error)
+                        [[ $found = false ]] && DisplayAsHelpTitle "these package actions were $(ColourTextBrightOrange skipped):"
+                        ;;
+                    failed)
+                        [[ $found = false ]] && DisplayAsHelpTitle "these package actions $(ColourTextBrightRed failed):"
+                esac
 
-            ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result" "$duration" "$reason"
-            found=true
-        fi
-    done < "$ACTIONS_LOG_PATHFILE"
+                ShowAsActionLogDetail "$datetime" "$package_name" "$action" "$result" "$duration" "$reason"
+                found=true
+            fi
+        done < "$ACTIONS_LOG_PATHFILE"
+    fi
 
     if [[ $found = false ]]; then
         case $1 in
@@ -5010,11 +5011,11 @@ _QPKG.Reassign_()
     local package_store_id=$(QPKG.StoreID "$PACKAGE_NAME")
 
     if ! QPKGs.IsInstalled.Exist "$PACKAGE_NAME"; then
-        SaveActionResultToLog "$PACKAGE_NAME" Reassign skipped 'not installed'
+        SaveActionResultToLog "$PACKAGE_NAME" Reassignment skipped 'not installed'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 2
     elif [[ $package_store_id = sherpa ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Reassign skipped-ok 'already assigned to sherpa'
+        SaveActionResultToLog "$PACKAGE_NAME" Reassignment skipped-ok 'already assigned to sherpa'
         MarkThisActionForkAsSkipped
         DebugForkFuncEx 0
     fi
@@ -5024,11 +5025,11 @@ _QPKG.Reassign_()
     result_code=$?
 
     if [[ $result_code -eq 0 ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Reassign ok
+        SaveActionResultToLog "$PACKAGE_NAME" Reassignment ok
         SendPackageStateChange IsReassigned
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Reassign failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Reassignment failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5097,7 +5098,7 @@ _QPKG.Download_()
     local -r LOG_PATHFILE=$LOGS_PATH/$LOCAL_FILENAME.$DOWNLOAD_LOG_FILE
 
     if [[ -z $REMOTE_URL || -z $REMOTE_MD5 ]]; then
-        SaveActionResultToLog "$PACKAGE_NAME" Downloaded skipped 'NAS is unsupported'
+        SaveActionResultToLog "$PACKAGE_NAME" Download skipped 'NAS is unsupported'
         MarkThisActionForkAsSkipped
         result_code=2
     elif [[ -f $LOCAL_PATHFILE ]]; then
@@ -5125,17 +5126,17 @@ _QPKG.Download_()
 
         if [[ $result_code -eq 0 ]]; then
             if FileMatchesMD5 "$LOCAL_PATHFILE" "$REMOTE_MD5"; then
-                SaveActionResultToLog "$PACKAGE_NAME" Download ok
+                SaveActionResultToLog "$PACKAGE_NAME" Downloaded ok
                 SendPackageStateChange IsDownloaded
                 MarkThisActionForkAsOk
             else
-                SaveActionResultToLog "$PACKAGE_NAME" Download failed "downloaded file $(FormatAsFileName "$LOCAL_PATHFILE") has incorrect checksum"
+                SaveActionResultToLog "$PACKAGE_NAME" Downloaded failed "downloaded file $(FormatAsFileName "$LOCAL_PATHFILE") has incorrect checksum"
                 SendPackageStateChange IsNtDownloaded
                 result_code=1
                 MarkThisActionForkAsFailed
             fi
         else
-            SaveActionResultToLog "$PACKAGE_NAME" Download failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+            SaveActionResultToLog "$PACKAGE_NAME" Downloaded failed "$result_code"
             result_code=1    # remap to 1 (last time I checked, 'curl' had 92 return codes)
             MarkThisActionForkAsFailed
         fi
@@ -5230,7 +5231,7 @@ _QPKG.Install_()
         fi
 
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
-        SaveActionResultToLog "$PACKAGE_NAME" Install ok "version $current_ver"
+        SaveActionResultToLog "$PACKAGE_NAME" Installed ok "version $current_ver"
 
         if [[ $PACKAGE_NAME = Entware ]]; then
             ModPathToEntware
@@ -5257,7 +5258,7 @@ _QPKG.Install_()
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Install failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Installed failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5329,11 +5330,11 @@ _QPKG.Reinstall_()
         fi
 
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
-        SaveActionResultToLog "$PACKAGE_NAME" Reinstall ok "version $current_ver"
+        SaveActionResultToLog "$PACKAGE_NAME" Reinstalled ok "version $current_ver"
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Reinstall failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Reinstalled failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5425,15 +5426,15 @@ _QPKG.Upgrade_()
         local current_ver=$(QPKG.Local.Ver "$PACKAGE_NAME")
 
         if [[ $current_ver = "$prev_ver" ]]; then
-            SaveActionResultToLog "$PACKAGE_NAME" Upgrade ok "version $current_ver"
+            SaveActionResultToLog "$PACKAGE_NAME" Upgraded ok "version $current_ver"
         else
-            SaveActionResultToLog "$PACKAGE_NAME" Upgrade ok "from version $prev_ver to version $current_ver"
+            SaveActionResultToLog "$PACKAGE_NAME" Upgraded ok "from version $prev_ver to version $current_ver"
         fi
 
         result_code=0    # remap to zero (0 or 10 from a QPKG install/reinstall/upgrade is OK)
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Upgrade failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Upgraded failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5501,7 +5502,7 @@ _QPKG.Uninstall_()
             SendPackageStateChange IsNtEnabled
             MarkThisActionForkAsOk
         else
-            SaveActionResultToLog "$PACKAGE_NAME" Uninstall failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+            SaveActionResultToLog "$PACKAGE_NAME" Uninstalled failed "$result_code"
 
             if [[ $PACKAGE_NAME = Entware ]]; then
                 SendParentChangeEnv 'HideCursor'
@@ -5512,7 +5513,7 @@ _QPKG.Uninstall_()
         fi
     else
         # standard QPKG .uninstall.sh was not found, so can't continue with uninstallation (maybe force this instead with `rm -r` ?)
-        SaveActionResultToLog "$PACKAGE_NAME" Uninstall failed '.uninstall.sh script is missing'
+        SaveActionResultToLog "$PACKAGE_NAME" Uninstalled failed '.uninstall.sh script is missing'
         MarkThisActionForkAsFailed
     fi
 
@@ -5564,7 +5565,7 @@ _QPKG.Restart_()
         SendPackageStateChange IsRestarted
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Restarted failed "please check the QPKG service log: /etc/init.d/$($BASENAME_CMD "$PACKAGE_INIT_PATHFILE") log"
+        SaveActionResultToLog "$PACKAGE_NAME" Restarted failed "$result_code"
         SendPackageStateChange IsNtRestarted
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
@@ -5630,7 +5631,7 @@ _QPKG.Start_()
         SendPackageStateChange IsStarted
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Start failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Started failed "$result_code"
         SendPackageStateChange IsNtStarted
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
@@ -5701,7 +5702,7 @@ _QPKG.Stop_()
         SendPackageStateChange IsNtStarted
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Stop failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Stopped failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5798,7 +5799,7 @@ _QPKG.Backup_()
         SendPackageStateChange IsBackedUp
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Backup failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Backed-up failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5852,7 +5853,7 @@ _QPKG.Restore_()
         SendPackageStateChange IsRestored
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Restore failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Restored failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -5906,7 +5907,7 @@ _QPKG.Clean_()
         SendPackageStateChange IsCleaned
         MarkThisActionForkAsOk
     else
-        SaveActionResultToLog "$PACKAGE_NAME" Clean failed "failed $(FormatAsPackName "$PACKAGE_NAME") $(FormatAsExitcode "$result_code")"
+        SaveActionResultToLog "$PACKAGE_NAME" Cleaned failed "$result_code"
         result_code=1    # remap to 1
         MarkThisActionForkAsFailed
     fi
@@ -7580,10 +7581,12 @@ ShowAsActionLogDetail()
         failed)
             echo -ne " in $(FormatMilliSecsToMinutesSecs "$duration")"
 
-            if [[ -n ${6:-} ]] && QPKG.IsCanLog "$2"; then
-                echo -ne ";\n\t\tfor more information: ${6:-}"
-            else
-                echo -ne "; ${6:-}"
+            if [[ -n ${6:-} ]]; then
+                if QPKG.IsCanLog "$2"; then
+                    echo -ne ";\n\t\tfor more information, please check the service log: /etc/init.d/$($BASENAME_CMD "$(QPKG.ServicePathFile "$2")") log"
+                else
+                    echo -ne "; ${6:-}"
+                fi
             fi
             ;;
         *)
