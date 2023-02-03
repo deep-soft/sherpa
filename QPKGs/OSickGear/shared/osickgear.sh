@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 ####################################################################################
 # osickgear.sh
-#
-# Copyright (C) 2020-2023 OneCD [one.cd.only@gmail.com]
-#
+
+# Copyright (C) 2020-2023 OneCD - one.cd.only@gmail.com
+
 # so, blame OneCD if it all goes horribly wrong. ;)
-#
+
 # This is a type 1 service-script: https://github.com/OneCDOnly/sherpa/wiki/Service-Script-Types
-#
+
 # For more info: https://forum.qnap.com/viewtopic.php?f=320&t=132373
 ####################################################################################
 
@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=OSickGear
-    readonly SCRIPT_VERSION=230105
+    readonly SCRIPT_VERSION=230203
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -47,7 +47,7 @@ Init()
     readonly INTERPRETER=/opt/bin/python3
     readonly VENV_PATH=$QPKG_PATH/venv
     readonly VENV_INTERPRETER=$VENV_PATH/bin/python3
-    readonly ALLOW_ACCESS_TO_SYS_PACKAGES=false
+    readonly ALLOW_ACCESS_TO_SYS_PACKAGES=true
 
     # specific to daemonised applications only
     readonly DAEMON_PATHFILE=$QPKG_REPO_PATH/sickgear.py
@@ -277,13 +277,6 @@ InstallAddons()
 
     if [[ -e $requirements_pathfile ]]; then
         DisplayRunAndLog 'install required PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $requirements_pathfile" log:failure-only || SetError
-        no_pips_installed=false
-    fi
-
-    [[ ! -e $recommended_pathfile && -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
-
-    if [[ -e $recommended_pathfile ]]; then
-        DisplayRunAndLog 'install recommended PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $recommended_pathfile" log:failure-only || SetError
         no_pips_installed=false
     fi
 
