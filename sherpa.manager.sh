@@ -190,9 +190,9 @@ Self.Init()
     PACKAGE_TIERS=(Standalone Addon Dependent)  # ordered
 
     # these words may be specified by the user when requesting actions, so each word can only be used once across all 4 of the following arrays
-    PACKAGE_GROUPS=(All CanBackup CanRestartToUpdate Dependent HasDependents Installable Standalone Upgradable)     # sorted: 'Sc' & 'ScNt'
-    PACKAGE_STATES=(BackedUp Cleaned Downloaded Enabled Installed Missing Reassigned Reinstalled Restarted Started Upgraded)  # sorted: 'Is' & 'IsNt'
-    PACKAGE_STATES_TRANSIENT=(Starting Stopping Restarting)                                                         # unsorted: 'Is' & 'IsNt'
+    PACKAGE_GROUPS=(All CanBackup CanRestartToUpdate Dependent HasDependents Installable Standalone Upgradable)     # sorted: `Sc` & `ScNt`
+    PACKAGE_STATES=(BackedUp Cleaned Downloaded Enabled Installed Missing Reassigned Reinstalled Restarted Started Upgraded)  # sorted: `Is` & `IsNt`
+    PACKAGE_STATES_TRANSIENT=(Starting Stopping Restarting)                                                         # unsorted: `Is` & `IsNt`
     PACKAGE_ACTIONS=(Download Rebuild Reassign Backup Stop Disable Uninstall Upgrade Reinstall Install Restore Clean Enable Start Restart)  # ordered
 
     # only used by sherpa QPKG service-script results parser
@@ -3300,7 +3300,7 @@ Help.Basic.Example.Show()
     DisplayAsProjSynIndentExam "to list available $(FormatAsAction)s, type" 'list actions'
     DisplayAsProjSynIndentExam "to list available $(FormatAsPackages), type" 'list packages'
     DisplayAsProjSynIndentExam '' p
-    DisplayAsProjSynIndentExam "to list available $(FormatAsGroups), type" 'list groups'
+    DisplayAsProjSynIndentExam "to list available $(FormatAsGroups)s, type" 'list groups'
     DisplayAsProjSynIndentExam "or, for more $(FormatAsOptions), type" 'list options'
     DisplayAsHelpTitle "More in the wiki: $(FormatAsURL "https://github.com/OneCDOnly/sherpa/wiki")"
 
