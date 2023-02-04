@@ -47,7 +47,7 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
-readonly PROJECT_BRANCH=unstable
+readonly PROJECT_BRANCH=main
 
 Self.Init()
     {
