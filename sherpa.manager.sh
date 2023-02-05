@@ -47,7 +47,7 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
-readonly PROJECT_BRANCH=main
+readonly PROJECT_BRANCH=unstable
 
 Self.Init()
     {
@@ -55,7 +55,7 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230204
+    local -r SCRIPT_VER=230205
 
     IsQNAP || return
     IsSU || return
@@ -703,9 +703,9 @@ Actions.Proc()
 
     [[ -e $ACTIONS_LOG_PATHFILE ]] && rm "$ACTIONS_LOG_PATHFILE"
 
-    Action.Proc Reassign All QPKG AcToReassign reassign reassigning reassigned short || return
-    Action.Proc Download All QPKG AcToDownload download downloading downloaded short || return
-    Action.Proc Backup All QPKG AcToBackup backup backing-up backed-up short || return
+    Action.Proc Reassign All QPKG AcToReassign reassign reassigning reassigned || return
+    Action.Proc Download All QPKG AcToDownload download downloading downloaded || return
+    Action.Proc Backup All QPKG AcToBackup backup backing-up backed-up || return
 
     # -> package removal phase begins here <-
 
@@ -714,8 +714,8 @@ Actions.Proc()
 
         case $tier in
             Standalone|Dependent)
-                Action.Proc Stop $tier QPKG AcToStop stop stopping stopped short || return
-                Action.Proc Uninstall $tier QPKG AcToUninstall uninstall uninstalling uninstalled short || return
+                Action.Proc Stop $tier QPKG AcToStop stop stopping stopped || return
+                Action.Proc Uninstall $tier QPKG AcToUninstall uninstall uninstalling uninstalled || return
         esac
     done
 
@@ -724,13 +724,13 @@ Actions.Proc()
     for tier in "${PACKAGE_TIERS[@]}"; do
         case $tier in
             Standalone|Dependent)
-                Action.Proc Upgrade $tier QPKG AcToUpgrade upgrade upgrading upgraded long || return
-                Action.Proc Reinstall $tier QPKG AcToReinstall reinstall reinstalling reinstalled long || return
-                Action.Proc Install $tier QPKG AcToInstall install installing installed long || return
-                Action.Proc Restore $tier QPKG AcToRestore restore restoring restored long || return
-                Action.Proc Clean $tier QPKG AcToClean clean cleaning cleaned long || return
-                Action.Proc Start $tier QPKG AcToStart start starting started long || return
-                Action.Proc Restart $tier QPKG AcToRestart restart restarting restarted long || return
+                Action.Proc Upgrade $tier QPKG AcToUpgrade upgrade upgrading upgraded || return
+                Action.Proc Reinstall $tier QPKG AcToReinstall reinstall reinstalling reinstalled || return
+                Action.Proc Install $tier QPKG AcToInstall install installing installed || return
+                Action.Proc Restore $tier QPKG AcToRestore restore restoring restored || return
+                Action.Proc Clean $tier QPKG AcToClean clean cleaning cleaned || return
+                Action.Proc Start $tier QPKG AcToStart start starting started || return
+                Action.Proc Restart $tier QPKG AcToRestart restart restarting restarted || return
                 ;;
             Addon)
                 for action in Install Reinstall Upgrade Start; do
@@ -740,11 +740,11 @@ Actions.Proc()
 
                 if QPKGs.IsStarted.Exist Entware; then
                     ModPathToEntware
-                    Action.Proc Upgrade $tier IPK '' upgrade upgrading upgraded long || return
-                    Action.Proc Install $tier IPK '' install installing installed long || return
+                    Action.Proc Upgrade $tier IPK '' upgrade upgrading upgraded || return
+                    Action.Proc Install $tier IPK '' install installing installed || return
 
                     PIPs.Install.Set
-                    Action.Proc Install $tier PIP '' install installing installed long || return
+                    Action.Proc Install $tier PIP '' install installing installed || return
                 fi
         esac
     done
@@ -774,7 +774,6 @@ Action.Proc()
     #   $5 = $ACTION_INTRANSITIVE               e.g. `start` ...
     #   $6 = $ACTION_PRESENT                    e.g. `starting` ...
     #   $7 = $ACTION_PAST                       e.g. `started` ...
-    #   $8 = $RUNTIME (optional)                e.g. `long` - default is `short`
 
     DebugScriptFuncEn
 
@@ -808,14 +807,9 @@ Action.Proc()
     local -r ACTION_INTRANSITIVE=${5:?null}
     local -r ACTION_PRESENT=${6:?null}
     local -r ACTION_PAST=${7:?null}
-    local -r RUNTIME=${8:-short}
     local original_colourful=$colourful
 
-#     if [[ $RUNTIME = short ]]; then
-        ShowAsProc "$ACTION_PRESENT $([[ $TIER != All ]] && Lowercase "$TIER ")${PACKAGE_TYPE}s"
-#     else
-#         ShowAsProcLong "$([[ $TIER != All ]] && Lowercase "$TIER ")packages to $ACTION_INTRANSITIVE"
-#     fi
+    ShowAsProc "$ACTION_PRESENT $([[ $TIER != All ]] && Lowercase "$TIER ")${PACKAGE_TYPE}s"
 
     case $PACKAGE_TYPE in
         QPKG)
