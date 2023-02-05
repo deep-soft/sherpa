@@ -1040,18 +1040,14 @@ Self.Results()
             Help.Actions.Show
         elif Opts.Help.ActionsAll.IsSet; then
             Help.ActionsAll.Show
-        elif QPKGs.List.IsBackedUp.IsSet; then
-            QPKGs.IsBackedUp.Show
-        elif QPKGs.List.IsNtBackedUp.IsSet; then
-            QPKGs.IsNtBackedUp.Show
         elif Opts.Help.Backups.IsSet; then
             QPKGs.Backups.Show
         elif Opts.Help.Groups.IsSet; then
             Help.Groups.Show
-        elif Opts.Help.Packages.IsSet; then
-            Help.Packages.Show
         elif Opts.Help.Options.IsSet; then
             Help.Options.Show
+        elif Opts.Help.Packages.IsSet; then
+            Help.Packages.Show
         elif Opts.Help.Problems.IsSet; then
             Help.Problems.Show
         elif Opts.Help.Repos.IsSet; then
@@ -1067,28 +1063,36 @@ Self.Results()
             QPKGs.Statuses.Show
         elif Opts.Help.Tips.IsSet; then
             Help.Tips.Show
-        elif Opts.Vers.View.IsSet; then
-            Self.Vers.Show
+        fi
+
+        if Opts.Log.Last.Paste.IsSet; then
+            Log.Last.Paste
         elif Opts.Log.Last.View.IsSet; then
             ReleaseLockFile
             Log.Last.View
+        elif Opts.Log.Tail.Paste.IsSet; then
+            Log.Tail.Paste
         elif Opts.Log.Tail.View.IsSet; then
             ReleaseLockFile
             Log.Tail.View
-        elif Opts.Log.Last.Paste.IsSet; then
-            Log.Last.Paste
-        elif Opts.Log.Tail.Paste.IsSet; then
-            Log.Tail.Paste
+        elif Opts.Vers.View.IsSet; then
+            Self.Vers.Show
+        fi
+
+        if QPKGs.List.IsBackedUp.IsSet; then
+            QPKGs.IsBackedUp.Show
+        elif QPKGs.List.IsNtBackedUp.IsSet; then
+            QPKGs.IsNtBackedUp.Show
         elif QPKGs.List.IsInstalled.IsSet; then
             QPKGs.IsInstalled.Show
-        elif QPKGs.List.ScInstallable.IsSet; then
-            QPKGs.ScInstallable.Show
         elif QPKGs.List.IsNtInstalled.IsSet; then
             QPKGs.IsNtInstalled.Show
         elif QPKGs.List.IsStarted.IsSet; then
             QPKGs.IsStarted.Show
         elif QPKGs.List.IsNtStarted.IsSet; then
             QPKGs.IsNtStarted.Show
+        elif QPKGs.List.ScInstallable.IsSet; then
+            QPKGs.ScInstallable.Show
         elif QPKGs.List.ScUpgradable.IsSet; then
             QPKGs.ScUpgradable.Show
         elif QPKGs.List.ScStandalone.IsSet; then
