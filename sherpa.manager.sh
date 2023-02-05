@@ -438,7 +438,7 @@ Self.IsAnythingToDo()
         for action in "${PACKAGE_ACTIONS[@]}"; do
             case $action in
                 Disable|Enable)
-                    continue
+                    continue    # there are no Ac lists for these, so ignore them
             esac
 
             if QPKGs.AcTo${action}.IsAny; then
@@ -454,7 +454,7 @@ Self.IsAnythingToDo()
 
                 case $group in
                     All|CanBackup|CanRestartToUpdate|Dependent|HasDependents|Standalone)
-                        continue
+                        continue    # there are no ScNt flags for these, so ignore them
                 esac
 
                 if QPKGs.Ac${action}.ScNt${group}.IsSet; then
@@ -471,7 +471,7 @@ Self.IsAnythingToDo()
 
                 case $state in
                     Missing|Reassigned)
-                        continue
+                        continue    # there are no IsNt flags for these, so ignore them
                 esac
 
                 if QPKGs.Ac${action}.IsNt${state}.IsSet; then
