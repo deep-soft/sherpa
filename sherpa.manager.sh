@@ -5005,7 +5005,11 @@ ShowSummary()
 
     for state in "${PACKAGE_STATES[@]}"; do
         for action in "${PACKAGE_ACTIONS[@]}"; do
-            [[ $action = Enable || $action = Disable ]] && continue     # no objects for these as `start` and `stop` do the same jobs
+            case $action in
+                Disable|Enable)
+                    continue        # no objects for these as `start` and `stop` do the same jobs
+            esac
+
             QPKGs.Ac${action}.Is${state}.IsSet && QPKGs.AcOk${action}.IsNone && ShowAsWarn "no QPKGs were able to $(Lowercase "$action")"
         done
     done
@@ -5017,14 +5021,14 @@ ShowSummary()
 ClaimLockFile()
     {
 
-    readonly RUNTIME_LOCK_PATHFILE=${1:?null}
+    readonly LOCK_PATHFILE=${1:?null}
 
-    if [[ -e $RUNTIME_LOCK_PATHFILE && -d /proc/$(<"$RUNTIME_LOCK_PATHFILE") && $(</proc/"$(<"$RUNTIME_LOCK_PATHFILE")"/cmdline) =~ $MANAGER_FILE ]]; then
-        ShowAsAbort "another instance is running (PID: $(<"$RUNTIME_LOCK_PATHFILE"))"
+    if [[ -e $LOCK_PATHFILE && -d /proc/$(<"$LOCK_PATHFILE") && $(</proc/"$(<"$LOCK_PATHFILE")"/cmdline) =~ $MANAGER_FILE ]]; then
+        ShowAsAbort "another instance is running (PID: $(<"$LOCK_PATHFILE"))"
         return 1
     fi
 
-    echo "$$" > "$RUNTIME_LOCK_PATHFILE"
+    echo "$$" > "$LOCK_PATHFILE"
     return 0
 
     }
@@ -5032,7 +5036,7 @@ ClaimLockFile()
 ReleaseLockFile()
     {
 
-    [[ -e ${RUNTIME_LOCK_PATHFILE:?null} ]] && rm -f "$RUNTIME_LOCK_PATHFILE"
+    [[ -e ${LOCK_PATHFILE:?null} ]] && rm -f "$LOCK_PATHFILE"
 
     }
 
@@ -7662,11 +7666,10 @@ WriteToDisplayWait()
     # output:
     #   $prev_msg = global and will be used again later
 
-    if [[ $colourful = true ]]; then
-        prev_msg=$(printf '%-10s: %s' "${1:-}" "${2:-}")    # allow extra length for ANSI codes
-    else
-        prev_msg=$(printf '%-4s: %s' "${1:-}" "${2:-}")
-    fi
+    local -i width=4
+
+    [[ $colourful = true ]] && width=10     # allow extra length for ANSI codes
+    prev_msg=$(printf "%-${width}s: %s" "${1:-}" "${2:-}")
 
     DisplayWait "$prev_msg"
 
@@ -7687,16 +7690,14 @@ WriteToDisplayNew()
     #   stdout = overwrites previous message with updated message
     #   $prev_length
 
+    local -i width=4
     local -i length=0
     local -i blanking_length=0
     local msg=''
     local strbuffer=''
 
-    if [[ $colourful = true ]]; then
-        msg=$(printf '%-10s: %s' "${1:-}" "${2:-}")    # allow extra length for ANSI codes
-    else
-        msg=$(printf '%-4s: %s' "${1:-}" "${2:-}")
-    fi
+    [[ $colourful = true ]] && width=10     # allow extra length for ANSI codes
+    msg=$(printf "%-${width}s: %s" "${1:-}" "${2:-}")
 
     if [[ $msg != "${prev_msg:=''}" ]]; then
         prev_length=$((${#prev_msg}+1))
