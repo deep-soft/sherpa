@@ -47,7 +47,7 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
-readonly PROJECT_BRANCH=main
+readonly PROJECT_BRANCH=unstable
 
 Self.Init()
     {
@@ -55,7 +55,8 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230205
+    local -r SCRIPT_VER=230206
+    colourful=true
 
     IsQNAP || return
     IsSU || return
@@ -63,7 +64,6 @@ Self.Init()
 
     trap RunOnEXIT EXIT
     trap RunOnSIGINT INT
-    colourful=true
     msg_pipe_fd=null
     backup_stdin_fd=null
 
