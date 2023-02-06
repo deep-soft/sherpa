@@ -6869,21 +6869,21 @@ FormatAsAction()
 FormatAsPackages()
     {
 
-    ColourTextBrightOrange '[packages...]'
+    ColourTextBrightOrange '[packages]'
 
     }
 
 FormatAsGroups()
     {
 
-    ColourTextBrightOrange '[package group...]'
+    ColourTextBrightOrange '[package group]'
 
     }
 
 FormatAsOptions()
     {
 
-    ColourTextBrightRed '[options...]'
+    ColourTextBrightRed '[options]'
 
     }
 
