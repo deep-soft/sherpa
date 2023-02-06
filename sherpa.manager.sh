@@ -48,7 +48,7 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
-readonly PROJECT_BRANCH=main
+readonly PROJECT_BRANCH='main'
 
 Self.Init()
     {
@@ -56,7 +56,7 @@ Self.Init()
     DebugScriptFuncEn
 
     readonly MANAGER_FILE=sherpa.manager.sh
-    local -r SCRIPT_VER=230206
+    local -r SCRIPT_VER='230207'
     msg_pipe_fd=null
     backup_stdin_fd=null
     UpdateColourisation
@@ -374,8 +374,7 @@ Self.LogEnv()
         DebugUserspaceWarning '$EUID' "$EUID"
     fi
 
-    DebugUserspaceOK '$SUDO_USER' "$SUDO_USER"
-    DebugUserspaceOK '$SUDO_UID' "$SUDO_UID"
+    DebugUserspaceOK '$SUDO_UID' "${SUDO_UID:-undefined}"
     DebugUserspaceOK 'time in shell' "$(GetTimeInShell)"
     DebugUserspaceOK '$BASH_VERSION' "$BASH_VERSION"
     DebugUserspaceOK 'default volume' "$(GetDefVol)"
