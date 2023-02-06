@@ -47,7 +47,7 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
-readonly PROJECT_BRANCH=main
+readonly PROJECT_BRANCH=unstable
 
 Self.Init()
     {
@@ -56,7 +56,9 @@ Self.Init()
 
     readonly MANAGER_FILE=sherpa.manager.sh
     local -r SCRIPT_VER=230206
-    colourful=true
+    msg_pipe_fd=null
+    backup_stdin_fd=null
+    UpdateColourisation
 
     IsQNAP || return
     IsSU || return
@@ -64,8 +66,6 @@ Self.Init()
 
     trap RunOnEXIT EXIT
     trap RunOnSIGINT INT
-    msg_pipe_fd=null
-    backup_stdin_fd=null
 
     [[ ! -e /dev/fd ]] && ln -s /proc/self/fd /dev/fd       # KLUDGE: `/dev/fd` isn't always created by QTS during startup
 
@@ -84,7 +84,6 @@ Self.Init()
 
     HideKeystrokes
     HideCursor
-    UpdateColourisation
 
     # cherry-pick required OS binaries
     readonly AWK_CMD=/bin/awk
@@ -7857,7 +7856,7 @@ StripANSI()
 UpdateColourisation()
     {
 
-    if [[ -e $GNU_SED_CMD ]]; then
+    if [[ -e /opt/bin/sed ]]; then
         colourful=true
         SendParentChangeEnv 'colourful=true'
     else
