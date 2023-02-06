@@ -47,7 +47,7 @@
 set -o nounset -o pipefail
 readonly USER_ARGS_RAW=$*
 readonly SCRIPT_STARTSECONDS=$(/bin/date +%s)
-readonly PROJECT_BRANCH=main
+readonly PROJECT_BRANCH=unstable
 
 Self.Init()
     {
@@ -373,6 +373,8 @@ Self.LogEnv()
         DebugUserspaceWarning '$EUID' "$EUID"
     fi
 
+    DebugUserspaceOK '$SUDO_USER' "$SUDO_USER"
+    DebugUserspaceOK '$SUDO_UID' "$SUDO_UID"
     DebugUserspaceOK 'time in shell' "$(GetTimeInShell)"
     DebugUserspaceOK '$BASH_VERSION' "$BASH_VERSION"
     DebugUserspaceOK 'default volume' "$(GetDefVol)"
