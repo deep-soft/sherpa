@@ -1947,13 +1947,11 @@ IPKs.AcToDownload.Init
 ! QPKGs.AcOkInstall.Exist Entware && IPKs.AcToInstall.Add "$ESSENTIAL_IPKS"
 if QPKGs.AcInstall.ScAll.IsSet; then
 for index in "${!QPKG_NAME[@]}"; do
-[[ ${QPKG_ARCH[$index]} = "$NAS_QPKG_ARCH" || ${QPKG_ARCH[$index]} = all ]] || continue
 IPKs.AcToInstall.Add "${QPKG_REQUIRES_IPKS[$index]}"
 done
 else
 for index in "${!QPKG_NAME[@]}"; do
 if QPKGs.AcToInstall.Exist "${QPKG_NAME[$index]}" || QPKGs.IsInstalled.Exist "${QPKG_NAME[$index]}" || QPKGs.AcToReinstall.Exist "${QPKG_NAME[$index]}" || (QPKGs.AcToStart.Exist "${QPKG_NAME[$index]}" && (QPKGs.AcToInstall.Exist "${QPKG_NAME[$index]}" || QPKGs.IsInstalled.Exist "${QPKG_NAME[$index]}" || QPKGs.AcToReinstall.Exist "${QPKG_NAME[$index]}")); then
-[[ ${QPKG_ARCH[$index]} = "$NAS_QPKG_ARCH" || ${QPKG_ARCH[$index]} = all ]] || continue
 QPKG.MinRAM "${QPKG_NAME[$index]}" &>/dev/null || continue
 IPKs.AcToInstall.Add "${QPKG_REQUIRES_IPKS[$index]}"
 fi
@@ -4396,12 +4394,8 @@ QPKG.IsBackupExist()
 QPKG.Author()
 {
 local -i index=0
-local package=''
-local prev=''
 for index in "${!QPKG_NAME[@]}"; do
-package="${QPKG_NAME[$index]}"
-[[ $package = "$prev" ]] && continue || prev=$package
-if [[ $1 = "$package" ]]; then
+if [[ ${QPKG_NAME[$index]} = "${1:?package name null}" ]]; then
 echo "${QPKG_AUTHOR[$index]}"
 return 0
 fi
@@ -4411,12 +4405,8 @@ return 1
 QPKG.AppAuthor()
 {
 local -i index=0
-local package=''
-local prev=''
 for index in "${!QPKG_NAME[@]}"; do
-package="${QPKG_NAME[$index]}"
-[[ $package = "$prev" ]] && continue || prev=$package
-if [[ $1 = "$package" ]]; then
+if [[ ${QPKG_NAME[$index]} = "${1:?package name null}" ]]; then
 echo "${QPKG_APP_AUTHOR[$index]}"
 return 0
 fi
@@ -4567,12 +4557,8 @@ return 1
 QPKG.Note()
 {
 local -i index=0
-local package=''
-local prev=''
 for index in "${!QPKG_NAME[@]}"; do
-package="${QPKG_NAME[$index]}"
-[[ $package = "$prev" ]] && continue || prev=$package
-if [[ $1 = "$package" ]]; then
+if [[ ${QPKG_NAME[$index]} = "${1:?package name null}" ]]; then
 echo "${QPKG_NOTE[$index]}"
 return 0
 fi
@@ -5454,7 +5440,6 @@ readonly QPKG_NOTE
 readonly QPKG_ABBRVS
 readonly QPKG_CONFLICTS_WITH
 readonly QPKG_DEPENDS_ON
-readonly QPKG_DEPENDED_UPON
 readonly QPKG_REQUIRES_IPKS
 readonly QPKG_CAN_BACKUP
 readonly QPKG_CAN_RESTART_TO_UPDATE
