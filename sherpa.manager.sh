@@ -204,6 +204,7 @@ prev_msg=' '
 fork_pid=''
 [[ ${NAS_FIRMWARE_VER//.} -lt 426 ]] && curl_insecure_arg=' --insecure' || curl_insecure_arg=''
 QPKG.IsInstalled Entware && [[ $ENTWARE_VER = none ]] && DebugAsWarn "$(FormatAsPackName Entware) appears to be installed but is not visible"
+[[ $(GetSudoUID) = '<undefined>' ]] && help_syntax_prefix="$HELP_SYNTAX_NONSUDO_PROMPT" || help_syntax_prefix="$HELP_SYNTAX_SUDO_PROMPT"
 if [[ -z $USER_ARGS_RAW ]]; then
 Opts.Help.Basic.Set
 QPKGs.SkProc.Set
@@ -262,7 +263,7 @@ DebugUserspaceOK '$EUID' "$EUID"
 else
 DebugUserspaceWarning '$EUID' "$EUID"
 fi
-DebugUserspaceOK '$SUDO_UID' "${SUDO_UID:-<undefined>}"
+DebugUserspaceOK '$SUDO_UID' "$(GetSudoUID)"
 DebugUserspaceOK 'time in shell' "$(GetTimeInShell)"
 DebugUserspaceOK '$BASH_VERSION' "$BASH_VERSION"
 DebugUserspaceOK 'default volume' "$(GetDefVol)"
@@ -2139,7 +2140,7 @@ IsSU()
 if [[ $EUID -ne 0 ]]; then
 if [[ -e /usr/bin/sudo ]]; then
 ShowAsError 'this utility must be run with superuser privileges. Try again as:'
-echo "$ sudo sherpa" >&2
+echo "${HELP_SYNTAX_SUDO_PROMPT}sherpa" >&2
 else
 ShowAsError "this utility must be run as the 'admin' user. Please login via SSH as 'admin' and try again"
 fi
@@ -2204,20 +2205,21 @@ IsNtSysFileExist()
 ! IsSysFileExist "${1:?pathfile null}"
 }
 readonly HELP_DESC_INDENT=3
-readonly HELP_SYNTAX_INDENT=6
+readonly HELP_FILE_NAME_WIDTH=33
 readonly ACTION_RESULT_INDENT=6
+readonly HELP_SYNTAX_INDENT=6
+readonly HELP_SYNTAX_SUDO_PROMPT='$ sudo '
+readonly HELP_SYNTAX_NONSUDO_PROMPT='# '
 readonly HELP_PACKAGE_NAME_WIDTH=20
 readonly HELP_PACKAGE_AUTHOR_WIDTH=12
 readonly HELP_PACKAGE_STATUS_WIDTH=40
 readonly HELP_PACKAGE_VER_WIDTH=17
 readonly HELP_PACKAGE_PATH_WIDTH=42
 readonly HELP_PACKAGE_REPO_WIDTH=40
-readonly HELP_FILE_NAME_WIDTH=33
 readonly HELP_COL_SPACER=' '
-readonly HELP_COL_MAIN_PREFIX='* '
+readonly HELP_COL_MAIN_PREFIX='• '
 readonly HELP_COL_OTHER_PREFIX='- '
 readonly HELP_COL_BLANK_PREFIX='  '
-readonly HELP_SYNTAX_PREFIX='# '
 LenANSIDiff()
 {
 local stripped=$(StripANSI "${1:-}")
@@ -2228,20 +2230,20 @@ DisplayAsProjSynExam()
 {
 Display
 if [[ ${1: -1} = '!' ]]; then
-printf "${HELP_COL_MAIN_PREFIX}%s\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+printf "${HELP_COL_MAIN_PREFIX}%s\n%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
 else
-printf "${HELP_COL_MAIN_PREFIX}%s:\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+printf "${HELP_COL_MAIN_PREFIX}%s:\n%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
 fi
 Self.LineSpace.UnSet
 }
 DisplayAsProjSynIndentExam()
 {
 if [[ -z ${1:-} ]]; then
-printf "%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" '' "sherpa ${2:-}"
+printf "%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" '' "sherpa ${2:-}"
 elif [[ ${1: -1} = '!' ]]; then
-printf "\n%${HELP_DESC_INDENT}s%s\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+printf "\n%${HELP_DESC_INDENT}s%s\n%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
 else
-printf "\n%${HELP_DESC_INDENT}s%s:\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+printf "\n%${HELP_DESC_INDENT}s%s:\n%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
 fi
 Self.LineSpace.UnSet
 }
@@ -2250,9 +2252,9 @@ DisplayAsSynExam()
 if [[ -z ${2:-} && ${1: -1} = ':' ]]; then
 printf "\n${HELP_COL_MAIN_PREFIX}%s\n" "$1"
 elif [[ ${1: -1} = '!' ]]; then
-printf "\n${HELP_COL_MAIN_PREFIX}%s\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" "$(Capitalise "${1:-}")" '' "${2:-}"
+printf "\n${HELP_COL_MAIN_PREFIX}%s\n%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" "$(Capitalise "${1:-}")" '' "${2:-}"
 else
-printf "\n${HELP_COL_MAIN_PREFIX}%s:\n%${HELP_SYNTAX_INDENT}s${HELP_SYNTAX_PREFIX}%s\n" "$(Capitalise "${1:-}")" '' "${2:-}"
+printf "\n${HELP_COL_MAIN_PREFIX}%s:\n%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" "$(Capitalise "${1:-}")" '' "${2:-}"
 fi
 Self.LineSpace.UnSet
 }
@@ -3633,6 +3635,10 @@ else
 echo none
 fi
 fi
+}
+GetSudoUID()
+{
+echo "${SUDO_UID:-<undefined>}"
 }
 Self.Error.Set()
 {
