@@ -204,7 +204,13 @@ prev_msg=' '
 fork_pid=''
 [[ ${NAS_FIRMWARE_VER//.} -lt 426 ]] && curl_insecure_arg=' --insecure' || curl_insecure_arg=''
 QPKG.IsInstalled Entware && [[ $ENTWARE_VER = none ]] && DebugAsWarn "$(FormatAsPackName Entware) appears to be installed but is not visible"
-[[ $(GetSudoUID) = '<undefined>' ]] && help_syntax_prefix="$HELP_SYNTAX_NONSUDO_PROMPT" || help_syntax_prefix="$HELP_SYNTAX_SUDO_PROMPT"
+if [[ $(GetSudoUID) = '<undefined>' ]]; then
+help_syntax_prefix="$HELP_SYNTAX_SUPER_PROMPT"
+help_syntax_sudo_prefix="$HELP_SYNTAX_SUPER_PROMPT"
+else
+help_syntax_prefix="$HELP_SYNTAX_REGULAR_PROMPT"
+help_syntax_sudo_prefix="$HELP_SYNTAX_SUDO_PROMPT"
+fi
 if [[ -z $USER_ARGS_RAW ]]; then
 Opts.Help.Basic.Set
 QPKGs.SkProc.Set
@@ -2140,7 +2146,7 @@ IsSU()
 if [[ $EUID -ne 0 ]]; then
 if [[ -e /usr/bin/sudo ]]; then
 ShowAsError 'this utility must be run with superuser privileges. Try again as:'
-echo "${HELP_SYNTAX_SUDO_PROMPT}sherpa" >&2
+echo "${HELP_SYNTAX_SUDO_PROMPT}sherpa $USER_ARGS_RAW" >&2
 else
 ShowAsError "this utility must be run as the 'admin' user. Please login via SSH as 'admin' and try again"
 fi
@@ -2208,8 +2214,9 @@ readonly HELP_DESC_INDENT=3
 readonly HELP_FILE_NAME_WIDTH=33
 readonly ACTION_RESULT_INDENT=6
 readonly HELP_SYNTAX_INDENT=6
-readonly HELP_SYNTAX_SUDO_PROMPT='$ sudo '
-readonly HELP_SYNTAX_NONSUDO_PROMPT='# '
+readonly HELP_SYNTAX_REGULAR_PROMPT='$ '
+readonly HELP_SYNTAX_SUDO_PROMPT=${HELP_SYNTAX_REGULAR_PROMPT}'sudo '
+readonly HELP_SYNTAX_SUPER_PROMPT='# '
 readonly HELP_PACKAGE_NAME_WIDTH=20
 readonly HELP_PACKAGE_AUTHOR_WIDTH=12
 readonly HELP_PACKAGE_STATUS_WIDTH=40
@@ -2230,20 +2237,20 @@ DisplayAsProjSynExam()
 {
 Display
 if [[ ${1: -1} = '!' ]]; then
-printf "${HELP_COL_MAIN_PREFIX}%s\n%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+printf "${HELP_COL_MAIN_PREFIX}%s\n%${HELP_SYNTAX_INDENT}s${help_syntax_sudo_prefix}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
 else
-printf "${HELP_COL_MAIN_PREFIX}%s:\n%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+printf "${HELP_COL_MAIN_PREFIX}%s:\n%${HELP_SYNTAX_INDENT}s${help_syntax_sudo_prefix}%s\n" "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
 fi
 Self.LineSpace.UnSet
 }
 DisplayAsProjSynIndentExam()
 {
 if [[ -z ${1:-} ]]; then
-printf "%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" '' "sherpa ${2:-}"
+printf "%${HELP_SYNTAX_INDENT}s${help_syntax_sudo_prefix}%s\n" '' "sherpa ${2:-}"
 elif [[ ${1: -1} = '!' ]]; then
-printf "\n%${HELP_DESC_INDENT}s%s\n%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+printf "\n%${HELP_DESC_INDENT}s%s\n%${HELP_SYNTAX_INDENT}s${help_syntax_sudo_prefix}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
 else
-printf "\n%${HELP_DESC_INDENT}s%s:\n%${HELP_SYNTAX_INDENT}s${help_syntax_prefix}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
+printf "\n%${HELP_DESC_INDENT}s%s:\n%${HELP_SYNTAX_INDENT}s${help_syntax_sudo_prefix}%s\n" '' "$(Capitalise "${1:-}")" '' "sherpa ${2:-}"
 fi
 Self.LineSpace.UnSet
 }
