@@ -571,7 +571,6 @@ local -r ACTION_INTRANSITIVE=${5:?null}
 local -r ACTION_PRESENT=${6:?null}
 local -r ACTION_PAST=${7:?null}
 local original_colourful=$colourful
-ShowAsProc "$ACTION_PRESENT $([[ $TIER != All ]] && Lowercase "$TIER ")${PACKAGE_TYPE}s"
 case $PACKAGE_TYPE in
 QPKG)
 if [[ $TIER = All ]]; then 
@@ -583,6 +582,7 @@ done
 fi
 total_count=${#target_packages[@]}
 DebugVar total_count
+ShowAsProc "$ACTION_PRESENT $([[ $TIER != All ]] && Lowercase "$TIER ")${PACKAGE_TYPE}$(Pluralise "$total_count")"
 if [[ $total_count -eq 0 ]]; then
 DebugInfo 'nothing to process'
 DebugScriptFuncEx; return
@@ -686,6 +686,7 @@ wait 2>/dev/null
 CloseActionMsgPipe
 ;;
 IPK|PIP)
+ShowAsProc "$ACTION_PRESENT $([[ $TIER != All ]] && Lowercase "$TIER ")${PACKAGE_TYPE}s"
 InitForkCounts
 $targets_function      
 esac
@@ -913,7 +914,7 @@ QPKGs.SkProc.UnSet
 esac
 if [[ -z $action ]]; then
 case $arg in
-a|abs|action|actions|actions-all|all-actions|b|backups|dependent|dependents|failed|groups|installable|installed|l|last|log|missing|not-installed|ok|option|options|p|package|packages|problems|r|repo|repos|results|skipped|standalone|standalones|started|stopped|tail|tips|updatable|updateable|upgradable|v|version|versions|whole)
+a|abs|action|actions|actions-all|alias|aliases|all-actions|b|backups|dependent|dependents|failed|groups|installable|installed|l|last|log|missing|not-installed|ok|option|options|p|package|packages|problems|r|repo|repos|results|skipped|standalone|standalones|started|stopped|tail|tips|updatable|updateable|upgradable|v|version|versions|whole)
 action=help_
 arg_identified=true
 group=''
@@ -927,7 +928,7 @@ case $arg in
 backedup|failed|installable|installed|missing|not-backedup|not-installed|ok|problems|results|skipped|started|stopped|tail|tips)
 group=${arg}_
 ;;
-a|abs)
+a|abs|alias|aliases)
 group=abs_
 ;;
 actions-all|all-actions)
@@ -2596,7 +2597,7 @@ for package in $(QPKGs.Sc${tier}.Array); do
 DisplayAsHelpPackageNameAuthorDesc "$package" "$(QPKG.Author "$package")" "$(QPKG.Desc "$package")" "$(QPKG.Note "$package")"
 done
 done
-DisplayAsProjSynExam "abbreviations may also be used to specify $(FormatAsPackages). To list these" 'list abs'
+DisplayAsProjSynExam "abbreviations and aliases may also be used to specify $(FormatAsPackages). To list these" 'list abs'
 DisplayAsProjSynIndentExam '' a
 return 0
 }
@@ -2607,9 +2608,9 @@ local package=''
 local abs=''
 DisableDebugToArchiveAndFile
 Help.Basic.Show
-DisplayAsHelpTitle "$(FormatAsTitle) can recognise various abbreviations as $(FormatAsPackages)"
+DisplayAsHelpTitle "$(FormatAsTitle) can recognise various abbreviations and aliases as $(FormatAsPackages)"
 for tier in Standalone Dependent; do
-DisplayAsHelpTitlePackageNameAbs "$tier QPKGs" 'acceptable package name abreviations'
+DisplayAsHelpTitlePackageNameAbs "$tier QPKGs" 'acceptable package name abbreviations and aliases'
 for package in $(QPKGs.Sc${tier}.Array); do
 abs=$(QPKG.Abbrvs "$package")
 [[ -n $abs ]] && DisplayAsHelpPackageNameAbs "$package" "${abs// /, }"
@@ -2648,7 +2649,7 @@ DisableDebugToArchiveAndFile
 Help.Basic.Show
 DisplayAsHelpTitle 'helpful tips and shortcuts:'
 DisplayAsProjSynIndentExam "install all available $(FormatAsTitle) packages" 'install all'
-DisplayAsProjSynIndentExam 'package abbreviations also work. To see these' 'list abs'
+DisplayAsProjSynIndentExam 'package abbreviations and aliases also work. To see these' 'list abs'
 DisplayAsProjSynIndentExam '' a
 DisplayAsProjSynIndentExam 'restart all installed packages (upgrades internal applications where supported)' 'restart all'
 DisplayAsProjSynIndentExam 'list only packages that can be installed' 'list installable'
