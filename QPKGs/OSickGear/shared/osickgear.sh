@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=OSickGear
-    readonly SCRIPT_VERSION=230211
+    readonly SCRIPT_VERSION=230211a
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -274,11 +274,6 @@ InstallAddons()
     IsNotAutoUpdate && [[ $new_env = false ]] && return 0
 
     [[ ! -e $requirements_pathfile && -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
-
-    if [[ $QPKG_NAME = OSickGear && -e $requirements_pathfile ]]; then
-        # KLUDGE: (230211) add `hachoir` module. This isn't yet included in the online version of `requirements.txt`
-        ! /bin/grep -q 'hachoir' "$requirements_pathfile" && echo 'hachoir' >> "$requirements_pathfile"
-    fi
 
     if [[ -e $requirements_pathfile ]]; then
         DisplayRunAndLog 'install required PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $requirements_pathfile" log:failure-only || SetError
