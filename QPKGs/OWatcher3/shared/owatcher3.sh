@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 ####################################################################################
-# sabnzbd3.sh
+# owatcher3.sh
 
-# Copyright (C) 2020-2023 OneCD - one.cd.only@gmail.com
+# Copyright (C) 2019-2023 OneCD - one.cd.only@gmail.com
 
 # so, blame OneCD if it all goes horribly wrong. ;)
 
@@ -19,8 +19,8 @@ Init()
     IsQNAP || return
 
     # service-script environment
-    readonly QPKG_NAME=SABnzbd
-    readonly SCRIPT_VERSION=230105a
+    readonly QPKG_NAME=OWatcher3
+    readonly SCRIPT_VERSION=230211
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -38,7 +38,7 @@ Init()
     local re=''
 
     # specific to online-sourced applications only
-    readonly SOURCE_GIT_URL=https://github.com/sabnzbd/sabnzbd.git
+    readonly SOURCE_GIT_URL=https://github.com/barbequesauce/Watcher3.git
     readonly SOURCE_GIT_BRANCH=master
     # 'shallow' (depth 1) or 'single-branch' ... 'shallow' implies 'single-branch'
     readonly SOURCE_GIT_DEPTH=shallow
@@ -50,24 +50,20 @@ Init()
     readonly ALLOW_ACCESS_TO_SYS_PACKAGES=true
 
     # specific to daemonised applications only
-    readonly DAEMON_PATHFILE=$QPKG_REPO_PATH/SABnzbd.py
+    readonly DAEMON_PATHFILE=$QPKG_REPO_PATH/watcher.py
     readonly DAEMON_PID_PATHFILE=/var/run/$QPKG_NAME.pid
-    readonly LAUNCHER="$DAEMON_PATHFILE --daemon --browser 0 --config-file $QPKG_INI_PATHFILE --pidfile $DAEMON_PID_PATHFILE"
+    readonly LAUNCHER="$DAEMON_PATHFILE --daemon --userdata $(dirname "$QPKG_INI_PATHFILE") --conf $QPKG_INI_PATHFILE --pid $DAEMON_PID_PATHFILE"
     readonly PORT_CHECK_TIMEOUT=120
     readonly DAEMON_STOP_TIMEOUT=60
     readonly DAEMON_PORT_CMD=''
-    readonly UI_PORT_CMD="/sbin/getcfg misc port -d 0 -f $QPKG_INI_PATHFILE"
-    readonly UI_PORT_SECURE_CMD="/sbin/getcfg misc https_port -d 0 -f $QPKG_INI_PATHFILE"
-    readonly UI_PORT_SECURE_ENABLED_TEST_CMD='[[ $(/sbin/getcfg misc enable_https -d 0 -f '$QPKG_INI_PATHFILE') = 1 ]]'
-    readonly UI_LISTENING_ADDRESS_CMD="/sbin/getcfg misc host -d undefined -f $QPKG_INI_PATHFILE"
+    readonly UI_PORT_CMD="/opt/bin/jq -r .Server.serverport < $QPKG_INI_PATHFILE"
+    readonly UI_PORT_SECURE_CMD="/opt/bin/jq -r .Server.serverport < $QPKG_INI_PATHFILE"
+    readonly UI_PORT_SECURE_ENABLED_TEST_CMD=''
+    readonly UI_LISTENING_ADDRESS_CMD="/opt/bin/jq -r .Server.serverhost < $QPKG_INI_PATHFILE"
     daemon_port=0
     ui_port=0
     ui_port_secure=0
     ui_listening_address=undefined
-
-    # specific to applications supporting version lookup only
-    readonly APP_VERSION_PATHFILE=$QPKG_REPO_PATH/sabnzbd/version.py
-    readonly APP_VERSION_CMD="/bin/grep '__version__ =' $APP_VERSION_PATHFILE | /bin/sed 's|^.*\"\(.*\)\"|\1|'"
 
     if [[ -z $LANG ]]; then
         export LANG=en_US.UTF-8
@@ -277,9 +273,14 @@ InstallAddons()
 
     IsNotAutoUpdate && [[ $new_env = false ]] && return 0
 
+    if [[ $QPKG_NAME = OWatcher3 ]]; then
+        # need to install `m2r` PyPI module first
+        DisplayRunAndLog "KLUDGE: install 'm2r' PyPI module first" ". $VENV_PATH/bin/activate && pip install --no-input m2r" log:failure-only || SetError
+    fi
+
     [[ ! -e $requirements_pathfile && -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
 
-    if [[ $QPKG_NAME = SABnzbd && -e $requirements_pathfile ]]; then
+    if [[ -e $requirements_pathfile ]]; then
         case $(/bin/uname -m) in
             x86_64|i686|aarch64)
                 : # `pip` compilation on these arches works fine
@@ -307,19 +308,6 @@ InstallAddons()
             DisplayRunAndLog 'install default PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input $QPKG_REPO_PATH" log:failure-only || SetError
             no_pips_installed=false
         fi
-    fi
-
-    if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
-        DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
-
-        # run [tools/make_mo.py] if SABnzbd version number has changed since last run
-        LoadAppVersion
-        [[ -e $APP_VERSION_STORE_PATHFILE && $(<"$APP_VERSION_STORE_PATHFILE") = "$app_version" && -d $QPKG_REPO_PATH/locale ]] && return 0
-
-        DisplayRunAndLog "update $(FormatAsPackageName $QPKG_NAME) language translations" ". $VENV_PATH/bin/activate && cd $QPKG_REPO_PATH; $VENV_INTERPRETER $QPKG_REPO_PATH/tools/make_mo.py" log:failure-only
-        [[ ! -e $APP_VERSION_STORE_PATHFILE ]] && return 0
-
-        SaveAppVersion
     fi
 
     }
@@ -1046,7 +1034,14 @@ IsNotSourcedOnline()
 IsSSLEnabled()
     {
 
-    eval "$UI_PORT_SECURE_ENABLED_TEST_CMD"
+    # It looks like SSL is considered "enabled" in Watcher3 if user has provided paths to a .cert and .key file pair.
+    # If these files are specified, but don't exist, Watcher3 aborts startup.
+    # Presuming the same is true if either file is invalid, but let's not check for that right now.
+
+    local server_ssl_certfile=$(/opt/bin/jq -r .Server.ssl_cert < "$QPKG_INI_PATHFILE")
+    local server_ssl_keyfile=$(/opt/bin/jq -r .Server.ssl_key < "$QPKG_INI_PATHFILE")
+
+    [[ -e $server_ssl_certfile && -e $server_ssl_keyfile ]]
 
     }
 
