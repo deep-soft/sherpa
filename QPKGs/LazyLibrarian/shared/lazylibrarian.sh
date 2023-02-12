@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 ####################################################################################
 # lazylibrarian.sh
-#
-# Copyright (C) 2017-2023 OneCD [one.cd.only@gmail.com]
-#
+
+# Copyright (C) 2017-2023 OneCD - one.cd.only@gmail.com
+
 # so, blame OneCD if it all goes horribly wrong. ;)
-#
+
 # This is a type 1 service-script: https://github.com/OneCDOnly/sherpa/wiki/Service-Script-Types
-#
+
 # For more info: https://forum.qnap.com/viewtopic.php?f=320&t=132373
 ####################################################################################
 
@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=LazyLibrarian
-    readonly SCRIPT_VERSION=230105
+    readonly SCRIPT_VERSION=230212
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -56,10 +56,10 @@ Init()
     readonly PORT_CHECK_TIMEOUT=120
     readonly DAEMON_STOP_TIMEOUT=60
     readonly DAEMON_PORT_CMD=''
-    readonly UI_PORT_CMD="/sbin/getcfg General http_port -d 5299 -f $QPKG_INI_PATHFILE"		# 5299 is the default value for LazyLibrarian, so it wont be found in config file. LL only stores non-default values.
-    readonly UI_PORT_SECURE_CMD="/sbin/getcfg General http_port -d 5299 -f $QPKG_INI_PATHFILE"
+    readonly UI_PORT_CMD='/sbin/getcfg General http_port -d 5299 -f '$QPKG_INI_PATHFILE     # 5299 is the default value for LazyLibrarian, so it wont be found in config file. LL only stores non-default values.
+    readonly UI_PORT_SECURE_CMD='/sbin/getcfg General http_port -d 5299 -f '$QPKG_INI_PATHFILE
     readonly UI_PORT_SECURE_ENABLED_TEST_CMD='[[ $(/sbin/getcfg General https_enabled -d 0 -f '$QPKG_INI_PATHFILE') = 1 ]]'
-    readonly UI_LISTENING_ADDRESS_CMD="/sbin/getcfg General http_host -d undefined -f $QPKG_INI_PATHFILE"
+    readonly UI_LISTENING_ADDRESS_CMD='/sbin/getcfg General http_host -d undefined -f '$QPKG_INI_PATHFILE
     daemon_port=0
     ui_port=0
     ui_port_secure=0
