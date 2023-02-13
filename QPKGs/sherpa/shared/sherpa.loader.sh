@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 # sherpa.loader.sh
-#   Copyright (C) 2017-2022 OneCD [one.cd.only@gmail.com]
+#   Copyright (C) 2017-2023 OneCD - one.cd.only@gmail.com
 
 #   So, blame OneCD if it all goes horribly wrong. ;)
 
 # Description:
-#   This is the loader script for the sherpa mini-package-manager and is part of the 'sherpa' QPKG.
+#   This is the loader script for the sherpa mini-package-manager and is part of the `sherpa` QPKG.
 
 # Project:
 #   https://git.io/sherpa
@@ -35,11 +35,10 @@ Init()
 
     IsQNAP || return
 
-    export LOADER_SCRIPT_VER=221228
+    export LOADER_SCRIPT_VER=230213
     export LOADER_SCRIPT_PPID=$PPID
 
-    local -r PROJECT_PATH=$(/sbin/getcfg sherpa Install_Path -f /etc/config/qpkg.conf)
-    local -r WORK_PATH=$PROJECT_PATH/cache
+    local -r WORK_PATH=$(/sbin/getcfg sherpa Install_Path -f /etc/config/qpkg.conf)/cache
 
     local -r MANAGER_FILE=sherpa.manager.sh
     local -r MANAGER_ARCHIVE_FILE=${MANAGER_FILE%.*}.tar.gz
@@ -67,7 +66,7 @@ EnsureFileIsCurrent()
 
     local PACKAGE_CHANGE_THRESHOLD_MINUTES=1440
 
-    # if file was updated only recently, don't run another update. Examine 'change' time as this is updated even if file content isn't modified.
+    # if file was updated only recently, don't run another update. Examine `change` time as this is updated even if file content isn't modified.
     if [[ -e $1 && -e $GNU_FIND_CMD ]]; then
         msgs=$($GNU_FIND_CMD "$1" -cmin +$PACKAGE_CHANGE_THRESHOLD_MINUTES) # no-output if last update was less than $PACKAGE_CHANGE_THRESHOLD_MINUTES minutes ago
     else

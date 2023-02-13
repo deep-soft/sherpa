@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 # sherpa.service.sh
-#   Copyright (C) 2020-2022 OneCD [one.cd.only@gmail.com]
+#   Copyright (C) 2020-2023 OneCD - one.cd.only@gmail.com
 
 #   So, blame OneCD if it all goes horribly wrong. ;)
 
 # Description:
-#   This is the service script for the sherpa mini-package-manager and is part of the 'sherpa' QPKG.
+#   This is the service script for the sherpa mini-package-manager and is part of the `sherpa` QPKG.
 
 # Project:
 #   https://git.io/sherpa
