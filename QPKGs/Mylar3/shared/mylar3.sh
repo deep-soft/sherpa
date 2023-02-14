@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 ####################################################################################
 # mylar3.sh
-#
-# Copyright (C) 2020-2023 OneCD [one.cd.only@gmail.com]
-#
+
+# Copyright (C) 2020-2023 OneCD - one.cd.only@gmail.com
+
 # so, blame OneCD if it all goes horribly wrong. ;)
-#
+
 # This is a type 1 service-script: https://github.com/OneCDOnly/sherpa/wiki/Service-Script-Types
-#
+
 # For more info: https://forum.qnap.com/viewtopic.php?f=320&t=132373
 ####################################################################################
 
@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=Mylar3
-    readonly SCRIPT_VERSION=230105
+    readonly SCRIPT_VERSION=230214
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)

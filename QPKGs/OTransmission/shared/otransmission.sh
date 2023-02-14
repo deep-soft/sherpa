@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 ####################################################################################
 # otransmission.sh
-#
-# Copyright (C) 2020-2023 OneCD [one.cd.only@gmail.com]
-#
+
+# Copyright (C) 2020-2023 OneCD - one.cd.only@gmail.com
+
 # so, blame OneCD if it all goes horribly wrong. ;)
-#
+
 # This is a type 3 service-script: https://github.com/OneCDOnly/sherpa/wiki/Service-Script-Types
-#
+
 # For more info: https://forum.qnap.com/viewtopic.php?f=320&t=132373
 ####################################################################################
 
@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=OTransmission
-    readonly SCRIPT_VERSION=230105
+    readonly SCRIPT_VERSION=230214
     readonly TRANSMISSION_WEB_HOME=/opt/share/transmission/web
 
     # general environment
