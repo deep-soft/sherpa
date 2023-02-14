@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=LazyLibrarian
-    readonly SCRIPT_VERSION=230212
+    readonly SCRIPT_VERSION=230214
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -54,7 +54,7 @@ Init()
     readonly DAEMON_PID_PATHFILE=/var/run/$QPKG_NAME.pid
     readonly LAUNCHER="$DAEMON_PATHFILE --daemon --nolaunch --datadir $(/usr/bin/dirname "$QPKG_INI_PATHFILE") --config $QPKG_INI_PATHFILE --pidfile $DAEMON_PID_PATHFILE"
     readonly PORT_CHECK_TIMEOUT=120
-    readonly DAEMON_STOP_TIMEOUT=60
+    readonly DAEMON_STOP_TIMEOUT=120
     readonly DAEMON_PORT_CMD=''
     readonly UI_PORT_CMD='/sbin/getcfg General http_port -d 5299 -f '$QPKG_INI_PATHFILE     # 5299 is the default value for LazyLibrarian, so it wont be found in config file. LL only stores non-default values.
     readonly UI_PORT_SECURE_CMD='/sbin/getcfg General http_port -d 5299 -f '$QPKG_INI_PATHFILE
