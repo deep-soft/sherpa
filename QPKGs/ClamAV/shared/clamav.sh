@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 ####################################################################################
 # clamav.sh
-#
-# Copyright (C) 2021-2023 OneCD [one.cd.only@gmail.com]
-#
+
+# Copyright (C) 2021-2023 OneCD - one.cd.only@gmail.com
+
 # so, blame OneCD if it all goes horribly wrong. ;)
-#
+
 # This is a type 4 service-script: https://github.com/OneCDOnly/sherpa/wiki/Service-Script-Types
-#
+
 # For more info: https://forum.qnap.com/viewtopic.php?f=320&t=132373
 ####################################################################################
 
