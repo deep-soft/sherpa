@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ####################################################################################
-# sabnzbd3.sh
+# sabnzbd.sh
 
 # Copyright (C) 2020-2023 OneCD - one.cd.only@gmail.com
 
@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=SABnzbd
-    readonly SCRIPT_VERSION=230105a
+    readonly SCRIPT_VERSION=230225
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
