@@ -1,0 +1,9 @@
+[BitTorrent]
+Session\Port=17267
+Session\QueueingSystemEnabled=false
+
+[Meta]
+MigrationVersion=3
+
+[Preferences]
+WebUI\Port=9080
