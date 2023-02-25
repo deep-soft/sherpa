@@ -1,9 +1,10 @@
-[BitTorrent]
-Session\Port=17267
-Session\QueueingSystemEnabled=false
-
 [Meta]
 MigrationVersion=3
 
 [Preferences]
+WebUI\Address=*
+WebUI\CSRFProtection=false
+WebUI\ClickjackingProtection=true
 WebUI\Port=9080
+WebUI\UseUPnP=false
+WebUI\Username=admin
