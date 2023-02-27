@@ -35,14 +35,14 @@ Init()
 
     IsQNAP || return
 
-    export LOADER_SCRIPT_VER=230213
+    export LOADER_SCRIPT_VER=230227
     export LOADER_SCRIPT_PPID=$PPID
 
     local -r WORK_PATH=$(/sbin/getcfg sherpa Install_Path -f /etc/config/qpkg.conf)/cache
 
     local -r MANAGER_FILE=sherpa.manager.sh
     local -r MANAGER_ARCHIVE_FILE=${MANAGER_FILE%.*}.tar.gz
-    readonly MANAGER_ARCHIVE_URL=https://raw.githubusercontent.com/OneCDOnly/sherpa/main/$MANAGER_ARCHIVE_FILE
+    readonly MANAGER_ARCHIVE_URL=https://raw.githubusercontent.com/OneCDOnly/sherpa/stable/$MANAGER_ARCHIVE_FILE
     readonly MANAGER_ARCHIVE_PATHFILE=$WORK_PATH/$MANAGER_ARCHIVE_FILE
     readonly MANAGER_PATHFILE=$WORK_PATH/$MANAGER_FILE
 
