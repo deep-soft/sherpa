@@ -20,12 +20,12 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=pyLoad
-    readonly SCRIPT_VERSION=230302
+    readonly SCRIPT_VERSION=230302a
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
     readonly QPKG_VERSION=$(/sbin/getcfg $QPKG_NAME Version -d unknown -f /etc/config/qpkg.conf)
-    readonly QPKG_INI_PATHFILE=$QPKG_PATH/config/config.ini
+    readonly QPKG_INI_PATHFILE=$QPKG_PATH/config/settings/pyload.cfg.def
     readonly QPKG_INI_DEFAULT_PATHFILE=$QPKG_INI_PATHFILE.def
     readonly APP_VERSION_STORE_PATHFILE=$QPKG_PATH/config/version.stored
     readonly SERVICE_STATUS_PATHFILE=/var/run/$QPKG_NAME.last.operation
@@ -42,9 +42,9 @@ Init()
     readonly SOURCE_GIT_BRANCH=''
     # 'shallow' (depth 1) or 'single-branch' ... 'shallow' implies 'single-branch'
     readonly SOURCE_GIT_DEPTH=''
-    readonly QPKG_REPO_PATH=''
+    readonly QPKG_REPO_PATH=$QPKG_PATH/repo-cache
     readonly PIP_CACHE_PATH=$QPKG_PATH/pip-cache
-    readonly INTERPRETER=''
+    readonly INTERPRETER=/opt/bin/python3
     readonly VENV_PATH=$QPKG_PATH/venv
     readonly VENV_INTERPRETER=''
     readonly ALLOW_ACCESS_TO_SYS_PACKAGES=true
@@ -64,10 +64,6 @@ Init()
     ui_port=0
     ui_port_secure=0
     ui_listening_address=undefined
-
-#     # specific to applications supporting version lookup only
-#     readonly APP_VERSION_PATHFILE=$QPKG_REPO_PATH/sabnzbd/version.py
-#     readonly APP_VERSION_CMD="/bin/grep '__version__ =' $APP_VERSION_PATHFILE | /bin/sed 's|^.*\"\(.*\)\"|\1|'"
 
     if [[ -z $LANG ]]; then
         export LANG=en_US.UTF-8
@@ -152,7 +148,6 @@ StartQPKG()
         DisplayCommitToLog false
     fi
 
-#     PullGitRepo "$QPKG_NAME" "$SOURCE_GIT_URL" "$SOURCE_GIT_BRANCH" "$SOURCE_GIT_DEPTH" "$QPKG_REPO_PATH" || { SetError; return 1 ;}
     InstallAddons || { SetError; return 1 ;}
     IsNotDaemon && return
     WaitForLaunchTarget || { SetError; return 1 ;}
@@ -279,52 +274,14 @@ InstallAddons()
 
     [[ ! -e $requirements_pathfile && -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
 
-    if [[ $QPKG_NAME = SABnzbd && -e $requirements_pathfile ]]; then
-        case $(/bin/uname -m) in
-            x86_64|i686|aarch64)
-                : # `pip` compilation on these arches works fine
-                ;;
-            *)
-                # need to remove `cffi` and `cryptography` modules from downloaded `requirements.txt`, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on armv5 NAS.
-                DisplayRunAndLog "KLUDGE: don't attempt to compile 'cffi' and 'cryptography' PyPI modules" "/bin/sed -i '/^cffi\|^cryptography/d' $requirements_pathfile" log:failure-only || SetError
-        esac
-    fi
-
     if [[ -e $requirements_pathfile ]]; then
         DisplayRunAndLog 'install required PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $requirements_pathfile" log:failure-only || SetError
         no_pips_installed=false
     fi
 
-    [[ ! -e $recommended_pathfile && -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
-
-    if [[ -e $recommended_pathfile ]]; then
-        DisplayRunAndLog 'install recommended PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $recommended_pathfile" log:failure-only || SetError
-        no_pips_installed=false
-    fi
-
-    if [[ $no_pips_installed = true ]]; then        # fallback to general installation method
-        if [[ -e $QPKG_REPO_PATH/setup.py || -e $QPKG_REPO_PATH/pyproject.toml ]]; then
-            DisplayRunAndLog 'install default PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input $QPKG_REPO_PATH" log:failure-only || SetError
-            no_pips_installed=false
-        fi
-    fi
-
-    if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
-		if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
-		elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabctools" log:failure-only || SetError
-		fi
-
-        # run [tools/make_mo.py] if SABnzbd version number has changed since last run
-        LoadAppVersion
-        [[ -e $APP_VERSION_STORE_PATHFILE && $(<"$APP_VERSION_STORE_PATHFILE") = "$app_version" && -d $QPKG_REPO_PATH/locale ]] && return 0
-
-        DisplayRunAndLog "update $(FormatAsPackageName $QPKG_NAME) language translations" ". $VENV_PATH/bin/activate && cd $QPKG_REPO_PATH; $VENV_INTERPRETER $QPKG_REPO_PATH/tools/make_mo.py" log:failure-only
-        [[ ! -e $APP_VERSION_STORE_PATHFILE ]] && return 0
-
-        SaveAppVersion
-    fi
+    if [[ $QPKG_NAME = pyLoad && $new_env = true ]]; then
+		DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
+	fi
 
     }
 
@@ -531,7 +488,6 @@ CleanLocalClone()
 
     StopQPKG
     DisplayRunAndLog 'clean local repository' "rm -rf $QPKG_REPO_PATH" log:failure-only
-    [[ -d $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME ]] && DisplayRunAndLog 'KLUDGE: remove previous local repository' "rm -r $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME" log:failure-only
     DisplayRunAndLog 'clean virtual environment' "rm -rf $VENV_PATH" log:failure-only
     DisplayRunAndLog 'clean PyPI cache' "rm -rf $PIP_CACHE_PATH" log:failure-only
     StartQPKG
@@ -1036,7 +992,7 @@ IsNotSupportReset()
 IsSourcedOnline()
     {
 
-    [[ -n ${SOURCE_GIT_URL:-} ]]
+    [[ -n ${VENV_PATH:-} ]]
 
     }
 

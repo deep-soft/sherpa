@@ -67,7 +67,7 @@ webui - "Web Interface":
 	str prefix : "Path prefix" =
 	int session_lifetime : "Session lifetime (minutes)" = 44640
 	file ssl_certchain : "CA's intermediate certificate bundle (optional)" =
-	file ssl_certfile : "SSL Certificate" =
-	file ssl_keyfile : "SSL Key" =
+	file ssl_certfile : "SSL Certificate" = /share/CACHEDEV2_DATA/.qpkg/pyLoad/config/data/ssl.crt
+	file ssl_keyfile : "SSL Key" = /share/CACHEDEV2_DATA/.qpkg/pyLoad/config/data/ssl.key
 	Default;modern;pyplex theme : "Theme" = modern
 	bool use_ssl : "Use HTTPS" = False
