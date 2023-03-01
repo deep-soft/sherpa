@@ -6,7 +6,7 @@
 
 # so, blame OneCD if it all goes horribly wrong. ;)
 
-# This is a type 1 service-script: https://github.com/OneCDOnly/sherpa/wiki/Service-Script-Types
+# This is a type x service-script: https://github.com/OneCDOnly/sherpa/wiki/Service-Script-Types
 
 # For more info: https://forum.qnap.com/viewtopic.php?f=320&t=132373
 ####################################################################################
@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=pyLoad
-    readonly SCRIPT_VERSION=230301
+    readonly SCRIPT_VERSION=230302
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -42,24 +42,24 @@ Init()
     readonly SOURCE_GIT_BRANCH=''
     # 'shallow' (depth 1) or 'single-branch' ... 'shallow' implies 'single-branch'
     readonly SOURCE_GIT_DEPTH=''
-    readonly QPKG_REPO_PATH=$QPKG_PATH/repo-cache
+    readonly QPKG_REPO_PATH=''
     readonly PIP_CACHE_PATH=$QPKG_PATH/pip-cache
-    readonly INTERPRETER=/opt/bin/python3
+    readonly INTERPRETER=''
     readonly VENV_PATH=$QPKG_PATH/venv
-    readonly VENV_INTERPRETER=$VENV_PATH/bin/python3
+    readonly VENV_INTERPRETER=''
     readonly ALLOW_ACCESS_TO_SYS_PACKAGES=true
 
     # specific to daemonised applications only
-    readonly DAEMON_PATHFILE=$QPKG_REPO_PATH/SABnzbd.py
+    readonly DAEMON_PATHFILE=$VENV_PATH/bin/pyload
     readonly DAEMON_PID_PATHFILE=/var/run/$QPKG_NAME.pid
-    readonly LAUNCHER="$DAEMON_PATHFILE --daemon --browser 0 --config-file $QPKG_INI_PATHFILE --pidfile $DAEMON_PID_PATHFILE"
+    readonly LAUNCHER="$DAEMON_PATHFILE --daemon --userdir $QPKG_PATH/config --pidfile $DAEMON_PID_PATHFILE"
     readonly PORT_CHECK_TIMEOUT=120
     readonly DAEMON_STOP_TIMEOUT=60
     readonly DAEMON_PORT_CMD=''
-    readonly UI_PORT_CMD="/sbin/getcfg misc port -d 0 -f $QPKG_INI_PATHFILE"
-    readonly UI_PORT_SECURE_CMD="/sbin/getcfg misc https_port -d 0 -f $QPKG_INI_PATHFILE"
-    readonly UI_PORT_SECURE_ENABLED_TEST_CMD='[[ $(/sbin/getcfg misc enable_https -d 0 -f '$QPKG_INI_PATHFILE') = 1 ]]'
-    readonly UI_LISTENING_ADDRESS_CMD="/sbin/getcfg misc host -d undefined -f $QPKG_INI_PATHFILE"
+    readonly UI_PORT_CMD="echo 9665"
+    readonly UI_PORT_SECURE_CMD="echo 0"
+    readonly UI_PORT_SECURE_ENABLED_TEST_CMD='false'
+    readonly UI_LISTENING_ADDRESS_CMD="echo 0.0.0.0"
     daemon_port=0
     ui_port=0
     ui_port_secure=0
@@ -182,7 +182,7 @@ StartQPKG()
         return 1
     fi
 
-    DisplayRunAndLog 'start daemon' ". $VENV_PATH/bin/activate && cd $QPKG_REPO_PATH && $VENV_INTERPRETER $LAUNCHER" || { SetError; return 1 ;}
+    DisplayRunAndLog 'start daemon' ". $VENV_PATH/bin/activate && $LAUNCHER" || { SetError; return 1 ;}
     WaitForPID || { SetError; return 1 ;}
     IsDaemonActive || { SetError; return 1 ;}
     CheckPorts || { SetError; return 1 ;}
