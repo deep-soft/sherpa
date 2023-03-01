@@ -20,12 +20,12 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=pyLoad
-    readonly SCRIPT_VERSION=230302a
+    readonly SCRIPT_VERSION=230302c
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
     readonly QPKG_VERSION=$(/sbin/getcfg $QPKG_NAME Version -d unknown -f /etc/config/qpkg.conf)
-    readonly QPKG_INI_PATHFILE=$QPKG_PATH/config/settings/pyload.cfg.def
+    readonly QPKG_INI_PATHFILE=$QPKG_PATH/config/settings/pyload.cfg
     readonly QPKG_INI_DEFAULT_PATHFILE=$QPKG_INI_PATHFILE.def
     readonly APP_VERSION_STORE_PATHFILE=$QPKG_PATH/config/version.stored
     readonly SERVICE_STATUS_PATHFILE=/var/run/$QPKG_NAME.last.operation
