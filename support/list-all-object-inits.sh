@@ -9,4 +9,6 @@ fi
 
 source_pathfile="$source_path"/objects
 
+[[ ! -e $source_pathfile ]] && ./build-objects.sh
+
 grep '.Init()' "$source_pathfile" | sort
