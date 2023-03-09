@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=nzbToMedia
-    readonly SCRIPT_VERSION=230214
+    readonly SCRIPT_VERSION=230309
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -101,7 +101,6 @@ Init()
 
     UnsetError
     UnsetRestartPending
-    EnsureConfigFileExists
     LoadAppVersion
 
     IsSupportBackup && [[ -n ${BACKUP_PATH:-} && ! -d $BACKUP_PATH ]] && mkdir -p "$BACKUP_PATH"
@@ -276,9 +275,7 @@ RestoreConfig()
         return 1
     fi
 
-    StopQPKG || return 1
     DisplayRunAndLog 'restore configuration backup' "/bin/tar --extract --gzip --file=$BACKUP_PATHFILE --directory=$QPKG_REPO_PATH" || SetError
-    StartQPKG || return 1
 
     return 0
 
@@ -346,7 +343,7 @@ PullGitRepo()
     # $4 = remote depth: 'shallow' or 'single-branch'
     # $5 = local path to clone into
 
-    [[ -z $1 || -z $2 || -z $3 || -z $4 || -z $5 ]] && return 1
+    ! [[ -z $1 || -z $2 || -z $3 || -z $4 || -z $5 ]] || return
 
     local -r QPKG_GIT_PATH="$5"
     local -r GIT_HTTPS_URL="$2"
@@ -362,7 +359,7 @@ PullGitRepo()
 
         if [[ $installed_branch != "$3" ]]; then
             branch_switch=true
-            DisplayCommitToLog "current git branch: $installed_branch, new git branch: $3"
+            DisplayCommitToLog "current git branch: '$installed_branch', new git branch: '$3'"
             [[ $QPKG_NAME = nzbToMedia ]] && BackupConfig
             DisplayRunAndLog 'new git branch has been specified, so clean local repository' "cd /tmp; rm -r $QPKG_GIT_PATH" log:failure-only
         fi
@@ -379,7 +376,7 @@ PullGitRepo()
 
     if IsAutoUpdate; then
         installed_branch=$(/opt/bin/git -C "$QPKG_GIT_PATH" branch | /bin/grep '^\*' | /bin/sed 's|^\* ||')
-        DisplayCommitToLog "current git branch: $installed_branch"
+        DisplayCommitToLog "current git branch: '$installed_branch'"
     fi
 
     [[ $branch_switch = true && $QPKG_NAME = nzbToMedia ]] && RestoreConfig
@@ -1588,29 +1585,26 @@ if IsNotError; then
         start|--start)
             if IsNotQPKGEnabled; then
                 echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
-                SetError
+			else
+				SetServiceOperation starting
+				StartQPKG
             fi
-
-            SetServiceOperation starting
-            StartQPKG
             ;;
         stop|--stop)
             if IsNotQPKGEnabled; then
                 echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
-                SetError
+			else
+				SetServiceOperation stopping
+				StopQPKG
             fi
-
-            SetServiceOperation stopping
-            StopQPKG
             ;;
         r|-r|restart|--restart)
             if IsNotQPKGEnabled; then
                 echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
-                SetError
+			else
+				SetServiceOperation restarting
+				StopQPKG && StartQPKG
             fi
-
-            SetServiceOperation restarting
-            StopQPKG && StartQPKG
             ;;
         s|-s|status|--status)
             SetServiceOperation status
@@ -1637,7 +1631,9 @@ if IsNotError; then
         restore|--restore|restore-config|--restore-config)
             if IsSupportBackup; then
                 SetServiceOperation restoring
+                StopQPKG
                 RestoreConfig
+                StartQPKG
             else
                 SetServiceOperation none
                 ShowHelp
@@ -1646,7 +1642,9 @@ if IsNotError; then
         clean|--clean)
             if IsSourcedOnline; then
                 SetServiceOperation cleaning
+                StopQPKG
                 CleanLocalClone
+                StartQPKG
             else
                 SetServiceOperation none
                 ShowHelp
@@ -1669,7 +1667,7 @@ if IsNotError; then
             Display "package: $QPKG_VERSION"
             Display "service: $SCRIPT_VERSION"
             ;;
-        remove)     # only called by the standard QDK .uninstall.sh script
+        remove)     # only called by the QDK .uninstall.sh script
             SetServiceOperation removing
             ;;
         *)
