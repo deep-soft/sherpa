@@ -142,6 +142,8 @@ ShowHelp()
 StartQPKG()
     {
 
+    # this function is customised depending on the requirements of the packaged application
+
     IsError && return
 
     if IsNotRestart && IsNotRestore && IsNotClean && IsNotReset; then
@@ -181,6 +183,8 @@ StartQPKG()
 
 StopQPKG()
     {
+
+    # this function is customised depending on the requirements of the packaged application
 
     IsError && return
 
