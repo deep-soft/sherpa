@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=nzbToMedia
-    readonly SCRIPT_VERSION=230311
+    readonly SCRIPT_VERSION=230312
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -151,10 +151,10 @@ StartQPKG()
     fi
 
     if IsRestore || IsClean || IsReset; then
-        IsNotRestartPending && return
+        IsRestartPending || return
     fi
 
-    DisplayWaitCommitToLog "auto-update:"
+    DisplayWaitCommitToLog 'auto-update:'
 
     if IsAutoUpdate; then
         DisplayCommitToLog true
@@ -193,7 +193,7 @@ StopQPKG()
     fi
 
     if IsRestart || IsRestore || IsClean || IsReset; then
-        SetRestartPending
+        IsPackageActive && SetRestartPending
     fi
 
     [[ -L $scripts_path ]] && rm "$scripts_path"
@@ -234,7 +234,23 @@ InstallAddons()
 
     IsNotAutoUpdate && [[ $new_env = false ]] && return 0
 
+    if [[ $QPKG_NAME = OWatcher3 ]]; then
+        # need to install `m2r` PyPI module first
+        DisplayRunAndLog "KLUDGE: install 'm2r' PyPI module first" ". $VENV_PATH/bin/activate && pip install --no-input m2r" log:failure-only || SetError
+    fi
+
     [[ ! -e $requirements_pathfile && -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
+
+    if [[ -e $requirements_pathfile ]]; then
+        case $(/bin/uname -m) in
+            x86_64|i686|aarch64)
+                : # `pip` compilation on these arches works fine
+                ;;
+            *)
+                # need to remove `cffi` and `cryptography` modules from downloaded `requirements.txt`, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on armv5 NAS.
+                DisplayRunAndLog "KLUDGE: don't attempt to compile 'cffi' and 'cryptography' PyPI modules" "/bin/sed -i '/^cffi\|^cryptography/d' $requirements_pathfile" log:failure-only || SetError
+        esac
+    fi
 
     if [[ -e $requirements_pathfile ]]; then
         DisplayRunAndLog 'install required PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $requirements_pathfile" log:failure-only || SetError
@@ -255,12 +271,39 @@ InstallAddons()
         fi
     fi
 
+    if [[ $QPKG_NAME = pyLoad && $new_env = true ]]; then
+        DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
+    fi
+
+    if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
+        if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
+            DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
+        elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
+            DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabctools" log:failure-only || SetError
+        fi
+
+        # run [tools/make_mo.py] if SABnzbd version number has changed since last run
+        LoadAppVersion
+        [[ -e $APP_VERSION_STORE_PATHFILE && $(<"$APP_VERSION_STORE_PATHFILE") = "$app_version" && -d $QPKG_REPO_PATH/locale ]] && return 0
+
+        DisplayRunAndLog "update $(FormatAsPackageName $QPKG_NAME) language translations" ". $VENV_PATH/bin/activate && cd $QPKG_REPO_PATH; $VENV_INTERPRETER $QPKG_REPO_PATH/tools/make_mo.py" log:failure-only
+        [[ ! -e $APP_VERSION_STORE_PATHFILE ]] && return 0
+
+        SaveAppVersion
+    fi
+
     }
 
 BackupConfig()
     {
 
     CommitOperationToLog
+
+    if [[ ! -e $QPKG_REPO_PATH/autoProcessMedia.cfg ]]; then
+        DisplayCommitToLog 'unable to backup configuration: nothing to backup'
+        return
+    fi
+
     DisplayRunAndLog 'update configuration backup' "/bin/tar --create --gzip --file=$BACKUP_PATHFILE --directory=$QPKG_REPO_PATH autoProcessMedia.cfg" || SetError
 
     return 0
@@ -273,7 +316,13 @@ RestoreConfig()
     CommitOperationToLog
 
     if [[ ! -f $BACKUP_PATHFILE ]]; then
-        DisplayErrCommitAllLogs 'unable to restore configuration: no backup file was found!'
+        DisplayErrCommitAllLogs 'unable to restore configuration: no backup file found'
+        return
+    fi
+
+    if [[ $QPKG_NAME = nzbToMedia && ! -d $QPKG_REPO_PATH ]]; then      # specific to nzbToMedia, can only restore after repo-cache has been created
+        DisplayErrCommitAllLogs 'unable to restore configuration: restore directory does not exist'
+        DisplayErrCommitAllLogs "please 'start' this QPKG first, then 'restore' the backup"
         SetError
         return 1
     fi
@@ -288,9 +337,54 @@ ResetConfig()
     {
 
     CommitOperationToLog
-    StopQPKG || return 1
     DisplayRunAndLog 'reset configuration' "rm $QPKG_INI_PATHFILE" || SetError
-    StartQPKG || return 1
+
+    return 0
+
+    }
+
+LoadPorts()
+    {
+
+    # If user changes ports via app UI, must first 'stop' application on old ports, then 'start' on new ports
+
+    case $1 in
+        app)
+            # Read the current application UI ports from application configuration
+            DisplayWaitCommitToLog 'load ports from configuration file:'
+            [[ -n ${UI_PORT_CMD:-} ]] && ui_port=$(eval "$UI_PORT_CMD")
+            [[ -n ${UI_PORT_SECURE_CMD:-} ]] && ui_port_secure=$(eval "$UI_PORT_SECURE_CMD")
+            DisplayCommitToLog OK
+            ;;
+        qts)
+            # Read the current application UI ports from QTS App Center
+            DisplayWaitCommitToLog 'load UI ports from QPKG icon:'
+            ui_port=$(/sbin/getcfg $QPKG_NAME Web_Port -d 0 -f /etc/config/qpkg.conf)
+            ui_port_secure=$(/sbin/getcfg $QPKG_NAME Web_SSL_Port -d 0 -f /etc/config/qpkg.conf)
+            DisplayCommitToLog OK
+            ;;
+        *)
+            DisplayErrCommitAllLogs "unable to load ports: action '$1' is unrecognised"
+            SetError
+            return 1
+            ;;
+    esac
+
+    # Always read these from the application configuration
+    [[ -n ${DAEMON_PORT_CMD:-} ]] && daemon_port=$(eval "$DAEMON_PORT_CMD")
+    [[ -n ${UI_LISTENING_ADDRESS_CMD:-} ]] && ui_listening_address=$(eval "$UI_LISTENING_ADDRESS_CMD")
+
+    # validate port numbers
+    ui_port=${ui_port//[!0-9]/}                     # strip everything not a numeral
+    [[ -z $ui_port || $ui_port -lt 0 || $ui_port -gt 65535 ]] && ui_port=0
+
+    ui_port_secure=${ui_port_secure//[!0-9]/}       # strip everything not a numeral
+    [[ -z $ui_port_secure || $ui_port_secure -lt 0 || $ui_port_secure -gt 65535 ]] && ui_port_secure=0
+
+    daemon_port=${daemon_port//[!0-9]/}             # strip everything not a numeral
+    [[ -z $daemon_port || $daemon_port -lt 0 || $daemon_port -gt 65535 ]] && daemon_port=0
+
+    [[ -z $ui_listening_address ]] && ui_listening_address=undefined
 
     return 0
 
@@ -317,13 +411,8 @@ StatusQPKG()
     {
 
     IsNotError || return
-
-    if IsNotPackageActive; then
-        SetError
-        return 1
-    fi
-
-    return 0
+    SetServiceOperationResultOK
+    IsPackageActive && exit 0 || exit 1
 
     }
 
@@ -387,8 +476,6 @@ CleanLocalClone()
 
     # for occasions where the local repo needs to be deleted and cloned again from source.
 
-    [[ $QPKG_NAME = nzbToMedia ]] && BackupConfig
-
     CommitOperationToLog
 
     if [[ -z $QPKG_PATH || -z $QPKG_NAME ]] || IsNotSourcedOnline; then
@@ -396,13 +483,10 @@ CleanLocalClone()
         return 1
     fi
 
-    StopQPKG
     DisplayRunAndLog 'clean local repository' "rm -rf $QPKG_REPO_PATH" log:failure-only
-    DisplayRunAndLog 'clean virtual environment' "rm -rf $VENV_PATH" log:failure-only
-    DisplayRunAndLog 'clean PyPI cache' "rm -rf $PIP_CACHE_PATH" log:failure-only
-    StartQPKG
-
-    [[ $QPKG_NAME = nzbToMedia ]] && RestoreConfig
+    [[ -n $QPKG_REPO_PATH && -d $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME ]] && DisplayRunAndLog 'KLUDGE: remove previous local repository' "rm -r $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME" log:failure-only
+    [[ -n $VENV_PATH && -d $VENV_PATH ]] && DisplayRunAndLog 'clean virtual environment' "rm -rf $VENV_PATH" log:failure-only
+    [[ -n $PIP_CACHE_PATH && -d $PIP_CACHE_PATH ]] && DisplayRunAndLog 'clean PyPI cache' "rm -rf $PIP_CACHE_PATH" log:failure-only
 
     }
 
@@ -435,6 +519,19 @@ WaitForLaunchTarget()
 
     }
 
+WritePID()
+    {
+
+    /bin/pidof $(/usr/bin/basename "$DAEMON_PATHFILE") > "$DAEMON_PID_PATHFILE"
+
+    if [[ -s $DAEMON_PID_PATHFILE ]]; then
+        return 0
+    else
+        return 1
+    fi
+
+    }
+
 WaitForPID()
     {
 
@@ -444,6 +541,55 @@ WaitForPID()
     else
         return 1
     fi
+
+    }
+
+WaitForDaemon()
+    {
+
+    # input:
+    #   $1 = timeout in seconds (optional) - default 30
+
+    # output:
+    #   $? = 0 (file was found) or 1 (file not found: timeout)
+
+    local -i count=0
+
+    if [[ -n $1 ]]; then
+        MAX_SECONDS=$1
+    else
+        MAX_SECONDS=$DAEMON_CHECK_TIMEOUT
+    fi
+
+    if [[ ! -e $1 ]]; then
+        DisplayWaitCommitToLog "wait for daemon to appear:"
+        DisplayWait "(no-more than $MAX_SECONDS seconds):"
+
+        (
+            for ((count=1; count<=MAX_SECONDS; count++)); do
+                sleep 1
+                DisplayWait "$count,"
+
+                if [[ -e $DAEMON_PID_PATHFILE && -d /proc/$(<$DAEMON_PID_PATHFILE) && -n ${DAEMON_PATHFILE:-} && $(</proc/"$(<$DAEMON_PID_PATHFILE)"/cmdline) =~ $DAEMON_PATHFILE ]]; then
+                    Display OK
+                    CommitLog "active in $count second$(FormatAsPlural "$count")"
+                    true
+                    exit    # only this sub-shell
+                fi
+            done
+            false
+        )
+
+        if [[ $? -ne 0 ]]; then
+            DisplayCommitToLog 'failed!'
+            DisplayErrCommitAllLogs "daemon not found! (exceeded timeout: $MAX_SECONDS seconds)"
+            return 1
+        fi
+    fi
+
+    DisplayCommitToLog "daemon: exists"
+
+    return 0
 
     }
 
@@ -734,6 +880,111 @@ Lowercase()
 
     }
 
+ReWriteUIPorts()
+    {
+
+    # Write the current application UI ports into the QTS App Center configuration
+
+    # QTS App Center requires 'Web_Port' to always be non-zero
+
+    # 'Web_SSL_Port' behaviour:
+    #            < -2 = crashes current QTS session. Starts with non-responsive package icons in App Center
+    #   missing or -2 = QTS will fallback from HTTPS to HTTP, with a warning to user
+    #              -1 = launch QTS UI again (only if WebUI = '/'), else show "QNAP Error" page
+    #               0 = "unable to connect"
+    #             > 0 = works if logged-in to QTS UI via HTTPS
+
+    # If SSL is enabled, attempting to access with non-SSL via 'Web_Port' results in "connection was reset"
+
+    [[ -n ${DAEMON_PORT_CMD:-} ]] && return     # dont need to rewrite QTS UI ports if this app has a daemon port, as UI ports are unused
+
+    DisplayWaitCommitToLog 'update QPKG icon with UI ports:'
+    /sbin/setcfg $QPKG_NAME Web_Port "$ui_port" -f /etc/config/qpkg.conf
+
+    if IsSSLEnabled; then
+        /sbin/setcfg $QPKG_NAME Web_SSL_Port "$ui_port_secure" -f /etc/config/qpkg.conf
+    else
+        /sbin/setcfg $QPKG_NAME Web_SSL_Port '-2' -f /etc/config/qpkg.conf
+    fi
+
+    DisplayCommitToLog OK
+
+    }
+
+CheckPorts()
+    {
+
+    local msg=''
+
+    DisplayCommitToLog "daemon listening address: $ui_listening_address"
+
+    if [[ $daemon_port -ne 0 ]]; then
+        DisplayCommitToLog "daemon port: $daemon_port"
+
+        if IsPortResponds $daemon_port; then
+            msg="daemon port $daemon_port"
+        fi
+    else
+        DisplayWaitCommitToLog 'HTTPS port enabled:'
+        if IsSSLEnabled; then
+            DisplayCommitToLog true
+            DisplayCommitToLog "HTTPS port: $ui_port_secure"
+
+            if IsPortSecureResponds $ui_port_secure; then
+                msg="HTTPS port $ui_port_secure"
+            fi
+        else
+            DisplayCommitToLog false
+        fi
+
+        DisplayCommitToLog "HTTP port: $ui_port"
+
+        if IsPortResponds $ui_port; then
+            [[ -n $msg ]] && msg+=' and '
+            msg+="HTTP port $ui_port"
+        fi
+    fi
+
+    if [[ -z $msg ]]; then
+        DisplayErrCommitAllLogs 'no response on configured port(s)!'
+        SetError
+        return 1
+    else
+        DisplayCommitToLog "$msg test: OK"
+        ReWriteUIPorts
+        return 0
+    fi
+
+    }
+
+parse_yaml()
+    {
+
+    # a nice bit of coding! https://stackoverflow.com/a/21189044
+
+    # input:
+    #   $1 = filename to parse
+
+    # output:
+    #   stdout = parsed YAML
+
+    local prefix=$2
+    local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+
+    /bin/sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+        /bin/awk -F$fs '{
+            indent = length($1)/2;
+            vname[indent] = $2;
+            for (i in vname) {if (i > indent) {delete vname[i]}}
+                if (length($3) > 0) {
+                vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+                printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+                }
+            }'
+    }
+
 IsQNAP()
     {
 
@@ -917,7 +1168,7 @@ IsPackageActive()
 
     DisplayWaitCommitToLog 'package active:'
 
-    if [[ -L $scripts_path || $scripts_path = "$QPKG_REPO_PATH" ]] && [[ -e $scripts_path/autoProcessMedia.cfg ]]; then
+    if [[ -L $scripts_path || $scripts_path = "$QPKG_REPO_PATH" ]]; then
         DisplayCommitToLog true
         return
     fi
@@ -1196,7 +1447,6 @@ SetServiceOperationResult()
 SetRestartPending()
     {
 
-    IsRestartPending && return
     _restart_pending_flag=true
 
     }
@@ -1204,7 +1454,6 @@ SetRestartPending()
 UnsetRestartPending()
     {
 
-    IsNotRestartPending && return
     _restart_pending_flag=false
 
     }
@@ -1624,23 +1873,19 @@ if IsNotError; then
     case $1 in
         start|--start)
             if IsNotQPKGEnabled; then
-                echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
+                echo "The $(FormatAsPackageName "$QPKG_NAME") QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
             else
                 SetServiceOperation starting
                 StartQPKG
             fi
             ;;
         stop|--stop)
-            if IsNotQPKGEnabled; then
-                echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
-            else
-                SetServiceOperation stopping
-                StopQPKG
-            fi
+            SetServiceOperation stopping
+            StopQPKG
             ;;
         r|-r|restart|--restart)
             if IsNotQPKGEnabled; then
-                echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
+                echo "The $(FormatAsPackageName "$QPKG_NAME") QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
             else
                 SetServiceOperation restarting
                 StopQPKG && StartQPKG
@@ -1662,7 +1907,9 @@ if IsNotError; then
         reset-config|--reset-config)
             if IsSupportReset; then
                 SetServiceOperation resetting-config
+                StopQPKG
                 ResetConfig
+                StartQPKG
             else
                 SetServiceOperation none
                 ShowHelp
@@ -1683,8 +1930,10 @@ if IsNotError; then
             if IsSourcedOnline; then
                 SetServiceOperation cleaning
                 StopQPKG
+                [[ $QPKG_NAME = nzbToMedia ]] && BackupConfig
                 CleanLocalClone
                 StartQPKG
+                [[ $QPKG_NAME = nzbToMedia ]] && RestoreConfig
             else
                 SetServiceOperation none
                 ShowHelp
