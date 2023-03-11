@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=Deluge-web
-    readonly SCRIPT_VERSION=230311
+    readonly SCRIPT_VERSION=230312
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -55,6 +55,10 @@ Init()
     ui_port=0
     ui_port_secure=0
     ui_listening_address=undefined
+
+    # specific to applications supporting version lookup only
+    readonly APP_VERSION_PATHFILE=''
+    readonly APP_VERSION_CMD=''
 
     if [[ -z $LANG ]]; then
         export LANG=en_US.UTF-8
@@ -225,6 +229,97 @@ StopQPKG()
 
     }
 
+InstallAddons()
+    {
+
+    local default_requirements_pathfile=$QPKG_PATH/config/requirements.txt
+    local default_recommended_pathfile=$QPKG_PATH/config/recommended.txt
+    local requirements_pathfile=$QPKG_REPO_PATH/requirements.txt
+    local recommended_pathfile=$QPKG_REPO_PATH/recommended.txt
+    local pip_conf_pathfile=$VENV_PATH/pip.conf
+    local new_env=false
+    local sys_packages=' --system-site-packages'
+    local no_pips_installed=true
+
+    [[ $ALLOW_ACCESS_TO_SYS_PACKAGES != true ]] && sys_packages=''
+
+    if IsNotVirtualEnvironmentExist; then
+        DisplayRunAndLog 'create new virtual Python environment' "export PIP_CACHE_DIR=$PIP_CACHE_PATH VIRTUALENV_OVERRIDE_APP_DATA=$PIP_CACHE_PATH; $INTERPRETER -m virtualenv $VENV_PATH $sys_packages" log:failure-only || SetError
+        new_env=true
+    fi
+
+    if IsNotVirtualEnvironmentExist; then
+        DisplayErrCommitAllLogs 'unable to install addons: virtual environment does not exist!'
+        SetError
+        return 1
+    fi
+
+    if [[ ! -e $pip_conf_pathfile ]]; then
+        DisplayRunAndLog "create global 'pip' config" "echo -e \"[global]\ncache-dir = $PIP_CACHE_PATH\" > $pip_conf_pathfile" log:failure-only || SetError
+    fi
+
+    IsNotAutoUpdate && [[ $new_env = false ]] && return 0
+
+    if [[ $QPKG_NAME = OWatcher3 ]]; then
+        # need to install `m2r` PyPI module first
+        DisplayRunAndLog "KLUDGE: install 'm2r' PyPI module first" ". $VENV_PATH/bin/activate && pip install --no-input m2r" log:failure-only || SetError
+    fi
+
+    [[ ! -e $requirements_pathfile && -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
+
+    if [[ -e $requirements_pathfile ]]; then
+        case $(/bin/uname -m) in
+            x86_64|i686|aarch64)
+                : # `pip` compilation on these arches works fine
+                ;;
+            *)
+                # need to remove `cffi` and `cryptography` modules from downloaded `requirements.txt`, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on armv5 NAS.
+                DisplayRunAndLog "KLUDGE: don't attempt to compile 'cffi' and 'cryptography' PyPI modules" "/bin/sed -i '/^cffi\|^cryptography/d' $requirements_pathfile" log:failure-only || SetError
+        esac
+    fi
+
+    if [[ -e $requirements_pathfile ]]; then
+        DisplayRunAndLog 'install required PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $requirements_pathfile" log:failure-only || SetError
+        no_pips_installed=false
+    fi
+
+    [[ ! -e $recommended_pathfile && -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
+
+    if [[ -e $recommended_pathfile ]]; then
+        DisplayRunAndLog 'install recommended PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $recommended_pathfile" log:failure-only || SetError
+        no_pips_installed=false
+    fi
+
+    if [[ $no_pips_installed = true ]]; then        # fallback to general installation method
+        if [[ -e $QPKG_REPO_PATH/setup.py || -e $QPKG_REPO_PATH/pyproject.toml ]]; then
+            DisplayRunAndLog 'install default PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input $QPKG_REPO_PATH" log:failure-only || SetError
+            no_pips_installed=false
+        fi
+    fi
+
+    if [[ $QPKG_NAME = pyLoad && $new_env = true ]]; then
+        DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
+    fi
+
+    if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
+        if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
+            DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
+        elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
+            DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabctools" log:failure-only || SetError
+        fi
+
+        # run [tools/make_mo.py] if SABnzbd version number has changed since last run
+        LoadAppVersion
+        [[ -e $APP_VERSION_STORE_PATHFILE && $(<"$APP_VERSION_STORE_PATHFILE") = "$app_version" && -d $QPKG_REPO_PATH/locale ]] && return 0
+
+        DisplayRunAndLog "update $(FormatAsPackageName $QPKG_NAME) language translations" ". $VENV_PATH/bin/activate && cd $QPKG_REPO_PATH; $VENV_INTERPRETER $QPKG_REPO_PATH/tools/make_mo.py" log:failure-only
+        [[ ! -e $APP_VERSION_STORE_PATHFILE ]] && return 0
+
+        SaveAppVersion
+    fi
+
+    }
+
 BackupConfig()
     {
 
@@ -256,9 +351,7 @@ ResetConfig()
     {
 
     CommitOperationToLog
-    StopQPKG || return 1
     DisplayRunAndLog 'reset configuration' "mv $QPKG_INI_DEFAULT_PATHFILE $QPKG_PATH; rm -rf $QPKG_PATH/config/*; mv $QPKG_PATH/$(/usr/bin/basename "$QPKG_INI_DEFAULT_PATHFILE") $QPKG_INI_DEFAULT_PATHFILE" || SetError
-    StartQPKG || return 1
 
     return 0
 
@@ -332,22 +425,18 @@ StatusQPKG()
     {
 
     IsNotError || return
+    SetServiceOperationResultOK
 
     if IsDaemonActive; then
         if IsDaemon || IsSourcedOnline; then
             LoadPorts app
-
-            if ! CheckPorts; then
-                SetError
-                return 1
-            fi
+            ! CheckPorts && exit 1
         fi
     else
-        SetError
-        return 1
+        exit 1
     fi
 
-    return 0
+    exit 0
 
     }
 
@@ -411,8 +500,6 @@ CleanLocalClone()
 
     # for occasions where the local repo needs to be deleted and cloned again from source.
 
-    [[ $QPKG_NAME = nzbToMedia ]] && BackupConfig
-
     CommitOperationToLog
 
     if [[ -z $QPKG_PATH || -z $QPKG_NAME ]] || IsNotSourcedOnline; then
@@ -420,14 +507,10 @@ CleanLocalClone()
         return 1
     fi
 
-    StopQPKG
     DisplayRunAndLog 'clean local repository' "rm -rf $QPKG_REPO_PATH" log:failure-only
-    [[ -d $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME ]] && DisplayRunAndLog 'KLUDGE: remove previous local repository' "rm -r $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME" log:failure-only
-    DisplayRunAndLog 'clean virtual environment' "rm -rf $VENV_PATH" log:failure-only
-    DisplayRunAndLog 'clean PyPI cache' "rm -rf $PIP_CACHE_PATH" log:failure-only
-    StartQPKG
-
-    [[ $QPKG_NAME = nzbToMedia ]] && RestoreConfig
+    [[ -n $QPKG_REPO_PATH && -d $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME ]] && DisplayRunAndLog 'KLUDGE: remove previous local repository' "rm -r $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME" log:failure-only
+    [[ -n $VENV_PATH && -d $VENV_PATH ]] && DisplayRunAndLog 'clean virtual environment' "rm -rf $VENV_PATH" log:failure-only
+    [[ -n $PIP_CACHE_PATH && -d $PIP_CACHE_PATH ]] && DisplayRunAndLog 'clean PyPI cache' "rm -rf $PIP_CACHE_PATH" log:failure-only
 
     }
 
@@ -460,6 +543,19 @@ WaitForLaunchTarget()
 
     }
 
+WritePID()
+    {
+
+    /bin/pidof $(/usr/bin/basename "$DAEMON_PATHFILE") > "$DAEMON_PID_PATHFILE"
+
+    if [[ -s $DAEMON_PID_PATHFILE ]]; then
+        return 0
+    else
+        return 1
+    fi
+
+    }
+
 WaitForPID()
     {
 
@@ -469,6 +565,55 @@ WaitForPID()
     else
         return 1
     fi
+
+    }
+
+WaitForDaemon()
+    {
+
+    # input:
+    #   $1 = timeout in seconds (optional) - default 30
+
+    # output:
+    #   $? = 0 (file was found) or 1 (file not found: timeout)
+
+    local -i count=0
+
+    if [[ -n $1 ]]; then
+        MAX_SECONDS=$1
+    else
+        MAX_SECONDS=$DAEMON_CHECK_TIMEOUT
+    fi
+
+    if [[ ! -e $1 ]]; then
+        DisplayWaitCommitToLog "wait for daemon to appear:"
+        DisplayWait "(no-more than $MAX_SECONDS seconds):"
+
+        (
+            for ((count=1; count<=MAX_SECONDS; count++)); do
+                sleep 1
+                DisplayWait "$count,"
+
+                if [[ -e $DAEMON_PID_PATHFILE && -d /proc/$(<$DAEMON_PID_PATHFILE) && -n ${DAEMON_PATHFILE:-} && $(</proc/"$(<$DAEMON_PID_PATHFILE)"/cmdline) =~ $DAEMON_PATHFILE ]]; then
+                    Display OK
+                    CommitLog "active in $count second$(FormatAsPlural "$count")"
+                    true
+                    exit    # only this sub-shell
+                fi
+            done
+            false
+        )
+
+        if [[ $? -ne 0 ]]; then
+            DisplayCommitToLog 'failed!'
+            DisplayErrCommitAllLogs "daemon not found! (exceeded timeout: $MAX_SECONDS seconds)"
+            return 1
+        fi
+    fi
+
+    DisplayCommitToLog "daemon: exists"
+
+    return 0
 
     }
 
@@ -848,6 +993,34 @@ CheckPorts()
         return 0
     fi
 
+    }
+
+parse_yaml()
+    {
+
+    # a nice bit of coding! https://stackoverflow.com/a/21189044
+
+    # input:
+    #   $1 = filename to parse
+
+    # output:
+    #   stdout = parsed YAML
+
+    local prefix=$2
+    local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+
+    /bin/sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+        /bin/awk -F$fs '{
+            indent = length($1)/2;
+            vname[indent] = $2;
+            for (i in vname) {if (i > indent) {delete vname[i]}}
+                if (length($3) > 0) {
+                vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+                printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+                }
+            }'
     }
 
 IsQNAP()
@@ -1302,7 +1475,6 @@ SetServiceOperationResult()
 SetRestartPending()
     {
 
-    IsRestartPending && return
     _restart_pending_flag=true
 
     }
@@ -1310,7 +1482,6 @@ SetRestartPending()
 UnsetRestartPending()
     {
 
-    IsNotRestartPending && return
     _restart_pending_flag=false
 
     }
@@ -1730,23 +1901,19 @@ if IsNotError; then
     case $1 in
         start|--start)
             if IsNotQPKGEnabled; then
-                echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
+                echo "The $(FormatAsPackageName "$QPKG_NAME") QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
             else
                 SetServiceOperation starting
                 StartQPKG
             fi
             ;;
         stop|--stop)
-            if IsNotQPKGEnabled; then
-                echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
-            else
-                SetServiceOperation stopping
-                StopQPKG
-            fi
+            SetServiceOperation stopping
+            StopQPKG
             ;;
         r|-r|restart|--restart)
             if IsNotQPKGEnabled; then
-                echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
+                echo "The $(FormatAsPackageName "$QPKG_NAME") QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
             else
                 SetServiceOperation restarting
                 StopQPKG && StartQPKG
@@ -1768,7 +1935,9 @@ if IsNotError; then
         reset-config|--reset-config)
             if IsSupportReset; then
                 SetServiceOperation resetting-config
+                StopQPKG
                 ResetConfig
+                StartQPKG
             else
                 SetServiceOperation none
                 ShowHelp

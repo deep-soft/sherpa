@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=OWatcher3
-    readonly SCRIPT_VERSION=230211
+    readonly SCRIPT_VERSION=230312
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -64,6 +64,10 @@ Init()
     ui_port=0
     ui_port_secure=0
     ui_listening_address=undefined
+
+    # specific to applications supporting version lookup only
+    readonly APP_VERSION_PATHFILE=''
+    readonly APP_VERSION_CMD=''
 
     if [[ -z $LANG ]]; then
         export LANG=en_US.UTF-8
@@ -148,7 +152,7 @@ StartQPKG()
         DisplayCommitToLog false
     fi
 
-    PullGitRepo "$QPKG_NAME" "$SOURCE_GIT_URL" "$SOURCE_GIT_BRANCH" "$SOURCE_GIT_DEPTH" "$QPKG_REPO_PATH" || { SetError; return 1 ;}
+    PullGitRepo || { SetError; return 1 ;}
     InstallAddons || { SetError; return 1 ;}
     IsNotDaemon && return
     WaitForLaunchTarget || { SetError; return 1 ;}
@@ -310,6 +314,27 @@ InstallAddons()
         fi
     fi
 
+    if [[ $QPKG_NAME = pyLoad && $new_env = true ]]; then
+        DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
+    fi
+
+    if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
+        if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
+            DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
+        elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
+            DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabctools" log:failure-only || SetError
+        fi
+
+        # run [tools/make_mo.py] if SABnzbd version number has changed since last run
+        LoadAppVersion
+        [[ -e $APP_VERSION_STORE_PATHFILE && $(<"$APP_VERSION_STORE_PATHFILE") = "$app_version" && -d $QPKG_REPO_PATH/locale ]] && return 0
+
+        DisplayRunAndLog "update $(FormatAsPackageName $QPKG_NAME) language translations" ". $VENV_PATH/bin/activate && cd $QPKG_REPO_PATH; $VENV_INTERPRETER $QPKG_REPO_PATH/tools/make_mo.py" log:failure-only
+        [[ ! -e $APP_VERSION_STORE_PATHFILE ]] && return 0
+
+        SaveAppVersion
+    fi
+
     }
 
 BackupConfig()
@@ -333,9 +358,7 @@ RestoreConfig()
         return 1
     fi
 
-    StopQPKG || return 1
     DisplayRunAndLog 'restore configuration backup' "/bin/tar --extract --gzip --file=$BACKUP_PATHFILE --directory=$QPKG_PATH/config" || SetError
-    StartQPKG || return 1
 
     return 0
 
@@ -345,9 +368,7 @@ ResetConfig()
     {
 
     CommitOperationToLog
-    StopQPKG || return 1
     DisplayRunAndLog 'reset configuration' "mv $QPKG_INI_DEFAULT_PATHFILE $QPKG_PATH; rm -rf $QPKG_PATH/config/*; mv $QPKG_PATH/$(/usr/bin/basename "$QPKG_INI_DEFAULT_PATHFILE") $QPKG_INI_DEFAULT_PATHFILE" || SetError
-    StartQPKG || return 1
 
     return 0
 
@@ -421,22 +442,18 @@ StatusQPKG()
     {
 
     IsNotError || return
+    SetServiceOperationResultOK
 
     if IsDaemonActive; then
         if IsDaemon || IsSourcedOnline; then
             LoadPorts app
-
-            if ! CheckPorts; then
-                SetError
-                return 1
-            fi
+            ! CheckPorts && exit 1
         fi
     else
-        SetError
-        return 1
+        exit 1
     fi
 
-    return 0
+    exit 0
 
     }
 
@@ -453,46 +470,40 @@ DisableOpkgDaemonStart()
 PullGitRepo()
     {
 
-    # $1 = package name
-    # $2 = URL to pull/clone from
-    # $3 = remote branch or tag
-    # $4 = remote depth: 'shallow' or 'single-branch'
-    # $5 = local path to clone into
+    # inputs (global):
+    #   $QPKG_NAME
+    #   $SOURCE_GIT_URL
+    #   $SOURCE_GIT_BRANCH
+    #   $SOURCE_GIT_BRANCH_DEPTH
+    #   $QPKG_REPO_PATH
 
-    [[ -z $1 || -z $2 || -z $3 || -z $4 || -z $5 ]] && return 1
-
-    local -r QPKG_GIT_PATH="$5"
-    local -r GIT_HTTPS_URL="$2"
-    local installed_branch=''
+    local branch_depth='--depth 1'
+    [[ $SOURCE_GIT_BRANCH_DEPTH = single-branch ]] && branch_depth='--single-branch'
+    local active_branch=$(GetPathGitBranch "$QPKG_REPO_PATH")
     local branch_switch=false
-    [[ $4 = shallow ]] && local -r DEPTH='--depth 1'
-    [[ $4 = single-branch ]] && local -r DEPTH='--single-branch'
 
     WaitForGit || return
 
-    if [[ -d $QPKG_GIT_PATH/.git ]]; then
-        installed_branch=$(/opt/bin/git -C "$QPKG_GIT_PATH" branch | /bin/grep '^\*' | /bin/sed 's|^\* ||')
-
-        if [[ $installed_branch != "$3" ]]; then
+    if [[ -d $QPKG_REPO_PATH/.git ]]; then
+        if [[ $active_branch != "$SOURCE_GIT_BRANCH" ]]; then
             branch_switch=true
-            DisplayCommitToLog "current git branch: $installed_branch, new git branch: $3"
+            DisplayCommitToLog "active git branch: '$active_branch', new git branch: '$SOURCE_GIT_BRANCH'"
             [[ $QPKG_NAME = nzbToMedia ]] && BackupConfig
-            DisplayRunAndLog 'new git branch has been specified, so clean local repository' "cd /tmp; rm -r $QPKG_GIT_PATH" log:failure-only
+            DisplayRunAndLog 'new git branch has been specified, so clean local repository' "cd /tmp; rm -r $QPKG_REPO_PATH" log:failure-only
         fi
     fi
 
-    if [[ ! -d $QPKG_GIT_PATH/.git ]]; then
-        DisplayRunAndLog "clone $(FormatAsPackageName "$1") from remote repository" "cd /tmp; /opt/bin/git clone --branch $3 $DEPTH -c advice.detachedHead=false $GIT_HTTPS_URL $QPKG_GIT_PATH" log:failure-only
+    if [[ ! -d $QPKG_REPO_PATH/.git ]]; then
+        DisplayRunAndLog "clone $(FormatAsPackageName "$QPKG_NAME") from remote repository" "cd /tmp; /opt/bin/git clone --branch $SOURCE_GIT_BRANCH $branch_depth -c advice.detachedHead=false $SOURCE_GIT_URL $QPKG_REPO_PATH" log:failure-only
     else
         if IsAutoUpdate; then
-            # latest effort at resolving local corruption, source: https://stackoverflow.com/a/10170195
-            DisplayRunAndLog "update $(FormatAsPackageName "$1") from remote repository" "cd /tmp; /opt/bin/git -C $QPKG_GIT_PATH clean -f; /opt/bin/git -C $QPKG_GIT_PATH reset --hard origin/$3; /opt/bin/git -C $QPKG_GIT_PATH pull" log:failure-only
+            # latest effort at resolving local clone corruption: https://stackoverflow.com/a/10170195
+            DisplayRunAndLog "update $(FormatAsPackageName "$QPKG_NAME") from remote repository" "cd /tmp; /opt/bin/git -C $QPKG_REPO_PATH clean -f; /opt/bin/git -C $QPKG_REPO_PATH reset --hard origin/$SOURCE_GIT_BRANCH; /opt/bin/git -C $QPKG_REPO_PATH pull" log:failure-only
         fi
     fi
 
     if IsAutoUpdate; then
-        installed_branch=$(/opt/bin/git -C "$QPKG_GIT_PATH" branch | /bin/grep '^\*' | /bin/sed 's|^\* ||')
-        DisplayCommitToLog "current git branch: $installed_branch"
+        DisplayCommitToLog "active git branch: '$(GetPathGitBranch "$QPKG_REPO_PATH")'"
     fi
 
     [[ $branch_switch = true && $QPKG_NAME = nzbToMedia ]] && RestoreConfig
@@ -513,12 +524,10 @@ CleanLocalClone()
         return 1
     fi
 
-    StopQPKG
     DisplayRunAndLog 'clean local repository' "rm -rf $QPKG_REPO_PATH" log:failure-only
-    [[ -d $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME ]] && DisplayRunAndLog 'KLUDGE: remove previous local repository' "rm -r $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME" log:failure-only
-    DisplayRunAndLog 'clean virtual environment' "rm -rf $VENV_PATH" log:failure-only
-    DisplayRunAndLog 'clean PyPI cache' "rm -rf $PIP_CACHE_PATH" log:failure-only
-    StartQPKG
+    [[ -n $QPKG_REPO_PATH && -d $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME ]] && DisplayRunAndLog 'KLUDGE: remove previous local repository' "rm -r $(/usr/bin/dirname "$QPKG_REPO_PATH")/$QPKG_NAME" log:failure-only
+    [[ -n $VENV_PATH && -d $VENV_PATH ]] && DisplayRunAndLog 'clean virtual environment' "rm -rf $VENV_PATH" log:failure-only
+    [[ -n $PIP_CACHE_PATH && -d $PIP_CACHE_PATH ]] && DisplayRunAndLog 'clean PyPI cache' "rm -rf $PIP_CACHE_PATH" log:failure-only
 
     }
 
@@ -551,6 +560,19 @@ WaitForLaunchTarget()
 
     }
 
+WritePID()
+    {
+
+    /bin/pidof $(/usr/bin/basename "$DAEMON_PATHFILE") > "$DAEMON_PID_PATHFILE"
+
+    if [[ -s $DAEMON_PID_PATHFILE ]]; then
+        return 0
+    else
+        return 1
+    fi
+
+    }
+
 WaitForPID()
     {
 
@@ -563,6 +585,55 @@ WaitForPID()
 
     }
 
+WaitForDaemon()
+    {
+
+    # input:
+    #   $1 = timeout in seconds (optional) - default 30
+
+    # output:
+    #   $? = 0 (file was found) or 1 (file not found: timeout)
+
+    local -i count=0
+
+    if [[ -n $1 ]]; then
+        MAX_SECONDS=$1
+    else
+        MAX_SECONDS=$DAEMON_CHECK_TIMEOUT
+    fi
+
+    if [[ ! -e $1 ]]; then
+        DisplayWaitCommitToLog "wait for daemon to appear:"
+        DisplayWait "(no-more than $MAX_SECONDS seconds):"
+
+        (
+            for ((count=1; count<=MAX_SECONDS; count++)); do
+                sleep 1
+                DisplayWait "$count,"
+
+                if [[ -e $DAEMON_PID_PATHFILE && -d /proc/$(<$DAEMON_PID_PATHFILE) && -n ${DAEMON_PATHFILE:-} && $(</proc/"$(<$DAEMON_PID_PATHFILE)"/cmdline) =~ $DAEMON_PATHFILE ]]; then
+                    Display OK
+                    CommitLog "active in $count second$(FormatAsPlural "$count")"
+                    true
+                    exit    # only this sub-shell
+                fi
+            done
+            false
+        )
+
+        if [[ $? -ne 0 ]]; then
+            DisplayCommitToLog 'failed!'
+            DisplayErrCommitAllLogs "daemon not found! (exceeded timeout: $MAX_SECONDS seconds)"
+            return 1
+        fi
+    fi
+
+    DisplayCommitToLog "daemon: exists"
+
+    return 0
+
+    }
+
 WaitForFileToAppear()
     {
 
@@ -571,9 +642,10 @@ WaitForFileToAppear()
     #   $2 = timeout in seconds (optional) - default 30
 
     # output:
-    #   $? = 0 (file was found) or 1 (file not found: timeout)
+    #   $? = 0 : file was found
+    #   $? = 1 : file not found/timeout
 
-    [[ -z $1 ]] && return
+    [[ -n $1 ]] || return
 
     if [[ -n $2 ]]; then
         MAX_SECONDS=$2
@@ -589,6 +661,7 @@ WaitForFileToAppear()
             for ((count=1; count<=MAX_SECONDS; count++)); do
                 sleep 1
                 DisplayWait "$count,"
+
                 if [[ -e $1 ]]; then
                     Display OK
                     CommitLog "visible in $count second$(FormatAsPlural "$count")"
@@ -619,7 +692,7 @@ ViewLog()
         if [[ -e /opt/bin/less ]]; then
             LESSSECURE=1 /opt/bin/less +G --quit-on-intr --tilde --LINE-NUMBERS --prompt ' use arrow-keys to scroll up-down left-right, press Q to quit' "$SERVICE_LOG_PATHFILE"
         else
-            cat --number "$SERVICE_LOG_PATHFILE"
+            /bin/cat --number "$SERVICE_LOG_PATHFILE"
         fi
     else
         Display "service log not found: $SERVICE_LOG_PATHFILE"
@@ -658,7 +731,7 @@ ViewLog()
         if [[ -e /opt/bin/less ]]; then
             LESSSECURE=1 /opt/bin/less +G --quit-on-intr --tilde --LINE-NUMBERS --prompt ' use arrow-keys to scroll up-down left-right, press Q to quit' "$SERVICE_LOG_PATHFILE"
         else
-            cat --number "$SERVICE_LOG_PATHFILE"
+            /bin/cat --number "$SERVICE_LOG_PATHFILE"
         fi
     else
         Display "service log not found: $SERVICE_LOG_PATHFILE"
@@ -673,7 +746,8 @@ ViewLog()
 DisplayRunAndLog()
     {
 
-    # Run a commandstring, log the results, and show onscreen if required
+    # Run a commandstring with a summarised description, log the results, and show onscreen if required
+    # This function is just a fancy wrapper for RunAndLog()
 
     # input:
     #   $1 = processing message
@@ -715,9 +789,9 @@ RunAndLog()
     #   $4 = e.g. '10' (optional) - an additional acceptable result code. Any other result from command (other than zero) will be considered a failure
 
     # output:
-    #   stdout = commandstring stdout and stderr if script is in 'debug' mode
-    #   pathfile ($2) = commandstring ($1) stdout and stderr
-    #   $? = result_code of commandstring
+    #   stdout : commandstring stdout and stderr if script is in 'debug' mode
+    #   pathfile ($2) : commandstring ($1) stdout and stderr
+    #   $? : $result_code of commandstring
 
     local -r LOG_PATHFILE=$(/bin/mktemp /var/log/"${FUNCNAME[0]}"_XXXXXX)
     local -i result_code=0
@@ -788,7 +862,9 @@ DebugExtLogMinorSeparator()
 DebugAsLog()
     {
 
-    DebugThis "(LL) ${1:-}"
+    [[ -n ${1:-} ]] || return
+
+    DebugThis "(LL) $1"
 
     }
 
@@ -922,10 +998,40 @@ CheckPorts()
 
     }
 
+parse_yaml()
+    {
+
+    # a nice bit of coding! https://stackoverflow.com/a/21189044
+
+    # input:
+    #   $1 = filename to parse
+
+    # output:
+    #   stdout = parsed YAML
+
+    local prefix=$2
+    local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+
+    /bin/sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+        /bin/awk -F$fs '{
+            indent = length($1)/2;
+            vname[indent] = $2;
+            for (i in vname) {if (i > indent) {delete vname[i]}}
+                if (length($3) > 0) {
+                vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+                printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+                }
+            }'
+    }
+
 IsQNAP()
     {
 
-    # returns 0 if this is a QNAP NAS
+    # output:
+    #   $? = 0 : this is a QNAP NAS
+    #   $? = 1 : not a QNAP
 
     if [[ ! -e /etc/init.d/functions ]]; then
         Display 'QTS functions missing (is this a QNAP NAS?)'
@@ -944,12 +1050,13 @@ IsQPKGInstalled()
     #   $1 = (optional) package name to check. If unspecified, default is $QPKG_NAME
 
     # output:
-    #   $? = 0 (true) or 1 (false)
+    #   $? = 0 : true
+    #   $? = 1 : false
 
-    if [[ -z ${1:-} ]]; then
-        local name=$QPKG_NAME
-    else
+    if [[ -n ${1:-} ]]; then
         local name=$1
+    else
+        local name=$QPKG_NAME
     fi
 
     /bin/grep -q "^\[$name\]" /etc/config/qpkg.conf
@@ -970,12 +1077,13 @@ IsQPKGEnabled()
     #   $1 = (optional) package name to check. If unspecified, default is $QPKG_NAME
 
     # output:
-    #   $? = 0 (true) or 1 (false)
+    #   $? = 0 : true
+    #   $? = 1 : false
 
-    if [[ -z ${1:-} ]]; then
-        local name=$QPKG_NAME
-    else
+    if [[ -n ${1:-} ]]; then
         local name=$1
+    else
+        local name=$QPKG_NAME
     fi
 
     [[ $(Lowercase "$(/sbin/getcfg "$name" Enable -d false -f /etc/config/qpkg.conf)") = true ]]
@@ -984,6 +1092,13 @@ IsQPKGEnabled()
 
 IsNotQPKGEnabled()
     {
+
+    # input:
+    #   $1 = (optional) package name to check. If unspecified, default is $QPKG_NAME
+
+    # output:
+    #   $? = 0 : true
+    #   $? = 1 : false
 
     ! IsQPKGEnabled "${1:-}"
 
@@ -1074,9 +1189,9 @@ IsDaemonActive()
 
     DisplayWaitCommitToLog 'daemon active:'
 
-    if [[ -e $DAEMON_PID_PATHFILE && -d /proc/$(<$DAEMON_PID_PATHFILE) && -n ${DAEMON_PATHFILE:-} && $(</proc/"$(<$DAEMON_PID_PATHFILE)"/cmdline) =~ $DAEMON_PATHFILE ]]; then
+    if [[ -e $DAEMON_PID_PATHFILE && -d /proc/$(<"$DAEMON_PID_PATHFILE") && -n ${DAEMON_PATHFILE:-} && $(</proc/"$(<"$DAEMON_PID_PATHFILE")"/cmdline) =~ $DAEMON_PATHFILE ]]; then
         DisplayCommitToLog true
-        DisplayCommitToLog "daemon PID: $(<$DAEMON_PID_PATHFILE)"
+        DisplayCommitToLog "daemon PID: $(<"$DAEMON_PID_PATHFILE")"
         return
     fi
 
@@ -1096,8 +1211,8 @@ IsNotDaemonActive()
 IsPackageActive()
     {
 
-    # $? = 0 : package is 'started'
-    # $? = 1 : package is 'stopped'
+    # $? = 0 : package is `started`
+    # $? = 1 : package is `stopped`
 
     DisplayWaitCommitToLog 'package active:'
 
@@ -1114,8 +1229,8 @@ IsPackageActive()
 IsNotPackageActive()
     {
 
-    # $? = 1 if $QPKG_NAME is active
-    # $? = 0 if $QPKG_NAME is not active
+    # $? = 0 : package is `stopped`
+    # $? = 1 : package is `started`
 
     ! IsPackageActive
 
@@ -1124,7 +1239,8 @@ IsNotPackageActive()
 IsSysFilePresent()
     {
 
-    # $1 = pathfile to check
+    # input:
+    #   $1 = pathfilename to check
 
     if [[ -z ${1:?pathfilename null} ]]; then
         SetError
@@ -1144,7 +1260,8 @@ IsSysFilePresent()
 IsNotSysFilePresent()
     {
 
-    # $1 = pathfile to check
+    # input:
+    #   $1 = pathfilename to check
 
     ! IsSysFilePresent "${1:?pathfilename null}"
 
@@ -1153,9 +1270,12 @@ IsNotSysFilePresent()
 IsPortAvailable()
     {
 
-    # $1 = port to check
-    # $? = 0 if available
-    # $? = 1 if already used
+    # input:
+    #   $1 = port to check
+
+    # output:
+    #   $? = 0 : available
+    #   $? = 1 : already used
 
     local port=${1//[!0-9]/}        # strip everything not a numeral
     [[ -n $port && $port -gt 0 ]] || return 0
@@ -1171,9 +1291,12 @@ IsPortAvailable()
 IsNotPortAvailable()
     {
 
-    # $1 = port to check
-    # $? = 1 if available
-    # $? = 0 if already used
+    # input:
+    #   $1 = port to check
+
+    # output:
+    #   $? = 1 : port available
+    #   $? = 0 : already used
 
     ! IsPortAvailable "${1:-0}"
 
@@ -1182,9 +1305,12 @@ IsNotPortAvailable()
 IsPortResponds()
     {
 
-    # $1 = port to check
-    # $? = 0 if response received
-    # $? = 1 if not OK
+    # input:
+    #   $1 = port to check
+
+    # output:
+    #   $? = 0 : response received
+    #   $? = 1 : not OK
 
     local port=${1//[!0-9]/}        # strip everything not a numeral
 
@@ -1229,9 +1355,12 @@ IsPortResponds()
 IsPortSecureResponds()
     {
 
-    # $1 = secure port to check
-    # $? = 0 if response received
-    # $? = 1 if not OK or secure port unspecified
+    # input:
+    #   $1 = secure port to check
+
+    # output:
+    #   $? = 0 : response received
+    #   $? = 1 : not OK or secure port unspecified
 
     local port=${1//[!0-9]/}        # strip everything not a numeral
 
@@ -1276,7 +1405,7 @@ IsPortSecureResponds()
 IsConfigFound()
     {
 
-    # Is there an application configuration file to read from?
+    # Is there an application configuration file?
 
     [[ -e $QPKG_INI_PATHFILE ]]
 
@@ -1292,7 +1421,7 @@ IsNotConfigFound()
 IsDefaultConfigFound()
     {
 
-    # Is there a default application configuration file to read from?
+    # Is there a default application configuration file?
 
     [[ -e $QPKG_INI_DEFAULT_PATHFILE ]]
 
@@ -1308,7 +1437,7 @@ IsNotDefaultConfigFound()
 IsVirtualEnvironmentExist()
     {
 
-    # Is there a virtual environment to run the application in?
+    # Is there a virtual environment?
 
     [[ -e $VENV_PATH/bin/activate ]]
 
@@ -1346,7 +1475,7 @@ SetServiceOperationResultFailed()
 SetServiceOperationResult()
     {
 
-    # $1 = result of operation to recorded
+    # $1 = result of operation to record
 
     [[ -n ${1:-} && -n ${SERVICE_STATUS_PATHFILE:-} ]] && echo "${1:-}" > "$SERVICE_STATUS_PATHFILE"
 
@@ -1355,7 +1484,6 @@ SetServiceOperationResult()
 SetRestartPending()
     {
 
-    IsRestartPending && return
     _restart_pending_flag=true
 
     }
@@ -1363,7 +1491,6 @@ SetRestartPending()
 UnsetRestartPending()
     {
 
-    IsNotRestartPending && return
     _restart_pending_flag=false
 
     }
@@ -1676,11 +1803,15 @@ CommitLogWait()
 CommitSysLog()
     {
 
-    # $1 = message to append to QTS system log
-    # $2 = event type:
-    #    1 : Error
-    #    2 : Warning
-    #    4 : Information
+    # input (global):
+    #   $QPKG_NAME
+
+    # input:
+    #   $1 = message to append to QTS system log
+    #   $2 = event type:
+    #     1 : Error
+    #     2 : Warning
+    #     4 : Information
 
     if [[ -z ${1:-} || -z ${2:-} ]]; then
         SetError
@@ -1764,36 +1895,38 @@ StoreAutoUpdateSelection()
 
     }
 
+GetPathGitBranch()
+    {
+
+    [[ -n $1 ]] || return
+
+    /opt/bin/git -C "$1" branch | /bin/grep '^\*' | /bin/sed 's|^\* ||'
+
+    } 2>/dev/null
+
 Init
 
 if IsNotError; then
     case $1 in
         start|--start)
             if IsNotQPKGEnabled; then
-                echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
-                SetError
+                echo "The $(FormatAsPackageName "$QPKG_NAME") QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
+            else
+                SetServiceOperation starting
+                StartQPKG
             fi
-
-            SetServiceOperation starting
-            StartQPKG
             ;;
         stop|--stop)
-            if IsNotQPKGEnabled; then
-                echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
-                SetError
-            fi
-
             SetServiceOperation stopping
             StopQPKG
             ;;
         r|-r|restart|--restart)
             if IsNotQPKGEnabled; then
-                echo "The $(FormatAsPackageName $QPKG_NAME) QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
-                SetError
+                echo "The $(FormatAsPackageName "$QPKG_NAME") QPKG is disabled. Please enable it first with: qpkg_service enable $QPKG_NAME"
+            else
+                SetServiceOperation restarting
+                StopQPKG && StartQPKG
             fi
-
-            SetServiceOperation restarting
-            StopQPKG && StartQPKG
             ;;
         s|-s|status|--status)
             SetServiceOperation status
@@ -1811,7 +1944,9 @@ if IsNotError; then
         reset-config|--reset-config)
             if IsSupportReset; then
                 SetServiceOperation resetting-config
+                StopQPKG
                 ResetConfig
+                StartQPKG
             else
                 SetServiceOperation none
                 ShowHelp
@@ -1820,7 +1955,9 @@ if IsNotError; then
         restore|--restore|restore-config|--restore-config)
             if IsSupportBackup; then
                 SetServiceOperation restoring
+                StopQPKG
                 RestoreConfig
+                StartQPKG
             else
                 SetServiceOperation none
                 ShowHelp
@@ -1829,7 +1966,11 @@ if IsNotError; then
         clean|--clean)
             if IsSourcedOnline; then
                 SetServiceOperation cleaning
+                StopQPKG
+                [[ $QPKG_NAME = nzbToMedia ]] && BackupConfig
                 CleanLocalClone
+                StartQPKG
+                [[ $QPKG_NAME = nzbToMedia ]] && RestoreConfig
             else
                 SetServiceOperation none
                 ShowHelp
@@ -1852,7 +1993,7 @@ if IsNotError; then
             Display "package: $QPKG_VERSION"
             Display "service: $SCRIPT_VERSION"
             ;;
-        remove)     # only called by the standard QDK .uninstall.sh script
+        remove)     # only called by the QDK .uninstall.sh script
             SetServiceOperation removing
             ;;
         *)
