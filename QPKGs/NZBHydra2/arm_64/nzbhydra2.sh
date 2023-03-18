@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=NZBHydra2
-    readonly SCRIPT_VERSION=230312
+    readonly SCRIPT_VERSION=230319
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -149,7 +149,17 @@ StartQPKG()
 
     [[ -n ${QPKG_REPO_PATH:-} && ! -d $QPKG_REPO_PATH ]] && mkdir -p "$QPKG_REPO_PATH"
 
-    if [[ ! -e $DAEMON_PATHFILE ]]; then    # download zip file from GitHub & extract all files
+	local remote_archive_url=$(/sbin/curl${curl_insecure_arg} --silent "$SOURCE_GIT_URL" | /bin/grep browser_download_url | cut -d\" -f4 | /bin/grep "$SOURCE_ARCH")
+
+    local source_url_pathfile=$QPKG_REPO_PATH/source.url
+    local update=false
+
+    if [[ ! -e $source_url_pathfile || $(<$source_url_pathfile) != $remote_archive_url ]]; then
+		echo "$remote_archive_url" > "$source_url_pathfile"
+		update=true
+	fi
+
+    if [[ ! -e $DAEMON_PATHFILE || $update = true ]]; then    # download zip file from GitHub & extract all files
         readonly NAS_FIRMWARE_VER=$(/sbin/getcfg System Version -f /etc/config/uLinux.conf)
         [[ ${NAS_FIRMWARE_VER//.} -lt 426 ]] && curl_insecure_arg=' --insecure' || curl_insecure_arg=''
 
