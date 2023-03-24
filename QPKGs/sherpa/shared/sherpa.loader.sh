@@ -35,7 +35,7 @@ Init()
 
     IsQNAP || return
 
-    export LOADER_SCRIPT_VER=230227
+    export LOADER_SCRIPT_VER=230325
     export LOADER_SCRIPT_PPID=$PPID
 
     local -r WORK_PATH=$(/sbin/getcfg sherpa Install_Path -f /etc/config/qpkg.conf)/cache
@@ -48,6 +48,11 @@ Init()
 
     local -r NAS_FIRMWARE=$(/sbin/getcfg System Version -f /etc/config/uLinux.conf)
     [[ ${NAS_FIRMWARE//.} -lt 426 ]] && curl_insecure_arg='--insecure' || curl_insecure_arg=''
+
+	# KLUDGE: GitHub SSL certs are presently invalid. This might be associated with recent RSA leak: https://github.blog/2023-03-23-we-updated-our-rsa-ssh-host-key
+	# So, don't check certs for now.
+	curl_insecure_arg=' --insecure'
+
     readonly GNU_FIND_CMD=/opt/bin/find
     previous_msg=''
 
