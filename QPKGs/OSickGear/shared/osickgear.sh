@@ -20,7 +20,7 @@ Init()
 
     # service-script environment
     readonly QPKG_NAME=OSickGear
-    readonly SCRIPT_VERSION=230312
+    readonly SCRIPT_VERSION=230409
 
     # general environment
     readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -290,7 +290,7 @@ InstallAddons()
                 : # `pip` compilation on these arches works fine
                 ;;
             *)
-                # need to remove `cffi` and `cryptography` modules from downloaded `requirements.txt`, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on armv5 NAS.
+                # need to remove `cffi` and `cryptography` modules from downloaded `requirements.txt`, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on early arm CPUs.
                 DisplayRunAndLog "KLUDGE: don't attempt to compile 'cffi' and 'cryptography' PyPI modules" "/bin/sed -i '/^cffi\|^cryptography/d' $requirements_pathfile" log:failure-only || SetError
         esac
     fi
@@ -301,6 +301,17 @@ InstallAddons()
     fi
 
     [[ ! -e $recommended_pathfile && -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
+
+    if [[ -e $recommended_pathfile ]]; then
+        case $(/bin/uname -m) in
+            x86_64|i686|aarch64)
+                : # `pip` compilation on these arches works fine
+                ;;
+            *)
+                # need to remove `cffi` and `cryptography` modules from downloaded `recommended_pathfile.txt`, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on early arm CPUs.
+                DisplayRunAndLog "KLUDGE: don't attempt to compile 'cffi' and 'cryptography' PyPI modules" "/bin/sed -i '/^cffi\|^cryptography/d' $recommended_pathfile" log:failure-only || SetError
+        esac
+    fi
 
     if [[ -e $recommended_pathfile ]]; then
         DisplayRunAndLog 'install recommended PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $recommended_pathfile" log:failure-only || SetError
