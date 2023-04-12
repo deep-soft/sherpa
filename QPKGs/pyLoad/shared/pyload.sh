@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=pyLoad
-	readonly SCRIPT_VERSION=230315
+	readonly SCRIPT_VERSION=230412
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -48,6 +48,7 @@ Init()
 	readonly VENV_PATH=$QPKG_PATH/venv
 	readonly VENV_INTERPRETER=''
 	readonly ALLOW_ACCESS_TO_SYS_PACKAGES=true
+	readonly INSTALL_PIP_DEPS=false
 
 	# specific to daemonised applications only
 	readonly DAEMON_PATHFILE=$VENV_PATH/bin/pyload
@@ -256,11 +257,13 @@ InstallAddons()
 	local new_env=false
 	local sys_packages=' --system-site-packages'
 	local no_pips_installed=true
+	local pip_deps=' --no-deps'
 
 	[[ $ALLOW_ACCESS_TO_SYS_PACKAGES != true ]] && sys_packages=''
+	[[ $INSTALL_PIP_DEPS = true ]] && pip_deps=''
 
 	if IsNotVirtualEnvironmentExist; then
-		DisplayRunAndLog 'create new virtual Python environment' "export PIP_CACHE_DIR=$PIP_CACHE_PATH VIRTUALENV_OVERRIDE_APP_DATA=$PIP_CACHE_PATH; $INTERPRETER -m virtualenv $VENV_PATH $sys_packages" log:failure-only || SetError
+		DisplayRunAndLog 'create new virtual Python environment' "export PIP_CACHE_DIR=$PIP_CACHE_PATH VIRTUALENV_OVERRIDE_APP_DATA=$PIP_CACHE_PATH; $INTERPRETER -m virtualenv ${VENV_PATH}${sys_packages}" log:failure-only || SetError
 		new_env=true
 	fi
 
@@ -278,50 +281,42 @@ InstallAddons()
 
 	if [[ $QPKG_NAME = OWatcher3 ]]; then
 		# need to install `m2r` PyPI module first
-		DisplayRunAndLog "KLUDGE: install 'm2r' PyPI module first" ". $VENV_PATH/bin/activate && pip install --no-input m2r" log:failure-only || SetError
+		DisplayRunAndLog "KLUDGE: install 'm2r' PyPI module first" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input m2r" log:failure-only || SetError
 	fi
 
 	[[ ! -e $requirements_pathfile && -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
-
-	if [[ -e $requirements_pathfile ]]; then
-		case $(/bin/uname -m) in
-			x86_64|i686|aarch64)
-				: # `pip` compilation on these arches works fine
-				;;
-			*)
-				# need to remove `cffi` and `cryptography` modules from downloaded `requirements.txt`, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on armv5 NAS.
-				DisplayRunAndLog "KLUDGE: don't attempt to compile 'cffi' and 'cryptography' PyPI modules" "/bin/sed -i '/^cffi\|^cryptography/d' $requirements_pathfile" log:failure-only || SetError
-		esac
-	fi
-
-	if [[ -e $requirements_pathfile ]]; then
-		DisplayRunAndLog 'install required PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $requirements_pathfile" log:failure-only || SetError
-		no_pips_installed=false
-	fi
-
 	[[ ! -e $recommended_pathfile && -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
 
-	if [[ -e $recommended_pathfile ]]; then
-		DisplayRunAndLog 'install recommended PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input -r $recommended_pathfile" log:failure-only || SetError
-		no_pips_installed=false
-	fi
+	for target in $requirements_pathfile $recommended_pathfile; do
+		if [[ -e $target ]]; then
+			# need to remove `cffi` and `cryptography` modules from repo txt files, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on early arm CPUs.
+			DisplayRunAndLog 'KLUDGE: exclude various PyPI modules from installation' "/bin/sed -i '/^cffi\|^cryptography/d' $target" log:failure-only || SetError
+		fi
+
+		if [[ -e $target ]]; then
+			name=$(/usr/bin/basename "$target"); name=${name%%.*}
+
+			DisplayRunAndLog "install '$name' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input -r $target" log:failure-only || SetError
+			no_pips_installed=false
+		fi
+	done
 
 	if [[ $no_pips_installed = true ]]; then		# fallback to general installation method
 		if [[ -e $QPKG_REPO_PATH/setup.py || -e $QPKG_REPO_PATH/pyproject.toml ]]; then
-			DisplayRunAndLog 'install default PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input $QPKG_REPO_PATH" log:failure-only || SetError
+			DisplayRunAndLog "install 'default' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input $QPKG_REPO_PATH" log:failure-only || SetError
 			no_pips_installed=false
 		fi
 	fi
 
 	if [[ $QPKG_NAME = pyLoad && $new_env = true ]]; then
-		DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
+		DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
 	fi
 
 	if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
 		if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
+			DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
 		elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabctools" log:failure-only || SetError
+			DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary :all: sabctools" log:failure-only || SetError
 		fi
 
 		# run [tools/make_mo.py] if SABnzbd version number has changed since last run
@@ -405,13 +400,13 @@ LoadPorts()
 	[[ -n ${UI_LISTENING_ADDRESS_CMD:-} ]] && ui_listening_address=$(eval "$UI_LISTENING_ADDRESS_CMD")
 
 	# validate port numbers
-	ui_port=${ui_port//[!0-9]/}					 # strip everything not a numeral
+	ui_port=${ui_port//[!0-9]/}					# strip everything not a numeral
 	[[ -z $ui_port || $ui_port -lt 0 || $ui_port -gt 65535 ]] && ui_port=0
 
-	ui_port_secure=${ui_port_secure//[!0-9]/}	   # strip everything not a numeral
+	ui_port_secure=${ui_port_secure//[!0-9]/}	# strip everything not a numeral
 	[[ -z $ui_port_secure || $ui_port_secure -lt 0 || $ui_port_secure -gt 65535 ]] && ui_port_secure=0
 
-	daemon_port=${daemon_port//[!0-9]/}			 # strip everything not a numeral
+	daemon_port=${daemon_port//[!0-9]/}			# strip everything not a numeral
 	[[ -z $daemon_port || $daemon_port -lt 0 || $daemon_port -gt 65535 ]] && daemon_port=0
 
 	[[ -z $ui_listening_address ]] && ui_listening_address=undefined
@@ -461,7 +456,7 @@ DisableOpkgDaemonStart()
 
 	if [[ -n $ORIG_DAEMON_SERVICE_SCRIPT && -x $ORIG_DAEMON_SERVICE_SCRIPT ]]; then
 		$ORIG_DAEMON_SERVICE_SCRIPT stop		# stop default daemon
-		chmod -x "$ORIG_DAEMON_SERVICE_SCRIPT"  # ... and ensure Entware doesn't re-launch it on startup
+		chmod -x "$ORIG_DAEMON_SERVICE_SCRIPT"	# ... and ensure Entware doesn't re-launch it on startup
 	fi
 
 	}
@@ -576,7 +571,7 @@ WaitForPID()
 	{
 
 	if WaitForFileToAppear "$DAEMON_PID_PATHFILE" 60; then
-		sleep 1	   # wait one more second to allow file to have PID written into it
+		sleep 1		# wait one more second to allow file to have PID written into it
 		return 0
 	else
 		return 1
@@ -800,7 +795,7 @@ RunAndLog()
 	if IsDebug; then
 		Display
 		Display "exec: '$1'"
-		eval "$1 > >(/usr/bin/tee $LOG_PATHFILE) 2>&1"   # NOTE: 'tee' buffers stdout here
+		eval "$1 > >(/usr/bin/tee $LOG_PATHFILE) 2>&1"	# NOTE: 'tee' buffers stdout here
 		result_code=$?
 	else
 		eval "$1" > "$LOG_PATHFILE" 2>&1
@@ -832,7 +827,7 @@ AddFileToDebug()
 	local debug_was_set=false
 	local linebuff=''
 
-	if IsDebug; then	  # prevent external log contents appearing onscreen again, as they have already been seen "live"
+	if IsDebug; then	# prevent external log contents appearing onscreen again, as they have already been seen "live"
 		debug_was_set=true
 		UnsetDebug
 	fi
@@ -854,7 +849,7 @@ AddFileToDebug()
 DebugExtLogMinorSeparator()
 	{
 
-	DebugAsLog "$(eval printf '%0.s-' "{1..$DEBUG_LOG_DATAWIDTH}")" # 'seq' is unavailable in QTS, so must resort to 'eval' trickery instead
+	DebugAsLog "$(eval printf '%0.s-' "{1..$DEBUG_LOG_DATAWIDTH}")"		# 'seq' is unavailable in QTS, so must resort to 'eval' trickery instead
 
 	}
 
@@ -901,7 +896,7 @@ StripANSI()
 	if [[ -e /opt/bin/sed ]]; then
 		/opt/bin/sed -r 's/\x1b\[[0-9;]*m//g' <<< "${1:-}"
 	else
-		echo "${1:-}"		   # can't strip, so pass thru original message unaltered
+		echo "${1:-}"		# can't strip, so pass thru original message unaltered
 	fi
 
 	}
@@ -928,15 +923,15 @@ ReWriteUIPorts()
 	# QTS App Center requires 'Web_Port' to always be non-zero
 
 	# 'Web_SSL_Port' behaviour:
-	#			< -2 = crashes current QTS session. Starts with non-responsive package icons in App Center
-	#   missing or -2 = QTS will fallback from HTTPS to HTTP, with a warning to user
-	#			  -1 = launch QTS UI again (only if WebUI = '/'), else show "QNAP Error" page
-	#			   0 = "unable to connect"
-	#			 > 0 = works if logged-in to QTS UI via HTTPS
+	#		   < -2 = crashes current QTS session. Starts with non-responsive package icons in App Center
+	# missing or -2 = QTS will fallback from HTTPS to HTTP, with a warning to user
+	#			 -1 = launch QTS UI again (only if WebUI = '/'), else show "QNAP Error" page
+	#			  0 = "unable to connect"
+	#			> 0 = works if logged-in to QTS UI via HTTPS
 
 	# If SSL is enabled, attempting to access with non-SSL via 'Web_Port' results in "connection was reset"
 
-	[[ -n ${DAEMON_PORT_CMD:-} ]] && return	 # dont need to rewrite QTS UI ports if this app has a daemon port, as UI ports are unused
+	[[ -n ${DAEMON_PORT_CMD:-} ]] && return		# dont need to rewrite QTS UI ports if this app has a daemon port, as UI ports are unused
 
 	DisplayWaitCommitToLog 'update QPKG icon with UI ports:'
 	/sbin/setcfg $QPKG_NAME Web_Port "$ui_port" -f /etc/config/qpkg.conf
@@ -1186,7 +1181,7 @@ IsNotSupportReset()
 IsSourcedOnline()
 	{
 
-	[[ -n ${SOURCE_GIT_URL:-} ]]
+	[[ -n ${SOURCE_GIT_URL:-} || -n ${PIP_CACHE_PATH} ]]
 
 	}
 
@@ -2037,7 +2032,7 @@ if IsNotError; then
 			Display "package: $QPKG_VERSION"
 			Display "service: $SCRIPT_VERSION"
 			;;
-		remove)	 # only called by the QDK .uninstall.sh script
+		remove)		# only called by the QDK .uninstall.sh script
 			SetServiceOperation removing
 			;;
 		*)

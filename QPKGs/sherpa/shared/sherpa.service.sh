@@ -31,47 +31,47 @@
 #   You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses/
 
 Init()
-    {
+	{
 
-    local -r QPKG_PATH=$(/sbin/getcfg sherpa Install_Path -f /etc/config/qpkg.conf)
-    readonly REAL_LOG_PATHFILE=$QPKG_PATH/logs/session.archive.log
-    readonly GUI_LOG_PATHFILE=/home/httpd/sherpa.debug.log
-    readonly REAL_LOADER_SCRIPT_PATHNAME=$QPKG_PATH/sherpa.loader.sh
-    readonly APPARENT_LOADER_SCRIPT_PATHNAME=/usr/sbin/sherpa
-    readonly SERVICE_STATUS_PATHFILE=/var/run/sherpa.last.operation
+	local -r QPKG_PATH=$(/sbin/getcfg sherpa Install_Path -f /etc/config/qpkg.conf)
+	readonly REAL_LOG_PATHFILE=$QPKG_PATH/logs/session.archive.log
+	readonly GUI_LOG_PATHFILE=/home/httpd/sherpa.debug.log
+	readonly REAL_LOADER_SCRIPT_PATHNAME=$QPKG_PATH/sherpa.loader.sh
+	readonly APPARENT_LOADER_SCRIPT_PATHNAME=/usr/sbin/sherpa
+	readonly SERVICE_STATUS_PATHFILE=/var/run/sherpa.last.operation
 
-    [[ ! -d $(/usr/bin/dirname "$REAL_LOG_PATHFILE") ]] && mkdir -p $(/usr/bin/dirname "$REAL_LOG_PATHFILE")
-    [[ ! -e $REAL_LOG_PATHFILE ]] && /bin/touch "$REAL_LOG_PATHFILE"
+	[[ ! -d $(/usr/bin/dirname "$REAL_LOG_PATHFILE") ]] && mkdir -p $(/usr/bin/dirname "$REAL_LOG_PATHFILE")
+	[[ ! -e $REAL_LOG_PATHFILE ]] && /bin/touch "$REAL_LOG_PATHFILE"
 
-    }
+	}
 
 SetServiceOperationResult()
-    {
+	{
 
-    # $1 = result of operation to recorded
+	# $1 = result of operation to recorded
 
-    [[ -n $1 && -n $SERVICE_STATUS_PATHFILE ]] && echo "$1" > "$SERVICE_STATUS_PATHFILE"
+	[[ -n $1 && -n $SERVICE_STATUS_PATHFILE ]] && echo "$1" > "$SERVICE_STATUS_PATHFILE"
 
-    }
+	}
 
 Init
 
 case $1 in
-    start)
-        [[ ! -L $APPARENT_LOADER_SCRIPT_PATHNAME ]] && /bin/ln -s "$REAL_LOADER_SCRIPT_PATHNAME" "$APPARENT_LOADER_SCRIPT_PATHNAME"
-        [[ ! -L $GUI_LOG_PATHFILE ]] && /bin/ln -s "$REAL_LOG_PATHFILE" "$GUI_LOG_PATHFILE"
-        sherpa status >& /dev/null
-        ;;
-    stop)
-        [[ -L $APPARENT_LOADER_SCRIPT_PATHNAME ]] && rm -f "$APPARENT_LOADER_SCRIPT_PATHNAME"
-        [[ -L $GUI_LOG_PATHFILE ]] && rm -f "$GUI_LOG_PATHFILE"
-        ;;
-    restart)
-        $0 stop
-        $0 start
-        ;;
-    *)
-        echo -e "\n Usage: $0 {start|stop|restart}\n"
+	start)
+		[[ ! -L $APPARENT_LOADER_SCRIPT_PATHNAME ]] && /bin/ln -s "$REAL_LOADER_SCRIPT_PATHNAME" "$APPARENT_LOADER_SCRIPT_PATHNAME"
+		[[ ! -L $GUI_LOG_PATHFILE ]] && /bin/ln -s "$REAL_LOG_PATHFILE" "$GUI_LOG_PATHFILE"
+		sherpa status >& /dev/null
+		;;
+	stop)
+		[[ -L $APPARENT_LOADER_SCRIPT_PATHNAME ]] && rm -f "$APPARENT_LOADER_SCRIPT_PATHNAME"
+		[[ -L $GUI_LOG_PATHFILE ]] && rm -f "$GUI_LOG_PATHFILE"
+		;;
+	restart)
+		$0 stop
+		$0 start
+		;;
+	*)
+		echo -e "\n Usage: $0 {start|stop|restart}\n"
 esac
 
 SetServiceOperationResult ok
