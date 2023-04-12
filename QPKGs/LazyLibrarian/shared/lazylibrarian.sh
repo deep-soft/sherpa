@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=LazyLibrarian
-	readonly SCRIPT_VERSION=230411
+	readonly SCRIPT_VERSION=230412
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -48,6 +48,7 @@ Init()
 	readonly VENV_PATH=$QPKG_PATH/venv
 	readonly VENV_INTERPRETER=$VENV_PATH/bin/python3
 	readonly ALLOW_ACCESS_TO_SYS_PACKAGES=true
+	readonly INSTALL_PIP_DEPS=true
 
 	# specific to daemonised applications only
 	readonly DAEMON_PATHFILE=$QPKG_REPO_PATH/LazyLibrarian.py
@@ -257,11 +258,13 @@ InstallAddons()
 	local new_env=false
 	local sys_packages=' --system-site-packages'
 	local no_pips_installed=true
+	local pip_deps=' --no-deps'
 
 	[[ $ALLOW_ACCESS_TO_SYS_PACKAGES != true ]] && sys_packages=''
+	[[ $INSTALL_PIP_DEPS = true ]] && pip_deps=''
 
 	if IsNotVirtualEnvironmentExist; then
-		DisplayRunAndLog 'create new virtual Python environment' "export PIP_CACHE_DIR=$PIP_CACHE_PATH VIRTUALENV_OVERRIDE_APP_DATA=$PIP_CACHE_PATH; $INTERPRETER -m virtualenv $VENV_PATH $sys_packages" log:failure-only || SetError
+		DisplayRunAndLog 'create new virtual Python environment' "export PIP_CACHE_DIR=$PIP_CACHE_PATH VIRTUALENV_OVERRIDE_APP_DATA=$PIP_CACHE_PATH; $INTERPRETER -m virtualenv ${VENV_PATH}${sys_packages}" log:failure-only || SetError
 		new_env=true
 	fi
 
@@ -279,7 +282,7 @@ InstallAddons()
 
 	if [[ $QPKG_NAME = OWatcher3 ]]; then
 		# need to install `m2r` PyPI module first
-		DisplayRunAndLog "KLUDGE: install 'm2r' PyPI module first" ". $VENV_PATH/bin/activate && pip install --no-input m2r" log:failure-only || SetError
+		DisplayRunAndLog "KLUDGE: install 'm2r' PyPI module first" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input m2r" log:failure-only || SetError
 	fi
 
 	[[ ! -e $requirements_pathfile && -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
@@ -287,40 +290,34 @@ InstallAddons()
 
 	for target in $requirements_pathfile $recommended_pathfile; do
 		if [[ -e $target ]]; then
-			case $(/bin/uname -m) in
-				x86_64|i686|aarch64)
-					: # `pip` compilation on these arches works fine
-					;;
-				*)
-					# need to remove `cffi` and `cryptography` modules from repo txt files, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on early arm CPUs.
-					DisplayRunAndLog "KLUDGE: don't attempt to compile 'cffi' and 'cryptography' PyPI modules" "/bin/sed -i '/^cffi\|^cryptography/d' $target" log:failure-only || SetError
-			esac
+			# need to remove `cffi` and `cryptography` modules from repo txt files, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on early arm CPUs.
+			DisplayRunAndLog 'KLUDGE: exclude various PyPI modules from installation' "/bin/sed -i '/^cffi\|^cryptography/d' $target" log:failure-only || SetError
 		fi
 
 		if [[ -e $target ]]; then
 			name=$(/usr/bin/basename "$target"); name=${name%%.*}
 
-			DisplayRunAndLog "install '$name' PyPI modules" ". $VENV_PATH/bin/activate && pip install --no-input -r $target" log:failure-only || SetError
+			DisplayRunAndLog "install '$name' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input -r $target" log:failure-only || SetError
 			no_pips_installed=false
 		fi
 	done
 
 	if [[ $no_pips_installed = true ]]; then		# fallback to general installation method
 		if [[ -e $QPKG_REPO_PATH/setup.py || -e $QPKG_REPO_PATH/pyproject.toml ]]; then
-			DisplayRunAndLog 'install default PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input $QPKG_REPO_PATH" log:failure-only || SetError
+			DisplayRunAndLog "install 'default' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input $QPKG_REPO_PATH" log:failure-only || SetError
 			no_pips_installed=false
 		fi
 	fi
 
 	if [[ $QPKG_NAME = pyLoad && $new_env = true ]]; then
-		DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
+		DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
 	fi
 
 	if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
 		if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
+			DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
 		elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabctools" log:failure-only || SetError
+			DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary :all: sabctools" log:failure-only || SetError
 		fi
 
 		# run [tools/make_mo.py] if SABnzbd version number has changed since last run
@@ -799,7 +796,7 @@ RunAndLog()
 	if IsDebug; then
 		Display
 		Display "exec: '$1'"
-		eval "$1 > >(/usr/bin/tee $LOG_PATHFILE) 2>&1"   # NOTE: 'tee' buffers stdout here
+		eval "$1 > >(/usr/bin/tee $LOG_PATHFILE) 2>&1"	# NOTE: 'tee' buffers stdout here
 		result_code=$?
 	else
 		eval "$1" > "$LOG_PATHFILE" 2>&1
@@ -853,7 +850,7 @@ AddFileToDebug()
 DebugExtLogMinorSeparator()
 	{
 
-	DebugAsLog "$(eval printf '%0.s-' "{1..$DEBUG_LOG_DATAWIDTH}")" # 'seq' is unavailable in QTS, so must resort to 'eval' trickery instead
+	DebugAsLog "$(eval printf '%0.s-' "{1..$DEBUG_LOG_DATAWIDTH}")"		# 'seq' is unavailable in QTS, so must resort to 'eval' trickery instead
 
 	}
 
@@ -927,15 +924,15 @@ ReWriteUIPorts()
 	# QTS App Center requires 'Web_Port' to always be non-zero
 
 	# 'Web_SSL_Port' behaviour:
-	#			< -2 = crashes current QTS session. Starts with non-responsive package icons in App Center
-	#   missing or -2 = QTS will fallback from HTTPS to HTTP, with a warning to user
-	#			-1 = launch QTS UI again (only if WebUI = '/'), else show "QNAP Error" page
-	#			0 = "unable to connect"
+	#		   < -2 = crashes current QTS session. Starts with non-responsive package icons in App Center
+	# missing or -2 = QTS will fallback from HTTPS to HTTP, with a warning to user
+	#			 -1 = launch QTS UI again (only if WebUI = '/'), else show "QNAP Error" page
+	#			  0 = "unable to connect"
 	#			> 0 = works if logged-in to QTS UI via HTTPS
 
 	# If SSL is enabled, attempting to access with non-SSL via 'Web_Port' results in "connection was reset"
 
-	[[ -n ${DAEMON_PORT_CMD:-} ]] && return	# dont need to rewrite QTS UI ports if this app has a daemon port, as UI ports are unused
+	[[ -n ${DAEMON_PORT_CMD:-} ]] && return		# dont need to rewrite QTS UI ports if this app has a daemon port, as UI ports are unused
 
 	DisplayWaitCommitToLog 'update QPKG icon with UI ports:'
 	/sbin/setcfg $QPKG_NAME Web_Port "$ui_port" -f /etc/config/qpkg.conf
@@ -994,34 +991,6 @@ CheckPorts()
 		return 0
 	fi
 
-	}
-
-parse_yaml()
-	{
-
-	# a nice bit of coding! https://stackoverflow.com/a/21189044
-
-	# input:
-	#   $1 = filename to parse
-
-	# output:
-	#   stdout = parsed YAML
-
-	local prefix=$2
-	local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
-
-	/bin/sed -ne "s|^\($s\):|\1|" \
-		-e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
-		-e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
-		/bin/awk -F$fs '{
-			indent = length($1)/2;
-			vname[indent] = $2;
-			for (i in vname) {if (i > indent) {delete vname[i]}}
-				if (length($3) > 0) {
-				vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
-				printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
-				}
-			}'
 	}
 
 IsQNAP()
@@ -1133,7 +1102,7 @@ IsNotSupportReset()
 IsSourcedOnline()
 	{
 
-	[[ -n ${SOURCE_GIT_URL:-} ]]
+	[[ -n ${SOURCE_GIT_URL:-} || -n ${PIP_CACHE_PATH} ]]
 
 	}
 
@@ -1800,9 +1769,9 @@ CommitSysLog()
 	# input:
 	#   $1 = message to append to QTS system log
 	#   $2 = event type:
-	#	1 : Error
-	#	2 : Warning
-	#	4 : Information
+	#	 1 : Error
+	#	 2 : Warning
+	#	 4 : Information
 
 	if [[ -z ${1:-} || -z ${2:-} ]]; then
 		SetError
@@ -1984,7 +1953,7 @@ if IsNotError; then
 			Display "package: $QPKG_VERSION"
 			Display "service: $SCRIPT_VERSION"
 			;;
-		remove)	# only called by the QDK .uninstall.sh script
+		remove)		# only called by the QDK .uninstall.sh script
 			SetServiceOperation removing
 			;;
 		*)
