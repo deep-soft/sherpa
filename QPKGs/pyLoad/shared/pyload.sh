@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=pyLoad
-	readonly SCRIPT_VERSION=230414
+	readonly SCRIPT_VERSION=230415
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -291,9 +291,7 @@ InstallAddons()
 		if [[ -e $target ]]; then
 			# need to remove `cffi` and `cryptography` modules from repo txt files, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on early arm CPUs.
 			DisplayRunAndLog 'KLUDGE: exclude various PyPI modules from installation' "/bin/sed -i '/^cffi\|^cryptography/d' $target" log:failure-only || SetError
-		fi
 
-		if [[ -e $target ]]; then
 			name=$(/usr/bin/basename "$target"); name=${name%%.*}
 
 			DisplayRunAndLog "install '$name' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input -r $target" log:failure-only || SetError
