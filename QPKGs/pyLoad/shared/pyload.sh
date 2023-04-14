@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=pyLoad
-	readonly SCRIPT_VERSION=230412
+	readonly SCRIPT_VERSION=230414
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -306,10 +306,6 @@ InstallAddons()
 			DisplayRunAndLog "install 'default' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input $QPKG_REPO_PATH" log:failure-only || SetError
 			no_pips_installed=false
 		fi
-	fi
-
-	if [[ $QPKG_NAME = pyLoad && $new_env = true ]]; then
-		DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
 	fi
 
 	if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
