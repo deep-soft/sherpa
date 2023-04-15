@@ -142,10 +142,10 @@ StartQPKG()
 	fi
 
 	if IsRestore || IsClean || IsReset; then
-		IsNotRestartPending && return
+		IsRestartPending || return
 	fi
 
-	DisplayWaitCommitToLog "auto-update:"
+	DisplayWaitCommitToLog 'auto-update:'
 
 	if IsAutoUpdate; then
 		DisplayCommitToLog true

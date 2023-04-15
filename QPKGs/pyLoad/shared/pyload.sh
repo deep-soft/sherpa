@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=pyLoad
-	readonly SCRIPT_VERSION=230415a
+	readonly SCRIPT_VERSION=230416
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -142,10 +142,10 @@ StartQPKG()
 	fi
 
 	if IsRestore || IsClean || IsReset; then
-		IsNotRestartPending && return
+		IsRestartPending || return
 	fi
 
-	DisplayWaitCommitToLog "auto-update:"
+	DisplayWaitCommitToLog 'auto-update:'
 
 	if IsAutoUpdate; then
 		DisplayCommitToLog true
@@ -284,8 +284,20 @@ InstallAddons()
 		DisplayRunAndLog "KLUDGE: install 'm2r' PyPI module first" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input m2r" log:failure-only || SetError
 	fi
 
-	[[ ! -e $requirements_pathfile && -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
-	[[ ! -e $recommended_pathfile && -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
+	[[ -e $requirements_pathfile ]] && cp -f "$requirements_pathfile" "$default_requirements_pathfile"
+	[[ -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
+
+	[[ -e $recommended_pathfile ]] && cp -f "$recommended_pathfile" "$default_recommended_pathfile"
+	[[ -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
+
+	if [[ $QPKG_NAME = SABnzbd ]]; then
+		# KLUDGE: can't use `manytolinux2014` wheel builds in QTS, so force wheels to rebuild locally
+		if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
+			echo '--no-binary=sabyenc3' >> "$requirements_pathfile"
+		elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
+			echo '--no-binary=sabyenc3' >> "$requirements_pathfile"
+		fi
+	fi
 
 	for target in $requirements_pathfile $recommended_pathfile; do
 		if [[ -e $target ]]; then
@@ -307,12 +319,6 @@ InstallAddons()
 	fi
 
 	if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
-		if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary=sabyenc3 sabyenc3" log:failure-only || SetError
-		elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary=sabctools sabctools" log:failure-only || SetError
-		fi
-
 		# run [tools/make_mo.py] if SABnzbd version number has changed since last run
 		LoadAppVersion
 		[[ -e $APP_VERSION_STORE_PATHFILE && $(<"$APP_VERSION_STORE_PATHFILE") = "$app_version" && -d $QPKG_REPO_PATH/locale ]] && return 0
@@ -452,51 +458,6 @@ DisableOpkgDaemonStart()
 		$ORIG_DAEMON_SERVICE_SCRIPT stop		# stop default daemon
 		chmod -x "$ORIG_DAEMON_SERVICE_SCRIPT"	# ... and ensure Entware doesn't re-launch it on startup
 	fi
-
-	}
-
-PullGitRepo()
-	{
-
-	# inputs (global):
-	#   $QPKG_NAME
-	#   $SOURCE_GIT_URL
-	#   $SOURCE_GIT_BRANCH
-	#   $SOURCE_GIT_BRANCH_DEPTH
-	#   $QPKG_REPO_PATH
-
-	local branch_depth='--depth 1'
-	[[ $SOURCE_GIT_BRANCH_DEPTH = single-branch ]] && branch_depth='--single-branch'
-	local active_branch=$(GetPathGitBranch "$QPKG_REPO_PATH")
-	local branch_switch=false
-
-	WaitForGit || return
-
-	if [[ -d $QPKG_REPO_PATH/.git ]]; then
-		if [[ $active_branch != "$SOURCE_GIT_BRANCH" ]]; then
-			branch_switch=true
-			DisplayCommitToLog "active git branch: '$active_branch', new git branch: '$SOURCE_GIT_BRANCH'"
-			[[ $QPKG_NAME = nzbToMedia ]] && BackupConfig
-			DisplayRunAndLog 'new git branch has been specified, so clean local repository' "cd /tmp; rm -r $QPKG_REPO_PATH" log:failure-only
-		fi
-	fi
-
-	if [[ ! -d $QPKG_REPO_PATH/.git ]]; then
-		DisplayRunAndLog "clone $(FormatAsPackageName "$QPKG_NAME") from remote repository" "cd /tmp; /opt/bin/git clone --branch $SOURCE_GIT_BRANCH $branch_depth -c advice.detachedHead=false $SOURCE_GIT_URL $QPKG_REPO_PATH" log:failure-only
-	else
-		if IsAutoUpdate; then
-			# latest effort at resolving local clone corruption: https://stackoverflow.com/a/10170195
-			DisplayRunAndLog "update $(FormatAsPackageName "$QPKG_NAME") from remote repository" "cd /tmp; /opt/bin/git -C $QPKG_REPO_PATH clean -f; /opt/bin/git -C $QPKG_REPO_PATH reset --hard origin/$SOURCE_GIT_BRANCH; /opt/bin/git -C $QPKG_REPO_PATH pull" log:failure-only
-		fi
-	fi
-
-	if IsAutoUpdate; then
-		DisplayCommitToLog "active git branch: '$(GetPathGitBranch "$QPKG_REPO_PATH")'"
-	fi
-
-	[[ $branch_switch = true && $QPKG_NAME = nzbToMedia ]] && RestoreConfig
-
-	return 0
 
 	}
 
