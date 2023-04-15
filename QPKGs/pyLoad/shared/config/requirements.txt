@@ -1,6 +1,7 @@
 babel
 bitmath
 brotli
+--no-binary=brotli
 cachelib
 certifi
 cheroot
@@ -17,6 +18,7 @@ jaraco.collections
 jaraco.functools
 jinja2
 js2py
+markupsafe
 more_itertools
 pycurl
 pyjsparser

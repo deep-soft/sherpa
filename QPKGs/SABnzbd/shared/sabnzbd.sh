@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=SABnzbd
-	readonly SCRIPT_VERSION=230412
+	readonly SCRIPT_VERSION=230415
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -292,9 +292,7 @@ InstallAddons()
 		if [[ -e $target ]]; then
 			# need to remove `cffi` and `cryptography` modules from repo txt files, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on early arm CPUs.
 			DisplayRunAndLog 'KLUDGE: exclude various PyPI modules from installation' "/bin/sed -i '/^cffi\|^cryptography/d' $target" log:failure-only || SetError
-		fi
 
-		if [[ -e $target ]]; then
 			name=$(/usr/bin/basename "$target"); name=${name%%.*}
 
 			DisplayRunAndLog "install '$name' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input -r $target" log:failure-only || SetError
@@ -309,15 +307,11 @@ InstallAddons()
 		fi
 	fi
 
-	if [[ $QPKG_NAME = pyLoad && $new_env = true ]]; then
-		DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
-	fi
-
 	if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
 		if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
+			DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary=sabyenc3 sabyenc3" log:failure-only || SetError
 		elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary :all: sabctools" log:failure-only || SetError
+			DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary=sabctools sabctools" log:failure-only || SetError
 		fi
 
 		# run [tools/make_mo.py] if SABnzbd version number has changed since last run
