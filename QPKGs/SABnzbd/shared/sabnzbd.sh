@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=SABnzbd
-	readonly SCRIPT_VERSION=230415
+	readonly SCRIPT_VERSION=230415a
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -285,8 +285,20 @@ InstallAddons()
 		DisplayRunAndLog "KLUDGE: install 'm2r' PyPI module first" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input m2r" log:failure-only || SetError
 	fi
 
-	[[ ! -e $requirements_pathfile && -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
-	[[ ! -e $recommended_pathfile && -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
+	[[ -e $requirements_pathfile ]] && cp -f "$requirements_pathfile" "$default_requirements_pathfile"
+	[[ -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
+
+	[[ -e $recommended_pathfile ]] && cp -f "$recommended_pathfile" "$default_recommended_pathfile"
+	[[ -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
+
+	if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
+		# KLUDGE: can't use `manytolinux2014` wheel builds in QTS, so force wheels to rebuild locally
+		if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
+			echo '--no-binary=sabyenc3' >> "$requirements_pathfile"
+		elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
+			echo '--no-binary=sabyenc3' >> "$requirements_pathfile"
+		fi
+	fi
 
 	for target in $requirements_pathfile $recommended_pathfile; do
 		if [[ -e $target ]]; then
@@ -308,12 +320,6 @@ InstallAddons()
 	fi
 
 	if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
-		if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary=sabyenc3 sabyenc3" log:failure-only || SetError
-		elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --force-reinstall --no-binary=sabctools sabctools" log:failure-only || SetError
-		fi
-
 		# run [tools/make_mo.py] if SABnzbd version number has changed since last run
 		LoadAppVersion
 		[[ -e $APP_VERSION_STORE_PATHFILE && $(<"$APP_VERSION_STORE_PATHFILE") = "$app_version" && -d $QPKG_REPO_PATH/locale ]] && return 0
