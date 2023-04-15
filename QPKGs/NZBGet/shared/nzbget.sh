@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=NZBGet
-	readonly SCRIPT_VERSION=230411
+	readonly SCRIPT_VERSION=230416
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -217,95 +217,6 @@ StopQPKG()
 
 	}
 
-InstallAddons()
-	{
-
-	local default_requirements_pathfile=$QPKG_PATH/config/requirements.txt
-	local default_recommended_pathfile=$QPKG_PATH/config/recommended.txt
-	local requirements_pathfile=$QPKG_REPO_PATH/requirements.txt
-	local recommended_pathfile=$QPKG_REPO_PATH/recommended.txt
-	local pip_conf_pathfile=$VENV_PATH/pip.conf
-	local new_env=false
-	local sys_packages=' --system-site-packages'
-	local no_pips_installed=true
-
-	[[ $ALLOW_ACCESS_TO_SYS_PACKAGES != true ]] && sys_packages=''
-
-	if IsNotVirtualEnvironmentExist; then
-		DisplayRunAndLog 'create new virtual Python environment' "export PIP_CACHE_DIR=$PIP_CACHE_PATH VIRTUALENV_OVERRIDE_APP_DATA=$PIP_CACHE_PATH; $INTERPRETER -m virtualenv $VENV_PATH $sys_packages" log:failure-only || SetError
-		new_env=true
-	fi
-
-	if IsNotVirtualEnvironmentExist; then
-		DisplayErrCommitAllLogs 'unable to install addons: virtual environment does not exist!'
-		SetError
-		return 1
-	fi
-
-	if [[ ! -e $pip_conf_pathfile ]]; then
-		DisplayRunAndLog "create global 'pip' config" "echo -e \"[global]\ncache-dir = $PIP_CACHE_PATH\" > $pip_conf_pathfile" log:failure-only || SetError
-	fi
-
-	IsNotAutoUpdate && [[ $new_env = false ]] && return 0
-
-	if [[ $QPKG_NAME = OWatcher3 ]]; then
-		# need to install `m2r` PyPI module first
-		DisplayRunAndLog "KLUDGE: install 'm2r' PyPI module first" ". $VENV_PATH/bin/activate && pip install --no-input m2r" log:failure-only || SetError
-	fi
-
-	[[ ! -e $requirements_pathfile && -e $default_requirements_pathfile ]] && requirements_pathfile=$default_requirements_pathfile
-	[[ ! -e $recommended_pathfile && -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
-
-	for target in $requirements_pathfile $recommended_pathfile; do
-		if [[ -e $target ]]; then
-			case $(/bin/uname -m) in
-				x86_64|i686|aarch64)
-					: # `pip` compilation on these arches works fine
-					;;
-				*)
-					# need to remove `cffi` and `cryptography` modules from repo txt files, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on early arm CPUs.
-					DisplayRunAndLog "KLUDGE: don't attempt to compile 'cffi' and 'cryptography' PyPI modules" "/bin/sed -i '/^cffi\|^cryptography/d' $target" log:failure-only || SetError
-			esac
-		fi
-
-		if [[ -e $target ]]; then
-			name=$(/usr/bin/basename "$target"); name=${name%%.*}
-
-			DisplayRunAndLog "install '$name' PyPI modules" ". $VENV_PATH/bin/activate && pip install --no-input -r $target" log:failure-only || SetError
-			no_pips_installed=false
-		fi
-	done
-
-	if [[ $no_pips_installed = true ]]; then		# fallback to general installation method
-		if [[ -e $QPKG_REPO_PATH/setup.py || -e $QPKG_REPO_PATH/pyproject.toml ]]; then
-			DisplayRunAndLog 'install default PyPI modules' ". $VENV_PATH/bin/activate && pip install --no-input $QPKG_REPO_PATH" log:failure-only || SetError
-			no_pips_installed=false
-		fi
-	fi
-
-	if [[ $QPKG_NAME = pyLoad && $new_env = true ]]; then
-		DisplayRunAndLog "KLUDGE: reinstall 'brotli' PyPI module" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: brotli" log:failure-only || SetError
-	fi
-
-	if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
-		if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabyenc3' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=128567#p128567)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabyenc3" log:failure-only || SetError
-		elif $(/bin/grep -q sabctools < "$requirements_pathfile" &>/dev/null); then
-			DisplayRunAndLog "KLUDGE: reinstall 'sabctools' PyPI module (https://forums.sabnzbd.org/viewtopic.php?p=129173#p129173)" ". $VENV_PATH/bin/activate && pip install --no-input --force-reinstall --no-binary :all: sabctools" log:failure-only || SetError
-		fi
-
-		# run [tools/make_mo.py] if SABnzbd version number has changed since last run
-		LoadAppVersion
-		[[ -e $APP_VERSION_STORE_PATHFILE && $(<"$APP_VERSION_STORE_PATHFILE") = "$app_version" && -d $QPKG_REPO_PATH/locale ]] && return 0
-
-		DisplayRunAndLog "update $(FormatAsPackageName $QPKG_NAME) language translations" ". $VENV_PATH/bin/activate && cd $QPKG_REPO_PATH; $VENV_INTERPRETER $QPKG_REPO_PATH/tools/make_mo.py" log:failure-only
-		[[ ! -e $APP_VERSION_STORE_PATHFILE ]] && return 0
-
-		SaveAppVersion
-	fi
-
-	}
-
 BackupConfig()
 	{
 
@@ -431,53 +342,8 @@ DisableOpkgDaemonStart()
 
 	if [[ -n $ORIG_DAEMON_SERVICE_SCRIPT && -x $ORIG_DAEMON_SERVICE_SCRIPT ]]; then
 		$ORIG_DAEMON_SERVICE_SCRIPT stop		# stop default daemon
-		chmod -x "$ORIG_DAEMON_SERVICE_SCRIPT"  # ... and ensure Entware doesn't re-launch it on startup
+		chmod -x "$ORIG_DAEMON_SERVICE_SCRIPT"	# ... and ensure Entware doesn't re-launch it on startup
 	fi
-
-	}
-
-PullGitRepo()
-	{
-
-	# inputs (global):
-	#   $QPKG_NAME
-	#   $SOURCE_GIT_URL
-	#   $SOURCE_GIT_BRANCH
-	#   $SOURCE_GIT_BRANCH_DEPTH
-	#   $QPKG_REPO_PATH
-
-	local branch_depth='--depth 1'
-	[[ $SOURCE_GIT_BRANCH_DEPTH = single-branch ]] && branch_depth='--single-branch'
-	local active_branch=$(GetPathGitBranch "$QPKG_REPO_PATH")
-	local branch_switch=false
-
-	WaitForGit || return
-
-	if [[ -d $QPKG_REPO_PATH/.git ]]; then
-		if [[ $active_branch != "$SOURCE_GIT_BRANCH" ]]; then
-			branch_switch=true
-			DisplayCommitToLog "active git branch: '$active_branch', new git branch: '$SOURCE_GIT_BRANCH'"
-			[[ $QPKG_NAME = nzbToMedia ]] && BackupConfig
-			DisplayRunAndLog 'new git branch has been specified, so clean local repository' "cd /tmp; rm -r $QPKG_REPO_PATH" log:failure-only
-		fi
-	fi
-
-	if [[ ! -d $QPKG_REPO_PATH/.git ]]; then
-		DisplayRunAndLog "clone $(FormatAsPackageName "$QPKG_NAME") from remote repository" "cd /tmp; /opt/bin/git clone --branch $SOURCE_GIT_BRANCH $branch_depth -c advice.detachedHead=false $SOURCE_GIT_URL $QPKG_REPO_PATH" log:failure-only
-	else
-		if IsAutoUpdate; then
-			# latest effort at resolving local clone corruption: https://stackoverflow.com/a/10170195
-			DisplayRunAndLog "update $(FormatAsPackageName "$QPKG_NAME") from remote repository" "cd /tmp; /opt/bin/git -C $QPKG_REPO_PATH clean -f; /opt/bin/git -C $QPKG_REPO_PATH reset --hard origin/$SOURCE_GIT_BRANCH; /opt/bin/git -C $QPKG_REPO_PATH pull" log:failure-only
-		fi
-	fi
-
-	if IsAutoUpdate; then
-		DisplayCommitToLog "active git branch: '$(GetPathGitBranch "$QPKG_REPO_PATH")'"
-	fi
-
-	[[ $branch_switch = true && $QPKG_NAME = nzbToMedia ]] && RestoreConfig
-
-	return 0
 
 	}
 
@@ -546,7 +412,7 @@ WaitForPID()
 	{
 
 	if WaitForFileToAppear "$DAEMON_PID_PATHFILE" 60; then
-		sleep 1	# wait one more second to allow file to have PID written into it
+		sleep 1		# wait one more second to allow file to have PID written into it
 		return 0
 	else
 		return 1
@@ -770,7 +636,7 @@ RunAndLog()
 	if IsDebug; then
 		Display
 		Display "exec: '$1'"
-		eval "$1 > >(/usr/bin/tee $LOG_PATHFILE) 2>&1"   # NOTE: 'tee' buffers stdout here
+		eval "$1 > >(/usr/bin/tee $LOG_PATHFILE) 2>&1"	# NOTE: 'tee' buffers stdout here
 		result_code=$?
 	else
 		eval "$1" > "$LOG_PATHFILE" 2>&1
@@ -824,7 +690,7 @@ AddFileToDebug()
 DebugExtLogMinorSeparator()
 	{
 
-	DebugAsLog "$(eval printf '%0.s-' "{1..$DEBUG_LOG_DATAWIDTH}")" # 'seq' is unavailable in QTS, so must resort to 'eval' trickery instead
+	DebugAsLog "$(eval printf '%0.s-' "{1..$DEBUG_LOG_DATAWIDTH}")"		# 'seq' is unavailable in QTS, so must resort to 'eval' trickery instead
 
 	}
 
@@ -898,15 +764,15 @@ ReWriteUIPorts()
 	# QTS App Center requires 'Web_Port' to always be non-zero
 
 	# 'Web_SSL_Port' behaviour:
-	#			< -2 = crashes current QTS session. Starts with non-responsive package icons in App Center
-	#   missing or -2 = QTS will fallback from HTTPS to HTTP, with a warning to user
-	#			-1 = launch QTS UI again (only if WebUI = '/'), else show "QNAP Error" page
-	#			0 = "unable to connect"
+	#		   < -2 = crashes current QTS session. Starts with non-responsive package icons in App Center
+	# missing or -2 = QTS will fallback from HTTPS to HTTP, with a warning to user
+	#			 -1 = launch QTS UI again (only if WebUI = '/'), else show "QNAP Error" page
+	#			  0 = "unable to connect"
 	#			> 0 = works if logged-in to QTS UI via HTTPS
 
 	# If SSL is enabled, attempting to access with non-SSL via 'Web_Port' results in "connection was reset"
 
-	[[ -n ${DAEMON_PORT_CMD:-} ]] && return	# dont need to rewrite QTS UI ports if this app has a daemon port, as UI ports are unused
+	[[ -n ${DAEMON_PORT_CMD:-} ]] && return		# dont need to rewrite QTS UI ports if this app has a daemon port, as UI ports are unused
 
 	DisplayWaitCommitToLog 'update QPKG icon with UI ports:'
 	/sbin/setcfg $QPKG_NAME Web_Port "$ui_port" -f /etc/config/qpkg.conf
@@ -965,34 +831,6 @@ CheckPorts()
 		return 0
 	fi
 
-	}
-
-parse_yaml()
-	{
-
-	# a nice bit of coding! https://stackoverflow.com/a/21189044
-
-	# input:
-	#   $1 = filename to parse
-
-	# output:
-	#   stdout = parsed YAML
-
-	local prefix=$2
-	local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
-
-	/bin/sed -ne "s|^\($s\):|\1|" \
-		-e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
-		-e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
-		/bin/awk -F$fs '{
-			indent = length($1)/2;
-			vname[indent] = $2;
-			for (i in vname) {if (i > indent) {delete vname[i]}}
-				if (length($3) > 0) {
-				vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
-				printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
-				}
-			}'
 	}
 
 IsQNAP()
@@ -1104,7 +942,7 @@ IsNotSupportReset()
 IsSourcedOnline()
 	{
 
-	[[ -n ${SOURCE_GIT_URL:-} ]]
+	[[ -n ${SOURCE_GIT_URL:-} || -n ${PIP_CACHE_PATH} ]]
 
 	}
 
@@ -1771,9 +1609,9 @@ CommitSysLog()
 	# input:
 	#   $1 = message to append to QTS system log
 	#   $2 = event type:
-	#	1 : Error
-	#	2 : Warning
-	#	4 : Information
+	#	 1 : Error
+	#	 2 : Warning
+	#	 4 : Information
 
 	if [[ -z ${1:-} || -z ${2:-} ]]; then
 		SetError

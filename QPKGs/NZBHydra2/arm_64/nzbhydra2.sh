@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=NZBHydra2
-	readonly SCRIPT_VERSION=230319
+	readonly SCRIPT_VERSION=230416
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -50,6 +50,7 @@ Init()
 	readonly VENV_PATH=''
 	readonly VENV_INTERPRETER=''
 	readonly ALLOW_ACCESS_TO_SYS_PACKAGES=false
+	readonly INSTALL_PIP_DEPS=true
 
 	# specific to daemonised applications only
 	readonly DAEMON_PATHFILE=$QPKG_REPO_PATH/nzbhydra2wrapperPy3.py
@@ -381,53 +382,8 @@ DisableOpkgDaemonStart()
 
 	if [[ -n $ORIG_DAEMON_SERVICE_SCRIPT && -x $ORIG_DAEMON_SERVICE_SCRIPT ]]; then
 		$ORIG_DAEMON_SERVICE_SCRIPT stop		# stop default daemon
-		chmod -x "$ORIG_DAEMON_SERVICE_SCRIPT"  # ... and ensure Entware doesn't re-launch it on startup
+		chmod -x "$ORIG_DAEMON_SERVICE_SCRIPT"	# ... and ensure Entware doesn't re-launch it on startup
 	fi
-
-	}
-
-PullGitRepo()
-	{
-
-	# inputs (global):
-	#   $QPKG_NAME
-	#   $SOURCE_GIT_URL
-	#   $SOURCE_GIT_BRANCH
-	#   $SOURCE_GIT_BRANCH_DEPTH
-	#   $QPKG_REPO_PATH
-
-	local branch_depth='--depth 1'
-	[[ $SOURCE_GIT_BRANCH_DEPTH = single-branch ]] && branch_depth='--single-branch'
-	local active_branch=$(GetPathGitBranch "$QPKG_REPO_PATH")
-	local branch_switch=false
-
-	WaitForGit || return
-
-	if [[ -d $QPKG_REPO_PATH/.git ]]; then
-		if [[ $active_branch != "$SOURCE_GIT_BRANCH" ]]; then
-			branch_switch=true
-			DisplayCommitToLog "active git branch: '$active_branch', new git branch: '$SOURCE_GIT_BRANCH'"
-			[[ $QPKG_NAME = nzbToMedia ]] && BackupConfig
-			DisplayRunAndLog 'new git branch has been specified, so clean local repository' "cd /tmp; rm -r $QPKG_REPO_PATH" log:failure-only
-		fi
-	fi
-
-	if [[ ! -d $QPKG_REPO_PATH/.git ]]; then
-		DisplayRunAndLog "clone $(FormatAsPackageName "$QPKG_NAME") from remote repository" "cd /tmp; /opt/bin/git clone --branch $SOURCE_GIT_BRANCH $branch_depth -c advice.detachedHead=false $SOURCE_GIT_URL $QPKG_REPO_PATH" log:failure-only
-	else
-		if IsAutoUpdate; then
-			# latest effort at resolving local clone corruption: https://stackoverflow.com/a/10170195
-			DisplayRunAndLog "update $(FormatAsPackageName "$QPKG_NAME") from remote repository" "cd /tmp; /opt/bin/git -C $QPKG_REPO_PATH clean -f; /opt/bin/git -C $QPKG_REPO_PATH reset --hard origin/$SOURCE_GIT_BRANCH; /opt/bin/git -C $QPKG_REPO_PATH pull" log:failure-only
-		fi
-	fi
-
-	if IsAutoUpdate; then
-		DisplayCommitToLog "active git branch: '$(GetPathGitBranch "$QPKG_REPO_PATH")'"
-	fi
-
-	[[ $branch_switch = true && $QPKG_NAME = nzbToMedia ]] && RestoreConfig
-
-	return 0
 
 	}
 
@@ -496,7 +452,7 @@ WaitForPID()
 	{
 
 	if WaitForFileToAppear "$DAEMON_PID_PATHFILE" 60; then
-		sleep 1	# wait one more second to allow file to have PID written into it
+		sleep 1		# wait one more second to allow file to have PID written into it
 		return 0
 	else
 		return 1
@@ -720,7 +676,7 @@ RunAndLog()
 	if IsDebug; then
 		Display
 		Display "exec: '$1'"
-		eval "$1 > >(/usr/bin/tee $LOG_PATHFILE) 2>&1"   # NOTE: 'tee' buffers stdout here
+		eval "$1 > >(/usr/bin/tee $LOG_PATHFILE) 2>&1"	# NOTE: 'tee' buffers stdout here
 		result_code=$?
 	else
 		eval "$1" > "$LOG_PATHFILE" 2>&1
@@ -774,7 +730,7 @@ AddFileToDebug()
 DebugExtLogMinorSeparator()
 	{
 
-	DebugAsLog "$(eval printf '%0.s-' "{1..$DEBUG_LOG_DATAWIDTH}")" # 'seq' is unavailable in QTS, so must resort to 'eval' trickery instead
+	DebugAsLog "$(eval printf '%0.s-' "{1..$DEBUG_LOG_DATAWIDTH}")"		# 'seq' is unavailable in QTS, so must resort to 'eval' trickery instead
 
 	}
 
@@ -848,15 +804,15 @@ ReWriteUIPorts()
 	# QTS App Center requires 'Web_Port' to always be non-zero
 
 	# 'Web_SSL_Port' behaviour:
-	#			< -2 = crashes current QTS session. Starts with non-responsive package icons in App Center
-	#   missing or -2 = QTS will fallback from HTTPS to HTTP, with a warning to user
-	#			-1 = launch QTS UI again (only if WebUI = '/'), else show "QNAP Error" page
-	#			0 = "unable to connect"
+	#		   < -2 = crashes current QTS session. Starts with non-responsive package icons in App Center
+	# missing or -2 = QTS will fallback from HTTPS to HTTP, with a warning to user
+	#			 -1 = launch QTS UI again (only if WebUI = '/'), else show "QNAP Error" page
+	#			  0 = "unable to connect"
 	#			> 0 = works if logged-in to QTS UI via HTTPS
 
 	# If SSL is enabled, attempting to access with non-SSL via 'Web_Port' results in "connection was reset"
 
-	[[ -n ${DAEMON_PORT_CMD:-} ]] && return	# dont need to rewrite QTS UI ports if this app has a daemon port, as UI ports are unused
+	[[ -n ${DAEMON_PORT_CMD:-} ]] && return		# dont need to rewrite QTS UI ports if this app has a daemon port, as UI ports are unused
 
 	DisplayWaitCommitToLog 'update QPKG icon with UI ports:'
 	/sbin/setcfg $QPKG_NAME Web_Port "$ui_port" -f /etc/config/qpkg.conf
@@ -1054,7 +1010,7 @@ IsNotSupportReset()
 IsSourcedOnline()
 	{
 
-	[[ -n ${SOURCE_GIT_URL:-} ]]
+	[[ -n ${SOURCE_GIT_URL:-} || -n ${PIP_CACHE_PATH} ]]
 
 	}
 
@@ -1721,9 +1677,9 @@ CommitSysLog()
 	# input:
 	#   $1 = message to append to QTS system log
 	#   $2 = event type:
-	#	1 : Error
-	#	2 : Warning
-	#	4 : Information
+	#	 1 : Error
+	#	 2 : Warning
+	#	 4 : Information
 
 	if [[ -z ${1:-} || -z ${2:-} ]]; then
 		SetError
@@ -1897,7 +1853,7 @@ if IsNotError; then
 			Display "package: $QPKG_VERSION"
 			Display "service: $SCRIPT_VERSION"
 			;;
-		remove)	# only called by the QDK .uninstall.sh script
+		remove)		# only called by the QDK .uninstall.sh script
 			SetServiceOperation removing
 			;;
 		*)
