@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=OSickGear
-	readonly SCRIPT_VERSION=230415
+	readonly SCRIPT_VERSION=230416
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -291,7 +291,7 @@ InstallAddons()
 	[[ -e $recommended_pathfile ]] && cp -f "$recommended_pathfile" "$default_recommended_pathfile"
 	[[ -e $default_recommended_pathfile ]] && recommended_pathfile=$default_recommended_pathfile
 
-	if [[ $QPKG_NAME = SABnzbd && $new_env = true ]]; then
+	if [[ $QPKG_NAME = SABnzbd ]]; then
 		# KLUDGE: can't use `manytolinux2014` wheel builds in QTS, so force wheels to rebuild locally
 		if $(/bin/grep -q sabyenc3 < "$requirements_pathfile" &>/dev/null); then
 			echo '--no-binary=sabyenc3' >> "$requirements_pathfile"
