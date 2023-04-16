@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=SABnzbd
-	readonly SCRIPT_VERSION=230416
+	readonly SCRIPT_VERSION=230417
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -142,10 +142,10 @@ StartQPKG()
 	fi
 
 	if IsRestore || IsClean || IsReset; then
-		IsRestartPending || return
+		IsNotRestartPending && return
 	fi
 
-	DisplayWaitCommitToLog 'auto-update:'
+	DisplayWaitCommitToLog "auto-update:"
 
 	if IsAutoUpdate; then
 		DisplayCommitToLog true
@@ -307,14 +307,14 @@ InstallAddons()
 
 			name=$(/usr/bin/basename "$target"); name=${name%%.*}
 
-			DisplayRunAndLog "install '$name' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input -r $target" log:failure-only || SetError
+			DisplayRunAndLog "install '$name' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --upgrade pip -r $target" log:failure-only || SetError
 			no_pips_installed=false
 		fi
 	done
 
 	if [[ $no_pips_installed = true ]]; then		# fallback to general installation method
 		if [[ -e $QPKG_REPO_PATH/setup.py || -e $QPKG_REPO_PATH/pyproject.toml ]]; then
-			DisplayRunAndLog "install 'default' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input $QPKG_REPO_PATH" log:failure-only || SetError
+			DisplayRunAndLog "install 'default' PyPI modules" ". $VENV_PATH/bin/activate && pip install${pip_deps} --no-input --upgrade pip $QPKG_REPO_PATH" log:failure-only || SetError
 			no_pips_installed=false
 		fi
 	fi
