@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=pyLoad
-	readonly SCRIPT_VERSION=230417
+	readonly SCRIPT_VERSION=230418
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -964,7 +964,10 @@ GetPyloadConfig()
 	local target_section_name=${2:?no section supplied}
 	local target_var_name=${3:?no variable supplied}
 
-	[[ -e $source_pathfile ]] || return
+	if [[ ! -e $source_pathfile ]]; then
+		echo false
+		return
+	fi
 
 	local result_line=''
 	local -i line_num=0
