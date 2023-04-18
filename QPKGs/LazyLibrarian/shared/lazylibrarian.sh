@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=LazyLibrarian
-	readonly SCRIPT_VERSION=230417
+	readonly SCRIPT_VERSION=230418
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -54,7 +54,7 @@ Init()
 	readonly DAEMON_PATHFILE=$QPKG_REPO_PATH/LazyLibrarian.py
 	readonly DAEMON_PID_PATHFILE=/var/run/$QPKG_NAME.pid
 	readonly LAUNCHER="$DAEMON_PATHFILE --daemon --nolaunch --datadir $(/usr/bin/dirname "$QPKG_INI_PATHFILE") --config $QPKG_INI_PATHFILE --pidfile $DAEMON_PID_PATHFILE"
-	readonly PORT_CHECK_TIMEOUT=120
+	readonly PORT_CHECK_TIMEOUT=240
 	readonly DAEMON_STOP_TIMEOUT=120
 	readonly DAEMON_PORT_CMD=''
 	readonly UI_PORT_CMD='/sbin/getcfg General http_port -d 5299 -f '$QPKG_INI_PATHFILE	# 5299 is the default value for LazyLibrarian, so it wont be found in config file. LL only stores non-default values.
@@ -1141,6 +1141,23 @@ IsNotDaemon()
 
 	}
 
+IsProcessActive()
+	{
+
+	# input:
+	#   $1 = process pathfile
+	#   $2 = PID pathfile
+
+	# output:
+	#   $? = 0 : $1 is in memory
+	#   $? = 1 : $1 is not in memory
+
+	[[ -n ${1:-} ]] || return
+	[[ -n ${2:-} ]] || return
+	[[ -e $2 && -d /proc/$(<"$2") && -n ${1:-} && $(</proc/"$(<"$2")"/cmdline) =~ ${1:-} ]]
+
+	}
+
 IsDaemonActive()
 	{
 
@@ -1149,10 +1166,10 @@ IsDaemonActive()
 
 	DisplayWaitCommitToLog 'daemon active:'
 
-	if [[ -e $DAEMON_PID_PATHFILE && -d /proc/$(<"$DAEMON_PID_PATHFILE") && -n ${DAEMON_PATHFILE:-} && $(</proc/"$(<"$DAEMON_PID_PATHFILE")"/cmdline) =~ $DAEMON_PATHFILE ]]; then
+	if IsProcessActive "$DAEMON_PATHFILE" "$DAEMON_PID_PATHFILE"; then
 		DisplayCommitToLog true
 		DisplayCommitToLog "daemon PID: $(<"$DAEMON_PID_PATHFILE")"
-		return
+		return 0
 	fi
 
 	DisplayCommitToLog false
@@ -1178,7 +1195,7 @@ IsPackageActive()
 
 	if [[ -e $BACKUP_SERVICE_PATHFILE ]]; then
 		DisplayCommitToLog true
-		return
+		return 0
 	fi
 
 	DisplayCommitToLog false
@@ -1288,27 +1305,40 @@ IsPortResponds()
 	DisplayWait "(no-more than $PORT_CHECK_TIMEOUT seconds):"
 
 	while true; do
-		/sbin/curl --silent --fail --max-time 1 http://localhost:"$port" >/dev/null
+		if ! IsProcessActive "$DAEMON_PATHFILE" "$DAEMON_PID_PATHFILE"; then
+			DisplayCommitToLog 'process not active!'
+			break
+		fi
+
+		/sbin/curl --silent --fail --max-time 1 http://localhost:"$port" &>/dev/null
+
 		case $? in
-			0|22|52)	# accept these curl exitcodes as being valid
-				break
+			0|22|52)	# accept these exitcodes as evidence of valid responses
+				Display OK
+				CommitLog "port responded after $acc seconds"
+				return 0
+				;;
+			28)			# timeout
+				: 			# do nothing
+				;;
+			7)			# this code is returned immediately
+				sleep 1		# ... so let's wait here a bit
+				;;
+			*)
+				: # do nothing
 		esac
 
-		sleep 1
-		((acc+=2))
+		((acc+=1))
 		DisplayWait "$acc,"
 
 		if [[ $acc -ge $PORT_CHECK_TIMEOUT ]]; then
 			DisplayCommitToLog 'failed!'
-			CommitErrToSysLog "port $port failed to respond after $acc seconds"
-			return 1
+			CommitErrToSysLog "port $port failed to respond after $acc seconds!"
+			break
 		fi
 	done
 
-	Display OK
-	CommitLog "port responded after $acc seconds"
-
-	return 0
+	return 1
 
 	}
 
@@ -1338,27 +1368,40 @@ IsPortSecureResponds()
 	DisplayWait "(no-more than $PORT_CHECK_TIMEOUT seconds):"
 
 	while true; do
-		/sbin/curl --silent --insecure --fail --max-time 1 https://localhost:"$port" >/dev/null
+		if ! IsProcessActive "$DAEMON_PATHFILE" "$DAEMON_PID_PATHFILE"; then
+			DisplayCommitToLog 'process not active!'
+			break
+		fi
+
+		/sbin/curl --silent -insecure --fail --max-time 1 https://localhost:"$port" &>/dev/null
+
 		case $? in
-			0|22|52)	# accept these curl exitcodes as being valid
-				break
+			0|22|52)	# accept these exitcodes as evidence of valid responses
+				Display OK
+				CommitLog "port responded after $acc seconds"
+				return 0
+				;;
+			28)			# timeout
+				: 			# do nothing
+				;;
+			7)			# this code is returned immediately
+				sleep 1		# ... so let's wait here a bit
+				;;
+			*)
+				: # do nothing
 		esac
 
-		sleep 1
-		((acc+=2))
+		((acc+=1))
 		DisplayWait "$acc,"
 
 		if [[ $acc -ge $PORT_CHECK_TIMEOUT ]]; then
 			DisplayCommitToLog 'failed!'
-			CommitErrToSysLog "secure port $port failed to respond after $acc seconds"
-			return 1
+			CommitErrToSysLog "secure port $port failed to respond after $acc seconds!"
+			break
 		fi
 	done
 
-	Display OK
-	CommitLog "secure port responded after $acc seconds"
-
-	return 0
+	return 1
 
 	}
 
