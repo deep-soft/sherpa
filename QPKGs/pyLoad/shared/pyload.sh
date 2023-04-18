@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=pyLoad
-	readonly SCRIPT_VERSION=230418a
+	readonly SCRIPT_VERSION=230419
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -560,7 +560,7 @@ WaitForDaemon()
 				sleep 1
 				DisplayWait "$count,"
 
-				if [[ -e $DAEMON_PID_PATHFILE && -d /proc/$(<$DAEMON_PID_PATHFILE) && -n ${DAEMON_PATHFILE:-} && $(</proc/"$(<$DAEMON_PID_PATHFILE)"/cmdline) =~ $DAEMON_PATHFILE ]]; then
+				if IsProcessActive "$DAEMON_PATHFILE" "$DAEMON_PID_PATHFILE"; then
 					Display OK
 					CommitLog "active in $count second$(FormatAsPlural "$count")"
 					true
@@ -1350,14 +1350,22 @@ IsPortResponds()
 		/sbin/curl --silent --fail --max-time 1 http://localhost:"$port" &>/dev/null
 
 		case $? in
-			0|22|52)	# accept these curl exitcodes as being valid
+			0|22|52)	# accept these exitcodes as evidence of valid responses
 				Display OK
 				CommitLog "port responded after $acc seconds"
 				return 0
+				;;
+			28)			# timeout
+				: 			# do nothing
+				;;
+			7)			# this code is returned immediately
+				sleep 1		# ... so let's wait here a bit
+				;;
+			*)
+				: # do nothing
 		esac
 
-		sleep 1
-		((acc+=2))
+		((acc+=1))
 		DisplayWait "$acc,"
 
 		if [[ $acc -ge $PORT_CHECK_TIMEOUT ]]; then
@@ -1405,14 +1413,22 @@ IsPortSecureResponds()
 		/sbin/curl --silent -insecure --fail --max-time 1 https://localhost:"$port" &>/dev/null
 
 		case $? in
-			0|22|52)	# accept these curl exitcodes as being valid
+			0|22|52)	# accept these exitcodes as evidence of valid responses
 				Display OK
-				CommitLog "secure port responded after $acc seconds"
+				CommitLog "port responded after $acc seconds"
 				return 0
+				;;
+			28)			# timeout
+				: 			# do nothing
+				;;
+			7)			# this code is returned immediately
+				sleep 1		# ... so let's wait here a bit
+				;;
+			*)
+				: # do nothing
 		esac
 
-		sleep 1
-		((acc+=2))
+		((acc+=1))
 		DisplayWait "$acc,"
 
 		if [[ $acc -ge $PORT_CHECK_TIMEOUT ]]; then
