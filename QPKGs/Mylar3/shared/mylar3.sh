@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=Mylar3
-	readonly SCRIPT_VERSION=230418
+	readonly SCRIPT_VERSION=230419
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -303,8 +303,11 @@ InstallAddons()
 
 	for target in $requirements_pathfile $recommended_pathfile; do
 		if [[ -e $target ]]; then
-			# need to remove `cffi` and `cryptography` modules from repo txt files, as we must use the ones installed via `opkg` instead. If not, `pip` will attempt to compile these, which fails on early arm CPUs.
-			DisplayRunAndLog 'KLUDGE: exclude various PyPI modules from installation' "/bin/sed -i '/^cffi\|^cryptography/d' $target" log:failure-only || SetError
+			# remove `cffi` and `cryptography` modules from repo txt files, as wheel builds result in errors on early ARM units.
+			DisplayRunAndLog "KLUDGE: exclude 'cffi' & 'cryptography' PyPI modules from installation" "/bin/sed -i '/^cffi\|^cryptography/d' $target" log:failure-only || SetError
+
+			# remove `pillow` from repo txt files, as installing latest from PyPI results in "no pillow module found".
+			DisplayRunAndLog "KLUDGE: exclude 'pillow' PyPI module from installation" "/bin/sed -i '/^Pillow/d' $target" log:failure-only || SetError
 
 			name=$(/usr/bin/basename "$target"); name=${name%%.*}
 
