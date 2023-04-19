@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=Deluge-web
-	readonly SCRIPT_VERSION=230419
+	readonly SCRIPT_VERSION=230419a
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -1020,7 +1020,9 @@ IsProcessActive()
 
 	[[ -n ${1:-} ]] || return
 	[[ -n ${2:-} ]] || return
-	[[ -e $2 && -d /proc/$(<"$2") && -n ${1:-} && $(</proc/"$(<"$2")"/cmdline) =~ ${1:-} ]]
+
+	# deluge-web: only check for basename of $DAEMON_PATHFILE as only the basename is shown in the process list
+	[[ -e $2 && -d /proc/$(<"$2") && -n ${1:-} && $(</proc/"$(<"$2")"/cmdline) =~ $(/usr/bin/basename "${1:-}") ]]
 
 	}
 
