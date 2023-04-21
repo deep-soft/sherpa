@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=SABnzbd
-	readonly SCRIPT_VERSION=230418
+	readonly SCRIPT_VERSION=230422
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -1306,14 +1306,14 @@ IsPortResponds()
 
 	while true; do
 		if ! IsProcessActive "$DAEMON_PATHFILE" "$DAEMON_PID_PATHFILE"; then
-			DisplayCommitToLog 'process not active!'
+			DisplayCommitToLog 'process inactive!'
 			break
 		fi
 
 		/sbin/curl --silent --fail --max-time 1 http://localhost:"$port" &>/dev/null
 
 		case $? in
-			0|22|52)	# accept these exitcodes as evidence of valid responses
+			0|22|52)	# accept these as evidence of valid responses
 				Display OK
 				CommitLog "port responded after $acc seconds"
 				return 0
