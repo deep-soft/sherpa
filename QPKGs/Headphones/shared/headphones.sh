@@ -20,7 +20,7 @@ Init()
 
 	# service-script environment
 	readonly QPKG_NAME=Headphones
-	readonly SCRIPT_VERSION=230418
+	readonly SCRIPT_VERSION=230422
 
 	# general environment
 	readonly QPKG_PATH=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
@@ -47,7 +47,7 @@ Init()
 	readonly INTERPRETER=/opt/bin/python3
 	readonly VENV_PATH=$QPKG_PATH/venv
 	readonly VENV_INTERPRETER=$VENV_PATH/bin/python3
-	readonly ALLOW_ACCESS_TO_SYS_PACKAGES=true
+	readonly ALLOW_ACCESS_TO_SYS_PACKAGES=false
 	readonly INSTALL_PIP_DEPS=true
 
 	# specific to daemonised applications only
@@ -779,7 +779,7 @@ RunAndLog()
 
 	# input:
 	#   $1 = commandstring to execute
-	#   $2 = pathfile to record stdout and stderr for commandstring
+	#   $2 = pathfile of log for stdout and stderr
 	#   $3 = 'log:failure-only' (optional) - if specified, stdout & stderr are only recorded in the specified log if the command failed. default is to always record stdout & stderr.
 	#   $4 = e.g. '10' (optional) - an additional acceptable result code. Any other result from command (other than zero) will be considered a failure
 
@@ -796,10 +796,10 @@ RunAndLog()
 	if IsDebug; then
 		Display
 		Display "exec: '$1'"
-		eval "$1 > >(/usr/bin/tee $LOG_PATHFILE) 2>&1"	# NOTE: 'tee' buffers stdout here
+		eval "$1 &> >(/usr/bin/tee $LOG_PATHFILE)"	# NOTE: 'tee' buffers stdout here
 		result_code=$?
 	else
-		eval "$1" > "$LOG_PATHFILE" 2>&1
+		eval "$1" &> "$LOG_PATHFILE"
 		result_code=$?
 	fi
 
@@ -1306,14 +1306,14 @@ IsPortResponds()
 
 	while true; do
 		if ! IsProcessActive "$DAEMON_PATHFILE" "$DAEMON_PID_PATHFILE"; then
-			DisplayCommitToLog 'process not active!'
+			DisplayCommitToLog 'process inactive!'
 			break
 		fi
 
 		/sbin/curl --silent --fail --max-time 1 http://localhost:"$port" &>/dev/null
 
 		case $? in
-			0|22|52)	# accept these exitcodes as evidence of valid responses
+			0|22|52)	# accept these as evidence of valid responses
 				Display OK
 				CommitLog "port responded after $acc seconds"
 				return 0
