@@ -779,7 +779,7 @@ RunAndLog()
 
 	# input:
 	#   $1 = commandstring to execute
-	#   $2 = pathfile to record stdout and stderr for commandstring
+	#   $2 = pathfile of log for stdout and stderr
 	#   $3 = 'log:failure-only' (optional) - if specified, stdout & stderr are only recorded in the specified log if the command failed. default is to always record stdout & stderr.
 	#   $4 = e.g. '10' (optional) - an additional acceptable result code. Any other result from command (other than zero) will be considered a failure
 
@@ -796,10 +796,10 @@ RunAndLog()
 	if IsDebug; then
 		Display
 		Display "exec: '$1'"
-		eval "$1 > >(/usr/bin/tee $LOG_PATHFILE) 2>&1"	# NOTE: 'tee' buffers stdout here
+		eval "$1 &> >(/usr/bin/tee $LOG_PATHFILE)"	# NOTE: 'tee' buffers stdout here
 		result_code=$?
 	else
-		eval "$1" > "$LOG_PATHFILE" 2>&1
+		eval "$1" &> "$LOG_PATHFILE"
 		result_code=$?
 	fi
 
